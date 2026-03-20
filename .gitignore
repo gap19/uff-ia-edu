@@ -1,0 +1,35 @@
+# Ambiente virtual Python
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Dados brutos (baixar manualmente — ver README.md)
+data/MICRODADOS_SAEB_2023/
+data/tic_educacao_2023_escolas_tabelas_xlsx_v1.0/
+
+# Dados processados são incluídos no repositório (prontos para uso)
+# Para regenerar a partir dos brutos: python scripts/init_db.py
+
+# Documentos pessoais do projeto
+*.pdf
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

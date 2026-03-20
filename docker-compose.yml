@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Montar dados processados (ou gerar via ETL antes do build)
+      - ./data/processed:/app/data/processed:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

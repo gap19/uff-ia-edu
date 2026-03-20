@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm 2cm 2.5cm 2cm;
+            @top-center {
+                content: "Painel de Pesquisa: IA na Educação — UFF";
+                font-size: 8pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        /* --- Capa --- */
+        .cover {
+            page-break-after: always;
+            text-align: center;
+            padding-top: 6cm;
+        }
+        .cover h1 {
+            font-size: 22pt;
+            color: #1a365d;
+            margin-bottom: 0.3cm;
+        }
+        .cover h2 {
+            font-size: 14pt;
+            color: #4e79a7;
+            font-weight: normal;
+            margin-bottom: 1.5cm;
+        }
+        .cover .meta {
+            font-size: 11pt;
+            color: #555;
+            margin-top: 2cm;
+        }
+        .cover .meta p { margin: 0.2cm 0; }
+        .cover .logo-bar {
+            margin-top: 3cm;
+            padding-top: 0.5cm;
+            border-top: 2px solid #4e79a7;
+            font-size: 10pt;
+            color: #777;
+        }
+
+        /* --- Sumário --- */
+        .toc {
+            page-break-after: always;
+        }
+        .toc h2 {
+            color: #1a365d;
+            border-bottom: 2px solid #4e79a7;
+            padding-bottom: 0.3cm;
+        }
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+        .toc li {
+            padding: 0.3cm 0;
+            border-bottom: 1px dotted #ccc;
+            font-size: 11pt;
+        }
+
+        /* --- Seções --- */
+        h2 {
+            color: #1a365d;
+            font-size: 16pt;
+            border-bottom: 2px solid #4e79a7;
+            padding-bottom: 0.2cm;
+            margin-top: 1cm;
+        }
+        h3 {
+            color: #4e79a7;
+            font-size: 13pt;
+            margin-top: 0.8cm;
+        }
+
+        .section {
+            page-break-before: always;
+        }
+        .section:first-of-type {
+            page-break-before: auto;
+        }
+
+        /* --- KPIs --- */
+        .kpi-row {
+            display: flex;
+            gap: 1cm;
+            margin: 0.5cm 0 1cm 0;
+        }
+        .kpi-card {
+            flex: 1;
+            background: #f0f4f8;
+            border-left: 4px solid #4e79a7;
+            padding: 0.4cm 0.6cm;
+            border-radius: 3px;
+        }
+        .kpi-card .label {
+            font-size: 9pt;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .kpi-card .value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1a365d;
+        }
+
+        /* --- Gráficos --- */
+        .chart-container {
+            text-align: center;
+            margin: 0.8cm 0;
+        }
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* --- Tabelas --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5cm 0;
+            font-size: 10pt;
+        }
+        th {
+            background: #4e79a7;
+            color: white;
+            padding: 0.3cm 0.4cm;
+            text-align: left;
+        }
+        td {
+            padding: 0.25cm 0.4cm;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+
+        /* --- Notas --- */
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 0.4cm 0.6cm;
+            margin: 0.5cm 0;
+            font-size: 10pt;
+        }
+
+        .methodology {
+            background: #e8f4f8;
+            border-left: 4px solid #76b7b2;
+            padding: 0.4cm 0.6cm;
+            margin: 0.5cm 0;
+            font-size: 10pt;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== CAPA ========== -->
+<div class="cover">
+    <h1>{{ titulo }}</h1>
+    <h2>{{ subtitulo }}</h2>
+    <div class="meta">
+        <p><strong>Projeto:</strong> {{ projeto }}</p>
+        <p><strong>Instituição:</strong> {{ instituicao }}</p>
+        <p><strong>Séries analisadas:</strong> {{ series | join(', ') }}</p>
+        <p><strong>Disciplinas:</strong> {{ disciplinas | join(', ') }}</p>
+        <p><strong>Gerado em:</strong> {{ data_geracao }}</p>
+    </div>
+    <div class="logo-bar">
+        PIBITI/PIBINOVA — Universidade Federal Fluminense
+    </div>
+</div>
+
+<!-- ========== SUMÁRIO ========== -->
+<div class="toc">
+    <h2>Sumário</h2>
+    <ul>
+        <li>1. Resumo Executivo</li>
+        <li>2. Metodologia</li>
+        {% if 'proficiencia' in secoes %}
+        <li>3. Resultados SAEB — Proficiência</li>
+        {% endif %}
+        {% if 'equidade' in secoes %}
+        <li>4. Equidade e Desigualdade</li>
+        {% endif %}
+        {% if 'tecnologia' in secoes %}
+        <li>5. Tecnologia nas Escolas (TIC Educação)</li>
+        {% endif %}
+        {% if 'cruzamentos' in secoes %}
+        <li>6. Cruzamentos: Tecnologia x Desempenho</li>
+        {% endif %}
+        {% if 'etica' in secoes %}
+        <li>7. Dimensões Éticas da IA na Educação</li>
+        {% endif %}
+        {% if apendice %}
+        <li>Apêndice Estatístico</li>
+        {% endif %}
+    </ul>
+</div>
+
+<!-- ========== 1. RESUMO EXECUTIVO ========== -->
+<div class="section">
+    <h2>1. Resumo Executivo</h2>
+
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="label">Total de Alunos Avaliados (RJ)</div>
+            <div class="value">{{ "{:,.0f}".format(total_alunos).replace(",", ".") }}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="label">Escolas no RJ</div>
+            <div class="value">{{ "{:,.0f}".format(total_escolas).replace(",", ".") }}</div>
+        </div>
+    </div>
+
+    {% if kpis %}
+    <table>
+        <thead>
+            <tr>
+                <th>Série</th>
+                <th>Total de Alunos</th>
+                <th>Média LP</th>
+                <th>Média MT</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in kpis %}
+            <tr>
+                <td>{{ r.serie }}</td>
+                <td>{{ "{:,.0f}".format(r.total_alunos or 0).replace(",", ".") }}</td>
+                <td>{{ "%.1f" | format(r.media_lp or 0) }}</td>
+                <td>{{ "%.1f" | format(r.media_mt or 0) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <p>
+        Este relatório apresenta uma análise dos microdados do SAEB 2023 e da pesquisa TIC Educação 2023,
+        com foco nas escolas do estado do Rio de Janeiro. Os dados do SAEB abrangem avaliações de
+        proficiência em Língua Portuguesa e Matemática, enquanto os dados TIC Educação descrevem
+        a infraestrutura tecnológica e as práticas digitais nas escolas da região Sudeste.
+    </p>
+</div>
+
+<!-- ========== 2. METODOLOGIA ========== -->
+<div class="section">
+    <h2>2. Metodologia</h2>
+
+    <h3>Fontes de Dados</h3>
+    <ul>
+        <li><strong>SAEB 2023</strong> (Sistema de Avaliação da Educação Básica): microdados de alunos, escolas, professores e diretores do estado do Rio de Janeiro (ID_UF = 33).</li>
+        <li><strong>TIC Educação 2023</strong> (CETIC.br): dados agregados para a região Sudeste (dados por UF não disponíveis publicamente).</li>
+    </ul>
+
+    <h3>Tratamento Estatístico</h3>
+    <div class="methodology">
+        <p><strong>Pesos amostrais:</strong> Todas as estimativas utilizam os pesos amostrais fornecidos pelo INEP (PESO_ALUNO_LP, PESO_ALUNO_MT, etc.) para garantir representatividade populacional.</p>
+        <p><strong>Intervalos de confiança:</strong> Calculados a 95% com correção para efeito de desenho amostral (design effect) quando aplicável.</p>
+        <p><strong>Testes estatísticos:</strong> Teste t ponderado para comparação de médias; d de Cohen ponderado para tamanho de efeito; correlação de Pearson ponderada para associações.</p>
+    </div>
+
+    <div class="note">
+        <strong>Nota:</strong> Os dados TIC Educação referem-se à região Sudeste como um todo. Análises no nível UF não são possíveis com os dados públicos disponíveis.
+    </div>
+</div>
+
+<!-- ========== 3. PROFICIÊNCIA ========== -->
+{% if 'proficiencia' in secoes %}
+<div class="section">
+    <h2>3. Resultados SAEB — Proficiência</h2>
+
+    <p>
+        A análise de proficiência examina o desempenho dos alunos do Rio de Janeiro nas avaliações
+        do SAEB 2023, comparando com o panorama nacional e regional.
+    </p>
+
+    {% if secoes.proficiencia.chart_bars %}
+    <h3>3.1 Proficiência por Série e Disciplina</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.proficiencia.chart_bars }}" alt="Proficiência por série">
+    </div>
+    {% endif %}
+
+    {% if secoes.proficiencia.chart_ranking %}
+    <h3>3.2 Ranking Nacional</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.proficiencia.chart_ranking }}" alt="Ranking nacional">
+    </div>
+    <p>
+        O gráfico acima posiciona o Rio de Janeiro no ranking das 27 unidades federativas,
+        com destaque em vermelho para facilitar a identificação.
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ========== 4. EQUIDADE ========== -->
+{% if 'equidade' in secoes %}
+<div class="section">
+    <h2>4. Equidade e Desigualdade</h2>
+
+    <p>
+        A análise de equidade investiga as disparidades de desempenho entre redes pública e privada
+        e a relação entre o nível socioeconômico (INSE) e a proficiência dos alunos.
+    </p>
+
+    {% if secoes.equidade.chart_gap %}
+    <h3>4.1 Lacuna Pública vs Privada</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.equidade.chart_gap }}" alt="Gap público-privado">
+    </div>
+    <p>
+        A diferença entre as médias de proficiência da rede privada e pública (Δ) é indicada
+        sobre cada par de barras. Valores positivos indicam vantagem da rede privada.
+    </p>
+    {% endif %}
+
+    {% if secoes.equidade.chart_inse %}
+    <h3>4.2 Proficiência por Nível Socioeconômico (INSE)</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.equidade.chart_inse }}" alt="INSE vs proficiência">
+    </div>
+    <p>
+        O Indicador de Nível Socioeconômico (INSE) é calculado pelo INEP com base nas respostas
+        dos questionários dos alunos. Níveis mais altos indicam maior nível socioeconômico.
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ========== 5. TECNOLOGIA ========== -->
+{% if 'tecnologia' in secoes %}
+<div class="section">
+    <h2>5. Tecnologia nas Escolas (TIC Educação 2023)</h2>
+
+    <div class="note">
+        <strong>Nota:</strong> Dados referentes à região Sudeste. A pesquisa TIC Educação pública
+        não disponibiliza microdados por unidade federativa.
+    </div>
+
+    {% if secoes.tecnologia.chart_infra %}
+    <h3>5.1 Infraestrutura</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.tecnologia.chart_infra }}" alt="Infraestrutura TIC">
+    </div>
+    {% endif %}
+
+    {% if secoes.tecnologia.chart_ai %}
+    <h3>5.2 IA e Sistemas de Dados</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.tecnologia.chart_ai }}" alt="IA nas escolas">
+    </div>
+    <p>
+        Os indicadores E4A/B referem-se a tecnologias de vigilância (biometria e reconhecimento facial),
+        E5 a sistemas de analytics educacional, E6 a sistemas de inteligência artificial e F6 a chatbots.
+    </p>
+    {% endif %}
+
+    {% if secoes.tecnologia.chart_privacy %}
+    <h3>5.3 Privacidade e Proteção de Dados</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.tecnologia.chart_privacy }}" alt="Privacidade">
+    </div>
+    {% endif %}
+
+    {% if secoes.tecnologia.chart_training %}
+    <h3>5.4 Formação Digital Docente</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.tecnologia.chart_training }}" alt="Formação digital">
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ========== 6. CRUZAMENTOS ========== -->
+{% if 'cruzamentos' in secoes %}
+<div class="section">
+    <h2>6. Cruzamentos: Tecnologia x Desempenho</h2>
+
+    <p>
+        Esta seção analisa a relação entre indicadores de acesso e uso de tecnologia e o
+        desempenho dos alunos no SAEB 2023. As análises são realizadas em três níveis:
+        aluno (acesso domiciliar a tecnologia), escola (infraestrutura reportada pelo diretor)
+        e professor (formação e uso de TICs).
+    </p>
+
+    <div class="note">
+        <strong>Nota metodológica:</strong> Correlação não implica causalidade. As análises estratificadas
+        por INSE (nível socioeconômico) ajudam a separar o efeito da tecnologia do confundimento com renda.
+        Correção de Bonferroni aplicada para comparações múltiplas.
+    </div>
+
+    {% if secoes.cruzamentos.chart_wifi %}
+    <h3>6.1 Wi-Fi em Casa vs Proficiência</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.cruzamentos.chart_wifi }}" alt="Wi-Fi vs Proficiência">
+    </div>
+    <p>
+        Alunos com Wi-Fi em casa apresentam proficiência significativamente maior. Entretanto,
+        o acesso à internet domiciliar correlaciona fortemente com o nível socioeconômico,
+        exigindo cautela na interpretação causal.
+    </p>
+    {% endif %}
+
+    {% if secoes.cruzamentos.chart_digital_index %}
+    <h3>6.2 Índice Digital Composto</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.cruzamentos.chart_digital_index }}" alt="Índice Digital">
+    </div>
+    <p>
+        O índice digital composto (0-8) combina quatro indicadores de acesso domiciliar:
+        computadores, celulares com internet, TV por streaming e Wi-Fi. A relação com a
+        proficiência é monotônica crescente.
+    </p>
+    {% endif %}
+
+    {% if secoes.cruzamentos.chart_director %}
+    <h3>6.3 Infraestrutura Tecnológica Escolar</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.cruzamentos.chart_director }}" alt="Infraestrutura Escolar">
+    </div>
+    <p>
+        Escolas com projetos de ciência e tecnologia e adoção de novas tecnologias educacionais
+        apresentam médias de proficiência diferentes. A análise compara escolas reportadas
+        pelos diretores como tendo (Sim) ou não tendo (Não) estes recursos.
+    </p>
+    {% endif %}
+
+    {% if secoes.cruzamentos.chart_forest %}
+    <h3>6.4 Tamanhos de Efeito — Visão Geral</h3>
+    <div class="chart-container">
+        <img src="data:image/png;base64,{{ secoes.cruzamentos.chart_forest }}" alt="Forest Plot">
+    </div>
+    <p>
+        O forest plot acima mostra os tamanhos de efeito (d de Cohen) para as variáveis
+        tecnológicas binárias. Valores positivos indicam associação positiva entre a presença
+        da tecnologia e o desempenho. Convenções: d &lt; 0.2 = pequeno, 0.2-0.5 = médio, &gt; 0.8 = grande.
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ========== 7. ÉTICA ========== -->
+{% if 'etica' in secoes %}
+<div class="section">
+    <h2>7. Dimensões Éticas da IA na Educação</h2>
+
+    <p>
+        A síntese ética articula os achados quantitativos do SAEB e do TIC Educação com as
+        dimensões éticas centrais da pesquisa: equidade algorítmica, vigilância digital,
+        autonomia docente e proteção de dados.
+    </p>
+
+    <h3>6.1 Contexto Tecnológico</h3>
+    <p>
+        A adoção de sistemas de inteligência artificial nas escolas da região Sudeste está em
+        expansão, com destaque para plataformas de analytics educacional e chatbots. Paralelamente,
+        tecnologias de vigilância como biometria e reconhecimento facial estão presentes em parcela
+        significativa das escolas.
+    </p>
+
+    <h3>6.2 Desigualdade Digital</h3>
+    <p>
+        A lacuna de desempenho entre redes pública e privada evidencia um cenário onde a desigualdade
+        de acesso a recursos tecnológicos pode amplificar disparidades educacionais existentes.
+        A introdução de ferramentas de IA sem equidade de acesso levanta questões éticas fundamentais.
+    </p>
+
+    <h3>6.3 Preparação Docente</h3>
+    <p>
+        A formação docente em tecnologias digitais ainda é insuficiente. A adoção de ferramentas
+        de IA sem adequada capacitação dos professores pode reduzir a autonomia docente e
+        transferir decisões pedagógicas para algoritmos opacos.
+    </p>
+
+    <h3>6.4 Privacidade e Proteção de Dados</h3>
+    <p>
+        Há uma lacuna significativa entre a adoção de tecnologias que coletam dados dos estudantes
+        e a implementação de políticas adequadas de privacidade e proteção de dados. Esta assimetria
+        é particularmente preocupante no contexto escolar, onde os sujeitos são majoritariamente
+        crianças e adolescentes.
+    </p>
+</div>
+{% endif %}
+
+<!-- ========== APÊNDICE ========== -->
+{% if apendice %}
+<div class="section">
+    <h2>Apêndice Estatístico</h2>
+
+    {% if apendice.gap %}
+    <h3>A1. Lacuna Pública vs Privada — Dados Completos</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Série</th>
+                <th>Disciplina</th>
+                <th>Média Pública</th>
+                <th>Média Privada</th>
+                <th>Lacuna</th>
+                <th>d Cohen</th>
+                <th>IC 95% Inf.</th>
+                <th>IC 95% Sup.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in apendice.gap %}
+            <tr>
+                <td>{{ r.serie }}</td>
+                <td>{{ r.disciplina }}</td>
+                <td>{{ "%.1f" | format(r.media_publica or 0) }}</td>
+                <td>{{ "%.1f" | format(r.media_privada or 0) }}</td>
+                <td>{{ "%.1f" | format(r.gap or 0) }}</td>
+                <td>{{ "%.2f" | format(r.cohens_d or 0) }}</td>
+                <td>{{ "%.1f" | format(r.ci_lower or 0) }}</td>
+                <td>{{ "%.1f" | format(r.ci_upper or 0) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if apendice.inse %}
+    <h3>A2. Proficiência por Nível INSE</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Série</th>
+                <th>Disciplina</th>
+                <th>Nível INSE</th>
+                <th>Média Proficiência</th>
+                <th>N Alunos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in apendice.inse %}
+            <tr>
+                <td>{{ r.serie }}</td>
+                <td>{{ r.disciplina }}</td>
+                <td>{{ r.nivel_inse }}</td>
+                <td>{{ "%.1f" | format(r.media_proficiencia or 0) }}</td>
+                <td>{{ "{:,.0f}".format(r.n_alunos or 0).replace(",", ".") }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ========== REFERÊNCIAS ========== -->
+<div class="section">
+    <h2>Referências</h2>
+    <ul>
+        <li>INEP. <em>Microdados do SAEB 2023.</em> Brasília: Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira, 2024.</li>
+        <li>CETIC.br. <em>TIC Educação 2023: Pesquisa sobre o Uso das Tecnologias de Informação e Comunicação nas Escolas Brasileiras.</em> São Paulo: Comitê Gestor da Internet no Brasil, 2024.</li>
+        <li>INEP. <em>Escalas de Proficiência do SAEB.</em> Brasília: INEP, 2023.</li>
+    </ul>
+</div>
+
+</body>
+</html>

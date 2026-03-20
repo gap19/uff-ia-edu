@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Pesquisa: IA na Educação — UFF</title>
+    <meta name="description" content="Dashboard analítico do projeto PIBITI/PIBINOVA sobre ética na tomada de decisão por IA no ambiente escolar — UFF/Faculdade de Educação">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/css/dashboard.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="text-white">
+            <div class="sidebar-header mb-4">
+                <h5 class="mb-1">Painel de Pesquisa</h5>
+                <small class="text-muted">IA na Educação — UFF</small>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active text-white" href="#" data-page="home">
+                        <i class="bi bi-house-door"></i>
+                        <span class="nav-label">Início</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="overview">
+                        <i class="bi bi-speedometer2"></i>
+                        <span class="nav-label">Visão Geral</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="proficiency">
+                        <i class="bi bi-bar-chart-line"></i>
+                        <span class="nav-label">Proficiência</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="equity">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span class="nav-label">Equidade</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="technology">
+                        <i class="bi bi-cpu"></i>
+                        <span class="nav-label">Tecnologia</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="teachers">
+                        <i class="bi bi-people"></i>
+                        <span class="nav-label">Professores</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="questionnaires">
+                        <i class="bi bi-clipboard-data"></i>
+                        <span class="nav-label">Questionários</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="ethics">
+                        <i class="bi bi-shield-check"></i>
+                        <span class="nav-label">Ética e IA</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="cross-analysis">
+                        <i class="bi bi-diagram-3"></i>
+                        <span class="nav-label">Cruzamentos Tech</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="methodology">
+                        <i class="bi bi-journal-bookmark"></i>
+                        <span class="nav-label">Metodologia</span>
+                    </a>
+                </li>
+                <li class="nav-item mt-3 pt-3 border-top border-secondary">
+                    <a class="nav-link text-white-50" href="#" id="btn-report" data-bs-toggle="modal" data-bs-target="#reportModal">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span class="nav-label">Gerar Relatório PDF</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" id="btn-about" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                        <i class="bi bi-info-circle"></i>
+                        <span class="nav-label">Sobre o Projeto</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" id="btn-theme">
+                        <i class="bi bi-moon"></i>
+                        <span class="nav-label">Modo Escuro</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main content -->
+        <main class="flex-grow-1">
+            <!-- Filtros globais -->
+            <div id="global-filters" class="align-items-center gap-3 flex-wrap" style="display:none">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 fw-bold small">Série:</label>
+                    <select id="filter-serie" class="form-select form-select-sm" style="width:auto">
+                        <option value="5EF">5º EF</option>
+                        <option value="9EF" selected>9º EF</option>
+                        <option value="34EM">3º/4º EM</option>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 fw-bold small">Disciplina:</label>
+                    <select id="filter-disciplina" class="form-select form-select-sm" style="width:auto">
+                        <option value="LP" selected>Língua Portuguesa</option>
+                        <option value="MT">Matemática</option>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-2" style="margin-left:auto">
+                    <small class="text-muted"><i class="bi bi-funnel"></i> Série e disciplina</small>
+                </div>
+            </div>
+
+            <!-- Conteúdo das páginas -->
+            <div id="page-content" class="p-4">
+                <!-- Página 0: Início (Home) -->
+                <div id="page-home" class="page-section">
+                    <!-- Hero -->
+                    <div class="text-center mb-4 pb-3 border-bottom">
+                        <h2 class="fw-bold mb-2" style="color: var(--clr-primary)">
+                            <i class="bi bi-mortarboard me-2"></i>Painel de Pesquisa: IA na Educação
+                        </h2>
+                        <p class="lead mb-1" style="color: var(--clr-text-muted)">
+                            Universidade Federal Fluminense — Faculdade de Educação
+                        </p>
+                        <span class="badge bg-warning text-dark">PIBITI / PIBINOVA 2025–2026</span>
+                    </div>
+
+                    <!-- Sobre o Projeto -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-lg-8">
+                            <div class="card h-100">
+                                <div class="card-header"><i class="bi bi-journal-text me-1"></i> Sobre o Projeto</div>
+                                <div class="card-body">
+                                    <h5 class="card-title">Ética na Tomada de Decisão por Inteligência Artificial no Ambiente Escolar</h5>
+                                    <p>
+                                        Este dashboard é parte do projeto de pesquisa PIBITI/PIBINOVA coordenado pelo
+                                        <strong>Prof. Richard Fonseca</strong>, vinculado à Faculdade de Educação da
+                                        Universidade Federal Fluminense (UFF).
+                                    </p>
+                                    <p>
+                                        O projeto investiga os <strong>impactos éticos da inteligência artificial nos processos educacionais</strong>
+                                        em escolas do estado do Rio de Janeiro, com foco em equidade, formação docente, infraestrutura
+                                        tecnológica e dimensões éticas da IA na educação.
+                                    </p>
+                                    <p>
+                                        A pesquisa analisa microdados do <strong>SAEB 2023</strong> (Sistema de Avaliação da Educação Básica),
+                                        com mais de 7,6 milhões de registros de alunos, escolas, professores e diretores, e da
+                                        <strong>TIC Educação 2023</strong> (CETIC.br/NIC.br), com 69 indicadores sobre o uso de tecnologias
+                                        de informação e comunicação nas escolas brasileiras.
+                                    </p>
+                                    <h6 class="mt-3">Objetivos Específicos</h6>
+                                    <ul>
+                                        <li>Mapear o acesso e uso de tecnologias digitais nas escolas do RJ e sua relação com o desempenho escolar</li>
+                                        <li>Analisar lacunas de equidade no acesso digital entre redes pública e privada</li>
+                                        <li>Investigar a preparação docente para o uso pedagógico de tecnologias e IA</li>
+                                        <li>Examinar práticas de privacidade e proteção de dados nas escolas</li>
+                                        <li>Produzir indicadores que subsidiem políticas públicas educacionais baseadas em evidências</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-header"><i class="bi bi-database me-1"></i> Fontes de Dados</div>
+                                <div class="card-body">
+                                    <h6><i class="bi bi-file-earmark-bar-graph me-1" style="color: var(--clr-primary)"></i> SAEB 2023</h6>
+                                    <p class="small">
+                                        Microdados do Sistema de Avaliação da Educação Básica (INEP/MEC).
+                                        Avaliação em larga escala aplicada a alunos do 5º EF, 9º EF e 3º/4º EM.
+                                    </p>
+                                    <table class="table table-sm small mb-3">
+                                        <tr><td>Alunos 5º EF</td><td class="text-end fw-bold">~2,4M</td></tr>
+                                        <tr><td>Alunos 9º EF</td><td class="text-end fw-bold">~2,5M</td></tr>
+                                        <tr><td>Alunos 3º/4º EM</td><td class="text-end fw-bold">~2,1M</td></tr>
+                                        <tr><td>Escolas</td><td class="text-end fw-bold">~70K</td></tr>
+                                        <tr><td>Professores</td><td class="text-end fw-bold">~411K</td></tr>
+                                        <tr><td>Diretores</td><td class="text-end fw-bold">~107K</td></tr>
+                                    </table>
+                                    <p class="small text-muted mb-2">Filtro geográfico: <strong>Rio de Janeiro</strong> (ID_UF = 33)</p>
+                                    <hr>
+                                    <h6><i class="bi bi-wifi me-1" style="color: var(--clr-teal)"></i> TIC Educação 2023</h6>
+                                    <p class="small mb-0">
+                                        Pesquisa do CETIC.br/NIC.br sobre uso de TIC nas escolas. 69 indicadores
+                                        regionais (Sudeste). 4 arquivos com 138 planilhas.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metodologia -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-clipboard2-pulse me-1"></i> Metodologia Estatística</div>
+                        <div class="card-body">
+                            <p>
+                                Todas as estimativas deste dashboard são produzidas com rigor estatístico, utilizando os
+                                <strong>pesos amostrais</strong> fornecidos pelo INEP para garantir representatividade populacional.
+                                O SAEB emprega um desenho amostral complexo com estratificação e pesos de expansão.
+                            </p>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6><i class="bi bi-calculator me-1" style="color: var(--clr-primary)"></i> Estimação</h6>
+                                        <ul class="small mb-0">
+                                            <li><strong>Média ponderada</strong> com pesos amostrais por disciplina (PESO_ALUNO_LP, PESO_ALUNO_MT, etc.)</li>
+                                            <li><strong>Variância ponderada</strong> com correção de Bessel para amostras</li>
+                                            <li><strong>Intervalos de confiança</strong> calculados com efeito de desenho (design effect — DEFF)</li>
+                                            <li><strong>Tamanho efetivo da amostra</strong>: n<sub>eff</sub> = (Σw<sub>i</sub>)² / Σw<sub>i</sub>²</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6><i class="bi bi-graph-up me-1" style="color: var(--clr-secondary)"></i> Testes de Hipóteses</h6>
+                                        <ul class="small mb-0">
+                                            <li><strong>Teste t ponderado (Welch)</strong> para comparação de duas médias (ex: pública vs. privada)</li>
+                                            <li><strong>ANOVA ponderada</strong> (one-way) para comparação de múltiplos grupos</li>
+                                            <li><strong>Teste qui-quadrado</strong> para independência entre variáveis categóricas</li>
+                                            <li><strong>Correlação de Pearson ponderada</strong> para associações contínuas (ex: INSE × proficiência)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6><i class="bi bi-rulers me-1" style="color: var(--clr-accent)"></i> Tamanho de Efeito</h6>
+                                        <p class="small mb-1">
+                                            O <strong>d de Cohen ponderado</strong> mede a magnitude prática das diferenças encontradas:
+                                        </p>
+                                        <table class="table table-sm small mb-0">
+                                            <tr><td>&lt; 0,2</td><td>Negligível</td></tr>
+                                            <tr><td>0,2 – 0,5</td><td>Pequeno</td></tr>
+                                            <tr><td>0,5 – 0,8</td><td>Médio</td></tr>
+                                            <tr><td>&gt; 0,8</td><td>Grande</td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6><i class="bi bi-shield-check me-1" style="color: var(--clr-green)"></i> Controles e Correções</h6>
+                                        <ul class="small mb-0">
+                                            <li><strong>Correção de Bonferroni</strong> para comparações múltiplas (α<sub>ajustado</sub> = 0,05/12 ≈ 0,004)</li>
+                                            <li><strong>Estratificação por INSE</strong> — todas as análises de cruzamento são repetidas dentro de cada nível socioeconômico (1–8) para separar o efeito da tecnologia do viés socioeconômico</li>
+                                            <li><strong>Variável de estratificação</strong> (ESTRATO) para estimação de variância com desenho amostral complexo</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="mt-3"><i class="bi bi-cpu me-1"></i> Índice Digital Composto</h6>
+                            <p class="small">
+                                Indicador sintético construído a partir de 4 variáveis de acesso digital do aluno (computadores em casa,
+                                celulares com internet, TV por streaming e Wi-Fi), variando de 0 a 8 pontos e classificado em três faixas:
+                                <strong>Baixo</strong> (0–2), <strong>Médio</strong> (3–5) e <strong>Alto</strong> (6–8).
+                            </p>
+
+                            <h6 class="mt-3"><i class="bi bi-exclamation-triangle me-1"></i> Limitações Metodológicas</h6>
+                            <ol class="small mb-0">
+                                <li><strong>Correlação ≠ causalidade</strong> — os cruzamentos mostram associações, não efeitos causais. Fatores não observados podem confundir as relações.</li>
+                                <li><strong>Viés socioeconômico</strong> — o acesso a tecnologia correlaciona com renda. A estratificação por INSE mitiga, mas não elimina completamente esse viés.</li>
+                                <li><strong>TIC regional vs. SAEB escolar</strong> — os dados TIC Educação são de nível regional (Sudeste), não podendo ser cruzados diretamente com escolas individuais do SAEB.</li>
+                                <li><strong>Missing data</strong> — respostas em branco são filtradas, o que pode introduzir viés de seleção se o padrão de não-resposta não for aleatório.</li>
+                                <li><strong>Temporalidade</strong> — dados de corte transversal (2023), sem possibilidade de análise de tendências temporais.</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Stack Tecnológico -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header"><i class="bi bi-gear me-1"></i> Stack Tecnológico</div>
+                                <div class="card-body">
+                                    <table class="table table-sm small mb-0">
+                                        <tr><td class="fw-bold">Backend/API</td><td>Python 3.12 + FastAPI</td></tr>
+                                        <tr><td class="fw-bold">Banco de dados</td><td>DuckDB (in-process, Parquet colunar)</td></tr>
+                                        <tr><td class="fw-bold">Frontend</td><td>Vanilla JS + Apache ECharts 5.5 + Bootstrap 5</td></tr>
+                                        <tr><td class="fw-bold">Tipografia</td><td>Google Fonts (Inter) + Bootstrap Icons</td></tr>
+                                        <tr><td class="fw-bold">Relatórios PDF</td><td>WeasyPrint + matplotlib/seaborn</td></tr>
+                                        <tr><td class="fw-bold">Containerização</td><td>Docker + docker-compose</td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header"><i class="bi bi-book me-1"></i> Referências</div>
+                                <div class="card-body small">
+                                    <ul class="mb-0">
+                                        <li>BRASIL/INEP. <em>Microdados do SAEB 2023.</em> Brasília: INEP, 2024.</li>
+                                        <li>CETIC.BR. <em>TIC Educação 2023.</em> São Paulo: CGI.br, 2024.</li>
+                                        <li>Cohen, J. (1988). <em>Statistical Power Analysis for the Behavioral Sciences</em> (2nd ed.).</li>
+                                        <li>OECD (2023). <em>PISA 2022 Results (Volume I).</em></li>
+                                        <li>UNESCO (2023). <em>Global Education Monitoring Report 2023: Technology in education.</em></li>
+                                        <li>Kish, L. (1965). <em>Survey Sampling.</em> John Wiley &amp; Sons.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Disclaimer e Licença -->
+                    <div class="alert alert-secondary small mb-3">
+                        <i class="bi bi-exclamation-circle me-1"></i>
+                        <strong>Aviso:</strong> Este painel é um material de apoio à pesquisa acadêmica, disponibilizado para consulta
+                        e em <strong>constante atualização</strong>. Os dados, análises e visualizações aqui apresentados podem ser
+                        revisados, corrigidos ou expandidos a qualquer momento conforme o andamento da pesquisa. Não constitui
+                        publicação oficial e não deve ser citado como fonte definitiva sem verificação junto aos autores.
+                    </div>
+                    <div class="text-center small" style="color: var(--clr-text-muted)">
+                        <p class="mb-1">
+                            <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank" rel="noopener noreferrer" style="color: var(--clr-primary); text-decoration: none;">
+                                <i class="bi bi-cc-circle me-1"></i>
+                                Licenciado sob Creative Commons Atribuição 4.0 Internacional (CC BY 4.0)
+                            </a>
+                        </p>
+                        <p class="mb-0" style="color: var(--clr-text-light)">
+                            Você pode compartilhar e adaptar este material, desde que atribua crédito adequado ao projeto e aos autores.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Página 1: Visão Geral -->
+                <div id="page-overview" class="page-section">
+                    <h3 class="mb-4"><i class="bi bi-speedometer2 me-2" style="color: var(--clr-primary)"></i>Visão Geral — Rio de Janeiro</h3>
+
+                    <!-- KPI Cards -->
+                    <div class="row g-3 mb-4" id="kpi-cards">
+                        <div class="col-md-3">
+                            <div class="card kpi-card kpi-blue h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-mortarboard kpi-icon"></i>
+                                    <h6 class="card-subtitle mb-2">Total de Alunos Avaliados</h6>
+                                    <h3 class="card-title" id="kpi-total-alunos">—</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card kpi-card kpi-green h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-building kpi-icon"></i>
+                                    <h6 class="card-subtitle mb-2">Escolas no RJ</h6>
+                                    <h3 class="card-title" id="kpi-total-escolas">—</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card kpi-card kpi-teal h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-book kpi-icon"></i>
+                                    <h6 class="card-subtitle mb-2">Média LP (RJ)</h6>
+                                    <h3 class="card-title" id="kpi-media-lp">—</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card kpi-card kpi-orange h-100">
+                                <div class="card-body">
+                                    <i class="bi bi-calculator kpi-icon"></i>
+                                    <h6 class="card-subtitle mb-2">Média MT (RJ)</h6>
+                                    <h3 class="card-title" id="kpi-media-mt">—</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><i class="bi bi-bar-chart me-1"></i> Médias por Série e Disciplina (RJ)</div>
+                                <div class="card-body">
+                                    <div id="chart-overview-bars" class="echarts-container" style="height:400px"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><i class="bi bi-trophy me-1"></i> Proficiência por UF — Ranking Nacional</div>
+                                <div class="card-body">
+                                    <div id="chart-overview-ranking" class="echarts-container" style="height:400px"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Página 2: Proficiência -->
+                <div id="page-proficiency" class="page-section d-none">
+                    <h3 class="mb-4"><i class="bi bi-bar-chart-line me-2" style="color: var(--clr-primary)"></i>Proficiência</h3>
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-prof-dist">Distribuição</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-prof-levels">Níveis</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-prof-compare">Comparação</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-prof-dist">
+                            <div id="chart-prof-distribution" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-prof-levels">
+                            <div id="chart-prof-levels" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-prof-compare">
+                            <div id="chart-prof-compare" class="echarts-container" style="height:500px"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Página 3: Equidade -->
+                <div id="page-equity" class="page-section d-none">
+                    <h3 class="mb-4"><i class="bi bi-graph-up-arrow me-2" style="color: var(--clr-primary)"></i>Equidade</h3>
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-eq-gap">Pública vs Privada</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-eq-inse">INSE</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-eq-location">Localização</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-eq-gap">
+                            <div id="chart-eq-gap" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-eq-inse">
+                            <div id="chart-eq-inse" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-eq-location">
+                            <div id="chart-eq-location" class="echarts-container" style="height:500px"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Página 4: Tecnologia -->
+                <div id="page-technology" class="page-section d-none">
+                    <h3 class="mb-4"><i class="bi bi-cpu me-2" style="color: var(--clr-primary)"></i>Tecnologia nas Escolas (TIC Educação)</h3>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Dados referentes à região Sudeste. Dados por UF não disponíveis na pesquisa TIC Educação pública.
+                    </div>
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-tech-infra">Infraestrutura</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-tech-ai">IA e Dados</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-tech-training">Formação Digital</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-tech-privacy">Privacidade</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-tech-infra">
+                            <div id="chart-tech-infra" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-tech-ai">
+                            <div id="chart-tech-ai" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-tech-training">
+                            <div id="chart-tech-training" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-tech-privacy">
+                            <div id="chart-tech-privacy" class="echarts-container" style="height:500px"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Página 5: Professores -->
+                <div id="page-teachers" class="page-section d-none">
+                    <h3 class="mb-4"><i class="bi bi-people me-2" style="color: var(--clr-primary)"></i>Professores</h3>
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-teach-profile">Perfil</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-teach-practices">Formação e Práticas</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-teach-infra">Infraestrutura Escolar</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-teach-corr">Correlações</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-teach-profile">
+                            <div id="chart-teach-profile" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-teach-practices">
+                            <div id="chart-teach-practices" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-teach-infra">
+                            <div id="chart-teach-infra" class="echarts-container" style="height:500px"></div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-teach-corr">
+                            <div id="chart-teach-corr" class="echarts-container" style="height:500px"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Página 6: Questionários -->
+                <div id="page-questionnaires" class="page-section d-none">
+                    <h3 class="mb-4"><i class="bi bi-clipboard-data me-2" style="color: var(--clr-primary)"></i>Questionários (Explorador Interativo)</h3>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Dataset:</label>
+                            <select id="quest-dataset" class="form-select">
+                                <option value="aluno_5ef">Aluno 5º EF</option>
+                                <option value="aluno_9ef">Aluno 9º EF</option>
+                                <option value="professor">Professor</option>
+                                <option value="diretor">Diretor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Questão:</label>
+                            <select id="quest-question" class="form-select">
+                                <option value="">Selecione uma questão...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="chart-questionnaire" class="echarts-container" style="height:500px"></div>
+                </div>
+
+                <!-- Página 7: Ética e IA -->
+                <div id="page-ethics" class="page-section d-none">
+                    <h3 class="mb-4"><i class="bi bi-shield-check me-2" style="color: var(--clr-primary)"></i>Ética e IA — Síntese dos Achados</h3>
+                    <p class="small mb-3" style="color: var(--clr-text-muted)">
+                        Esta página integra os achados das análises SAEB e TIC Educação para apresentar
+                        uma visão panorâmica das dimensões éticas da IA na educação no estado do Rio de Janeiro.
+                    </p>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="card" style="border-left: 4px solid var(--clr-primary)">
+                                <div class="card-header"><i class="bi bi-lightning me-1"></i> Achados-Chave: Tecnologia x Desempenho</div>
+                                <div class="card-body">
+                                    <div id="ethics-cross-findings" class="small">
+                                        <div class="loading-skeleton" style="min-height:80px">
+                                            <div class="spinner-border"></div>
+                                            <span>Carregando achados...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><i class="bi bi-robot me-1"></i> Contexto Tecnológico</div>
+                                <div class="card-body"><div id="chart-ethics-tech" class="echarts-container" style="height:350px"></div></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><i class="bi bi-arrow-left-right me-1"></i> Desigualdade Digital</div>
+                                <div class="card-body"><div id="chart-ethics-digital" class="echarts-container" style="height:350px"></div></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><i class="bi bi-person-workspace me-1"></i> Preparação Docente</div>
+                                <div class="card-body"><div id="chart-ethics-teachers" class="echarts-container" style="height:350px"></div></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header"><i class="bi bi-lock me-1"></i> Dimensões Éticas</div>
+                                <div class="card-body"><div id="chart-ethics-dimensions" class="echarts-container" style="height:350px"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Página 8: Cruzamentos Tech x Desempenho -->
+                <div id="page-cross-analysis" class="page-section d-none">
+                    <h3 class="mb-3"><i class="bi bi-diagram-3 me-2" style="color: var(--clr-primary)"></i>Cruzamentos: Tecnologia x Desempenho</h3>
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        <strong>Nota metodológica:</strong> Correlação não implica causalidade. As análises
+                        controlam por nível socioeconômico (INSE) para separar o efeito da tecnologia do
+                        confundimento com renda. Significância estatística avaliada com correção de Bonferroni
+                        (α ajustado para comparações múltiplas). Todas as estimativas usam pesos amostrais.
+                    </div>
+
+                    <ul class="nav nav-tabs mb-3" id="crossTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="cross-tab-student" data-bs-toggle="tab" data-bs-target="#cross-student" type="button" role="tab">Acesso Digital do Aluno</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="cross-tab-school" data-bs-toggle="tab" data-bs-target="#cross-school" type="button" role="tab">Infraestrutura Escolar</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="cross-tab-teacher" data-bs-toggle="tab" data-bs-target="#cross-teacher" type="button" role="tab">Formação Docente</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="cross-tab-overview" data-bs-toggle="tab" data-bs-target="#cross-overview" type="button" role="tab">Panorama Geral</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="cross-tab-inse" data-bs-toggle="tab" data-bs-target="#cross-inse" type="button" role="tab">Controle INSE</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="crossTabContent">
+                        <!-- Tab 1: Acesso Digital do Aluno -->
+                        <div class="tab-pane fade show active" id="cross-student" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Computadores em Casa vs Proficiência</div>
+                                        <div class="card-body"><div id="chart-cross-computers" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Wi-Fi em Casa vs Proficiência</div>
+                                        <div class="card-body"><div id="chart-cross-wifi" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Celulares com Internet vs Proficiência</div>
+                                        <div class="card-body"><div id="chart-cross-phones" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Índice Digital Composto vs Proficiência</div>
+                                        <div class="card-body"><div id="chart-cross-index" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Infraestrutura Escolar -->
+                        <div class="tab-pane fade" id="cross-school" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Projetos de Ciência e Tecnologia (Q194)</div>
+                                        <div class="card-body"><div id="chart-cross-q194" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Novas Tecnologias Educacionais (Q219)</div>
+                                        <div class="card-body"><div id="chart-cross-q219" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Softwares Educacionais (Q035)</div>
+                                        <div class="card-body"><div id="chart-cross-q035" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Internet Banda Larga (Q036)</div>
+                                        <div class="card-body"><div id="chart-cross-q036" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Formação Docente -->
+                        <div class="tab-pane fade" id="cross-teacher" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Contribuição da Formação em Tecnologia (Q029)</div>
+                                        <div class="card-body"><div id="chart-cross-q029" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Uso de TICs na Prática Pedagógica (Q037)</div>
+                                        <div class="card-body"><div id="chart-cross-q037" class="echarts-container" style="height:350px"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 4: Panorama Geral -->
+                        <div class="tab-pane fade" id="cross-overview" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header"><i class="bi bi-table me-1"></i> Todas as Variáveis Tecnológicas — Ranqueadas por Efeito</div>
+                                        <div class="card-body">
+                                            <div id="table-cross-summary"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header"><i class="bi bi-distribute-horizontal me-1"></i> Forest Plot — Tamanhos de Efeito</div>
+                                        <div class="card-body"><div id="chart-cross-forest" class="echarts-container" style="height:450px"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 5: Controle INSE -->
+                        <div class="tab-pane fade" id="cross-inse" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="alert alert-warning py-2 small">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Se o gap tecnológico desaparece ao estratificar por INSE, isso indica que o efeito observado é proxy do nível socioeconômico, não da tecnologia em si.
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Wi-Fi vs Proficiência — por Nível INSE</div>
+                                        <div class="card-body"><div id="chart-cross-wifi-inse" class="echarts-container" style="height:400px"></div></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">Índice Digital vs Proficiência — por Nível INSE</div>
+                                        <div class="card-body"><div id="chart-cross-index-inse" class="echarts-container" style="height:400px"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Página 9: Metodologia -->
+                <div id="page-methodology" class="page-section d-none">
+                    <h3 class="mb-3"><i class="bi bi-journal-bookmark me-2" style="color: var(--clr-primary)"></i>Metodologia</h3>
+                    <p class="text-muted mb-4">Documentação das metodologias estatísticas e fontes de dados utilizadas neste painel de pesquisa.</p>
+
+                    <!-- 1. Fontes de Dados -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-database me-1"></i> Fontes de Dados</div>
+                        <div class="card-body">
+                            <h5>SAEB 2023 (INEP/MEC)</h5>
+                            <p>
+                                O <strong>Sistema de Avaliação da Educação Básica (SAEB)</strong> é a principal avaliação em larga escala
+                                da educação brasileira, aplicada pelo INEP a alunos de escolas públicas e privadas.
+                                Os microdados contêm informações individuais de cada aluno, incluindo respostas a questionários
+                                contextuais e escores de proficiência.
+                            </p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Arquivo</th><th>Registros</th><th>Descrição</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>TS_ALUNO_5EF</code></td><td>~2,4 milhões</td><td>Alunos do 5º ano do Ensino Fundamental</td></tr>
+                                        <tr><td><code>TS_ALUNO_9EF</code></td><td>~2,5 milhões</td><td>Alunos do 9º ano do Ensino Fundamental</td></tr>
+                                        <tr><td><code>TS_ALUNO_34EM</code></td><td>~2,1 milhões</td><td>Alunos do 3º/4º ano do Ensino Médio</td></tr>
+                                        <tr><td><code>TS_ESCOLA</code></td><td>~70 mil</td><td>Escolas avaliadas</td></tr>
+                                        <tr><td><code>TS_PROFESSOR</code></td><td>~411 mil</td><td>Professores respondentes</td></tr>
+                                        <tr><td><code>TS_DIRETOR</code></td><td>~107 mil</td><td>Diretores respondentes</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="small text-muted mb-3">
+                                <strong>Filtro geográfico:</strong> Rio de Janeiro (ID_UF = 33, código IBGE). <br>
+                                <strong>Escala de proficiência:</strong> Os escores são expressos na escala SAEB, baseada na Teoria de Resposta ao Item (TRI),
+                                com média nacional em torno de 250 pontos para o 9º EF.
+                            </p>
+
+                            <h5>TIC Educação 2023 (CETIC.br/NIC.br)</h5>
+                            <p>
+                                A pesquisa <strong>TIC Educação</strong> investiga o acesso, uso e apropriação das tecnologias
+                                de informação e comunicação nas escolas brasileiras.
+                                Os dados disponíveis publicamente são tabelas agregadas por região (não por UF).
+                                Neste painel, utilizamos os dados da região <strong>Sudeste</strong>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Como Obter os Dados -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-primary text-white"><i class="bi bi-download me-1"></i> Como Obter os Dados (Reprodução)</div>
+                        <div class="card-body">
+                            <p class="small">
+                                Este painel já inclui os dados processados prontos para uso. Os dados brutos originais são públicos
+                                e podem ser obtidos das fontes oficiais caso deseje <strong>validar o pipeline</strong> ou
+                                <strong>adicionar novas fontes de dados</strong>:
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6><i class="bi bi-building me-1"></i> SAEB 2023 — Microdados</h6>
+                                            <p class="small mb-2">INEP / Ministério da Educação</p>
+                                            <ol class="small mb-2">
+                                                <li>Acesse o portal de microdados do INEP</li>
+                                                <li>Baixe "Microdados SAEB 2023" (~1,2 GB compactado)</li>
+                                                <li>Extraia em <code>data/MICRODADOS_SAEB_2023/</code></li>
+                                            </ol>
+                                            <a href="https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/saeb"
+                                               target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-box-arrow-up-right me-1"></i> Portal INEP — Microdados SAEB
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6><i class="bi bi-wifi me-1"></i> TIC Educação 2023 — Tabelas</h6>
+                                            <p class="small mb-2">CETIC.br / NIC.br / CGI.br</p>
+                                            <ol class="small mb-2">
+                                                <li>Acesse o portal da pesquisa TIC Educação</li>
+                                                <li>Baixe as tabelas de escolas (formato Excel, edição 2023)</li>
+                                                <li>Coloque os <code>.xlsx</code> em <code>data/tic_educacao_2023_escolas_tabelas_xlsx_v1.0/</code></li>
+                                            </ol>
+                                            <a href="https://cetic.br/pt/pesquisa/educacao/indicadores/"
+                                               target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-box-arrow-up-right me-1"></i> Portal CETIC.br — TIC Educação
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-secondary py-2 small mt-3 mb-0">
+                                <i class="bi bi-terminal me-1"></i>
+                                Após baixar os dados, execute o pipeline ETL para gerar os arquivos processados:
+                                <code>python scripts/init_db.py</code> (~10-15 min).
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Pesos Amostrais -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-balance-scale me-1"></i> Pesos Amostrais</div>
+                        <div class="card-body">
+                            <p>
+                                O SAEB utiliza um <strong>desenho amostral complexo</strong> com estratificação e pesos de expansão.
+                                Na prática, isso significa que cada aluno avaliado "representa" um número diferente de alunos na população real.
+                                Um aluno de uma escola rural pequena pode ter um peso maior que um de uma escola urbana grande, por exemplo.
+                            </p>
+                            <div class="alert alert-warning py-2 small">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                <strong>Importante:</strong> Todas as estimativas deste dashboard (médias, gaps, testes estatísticos) utilizam
+                                os pesos amostrais fornecidos pelo INEP. Ignorar esses pesos produziria resultados enviesados.
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Disciplina</th><th>Coluna de Peso</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Língua Portuguesa</td><td><code>PESO_ALUNO_LP</code></td></tr>
+                                        <tr><td>Matemática</td><td><code>PESO_ALUNO_MT</code></td></tr>
+                                        <tr><td>Ciências Humanas</td><td><code>PESO_ALUNO_CH</code></td></tr>
+                                        <tr><td>Ciências da Natureza</td><td><code>PESO_ALUNO_CN</code></td></tr>
+                                        <tr><td>Indicador Socioeconômico</td><td><code>PESO_ALUNO_INSE</code></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Funções Estatísticas -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-calculator me-1"></i> Métodos Estatísticos</div>
+                        <div class="card-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-bar-chart me-1"></i> Média Ponderada</h6>
+                                    <p class="small">
+                                        Calcula a média dos escores de proficiência levando em conta o peso de cada aluno.
+                                        Alunos com pesos maiores influenciam mais o resultado, garantindo que a estimativa
+                                        represente a população real.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="\bar{x}_w = \frac{\sum_{i=1}^{n} w_i \, x_i}{\sum_{i=1}^{n} w_i}"></span></div>
+                                    <p class="small text-muted">Onde <em>w<sub>i</sub></em> é o peso amostral e <em>x<sub>i</sub></em> é o valor observado.</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-arrows-expand me-1"></i> Variância Ponderada (Bessel)</h6>
+                                    <p class="small">
+                                        Mede a dispersão dos escores, corrigida pelo tamanho da amostra (correção de Bessel)
+                                        para evitar subestimação.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="s_w^2 = \frac{\sum w_i}{\left(\sum w_i\right)^2 - \sum w_i^2} \sum_{i=1}^{n} w_i (x_i - \bar{x}_w)^2"></span></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-arrows-expand me-1"></i> Intervalo de Confiança</h6>
+                                    <p class="small">
+                                        Faixa de valores dentro da qual a verdadeira média populacional provavelmente se encontra.
+                                        Considera o <em>efeito de desenho</em> (DEFF), que corrige pela estrutura estratificada
+                                        da amostra do SAEB.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="IC_{1-\alpha} = \bar{x}_w \pm z_{\alpha/2} \cdot \sqrt{DEFF \cdot \frac{s_w^2}{n}}"></span></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-arrow-left-right me-1"></i> Teste t de Welch (ponderado)</h6>
+                                    <p class="small">
+                                        Compara duas médias ponderadas (ex: escola pública vs. privada) para determinar se a
+                                        diferença observada é estatisticamente significativa ou pode ser atribuída ao acaso.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="t = \frac{\bar{x}_{w,1} - \bar{x}_{w,2}}{\sqrt{\dfrac{s_{w,1}^2}{n_1^{eff}} + \dfrac{s_{w,2}^2}{n_2^{eff}}}}"></span></div>
+                                    <p class="small text-muted">Onde <span class="katex-formula" data-formula="n^{eff} = \frac{(\sum w_i)^2}{\sum w_i^2}" data-inline="true"></span> é o tamanho efetivo da amostra. Graus de liberdade via aproximação de Welch-Satterthwaite.</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-rulers me-1"></i> d de Cohen (tamanho do efeito)</h6>
+                                    <p class="small">
+                                        Mede a <em>magnitude prática</em> de uma diferença, independentemente do tamanho da amostra.
+                                        Uma diferença pode ser estatisticamente significativa, mas trivial na prática.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="d = \frac{\bar{x}_{w,1} - \bar{x}_{w,2}}{s_{pooled}} \quad \text{onde} \quad s_{pooled} = \sqrt{\frac{s_{w,1}^2 + s_{w,2}^2}{2}}"></span></div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered small">
+                                            <thead class="table-light"><tr><th>d</th><th>Interpretação</th></tr></thead>
+                                            <tbody>
+                                                <tr><td>&lt; 0,2</td><td>Negligível</td></tr>
+                                                <tr><td>0,2 – 0,5</td><td>Pequeno</td></tr>
+                                                <tr><td>0,5 – 0,8</td><td>Médio</td></tr>
+                                                <tr><td>&gt; 0,8</td><td>Grande</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-stack me-1"></i> ANOVA Ponderado (one-way)</h6>
+                                    <p class="small">
+                                        Extensão do teste t para três ou mais grupos (ex: proficiência por nível de acesso digital).
+                                        Verifica se ao menos um grupo difere significativamente dos demais.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="F = \frac{SS_{between} / (k - 1)}{SS_{within} / (N_{eff} - k)}"></span></div>
+                                    <p class="small text-muted">Somas de quadrados calculadas com pesos amostrais.</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-grid-3x3 me-1"></i> Teste Qui-Quadrado</h6>
+                                    <p class="small">
+                                        Testa independência entre variáveis categóricas nos questionários.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="\chi^2 = \sum_{i,j} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}"></span></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-graph-up me-1"></i> Correlação de Pearson Ponderada</h6>
+                                    <p class="small">
+                                        Mede a força e direção da relação linear entre duas variáveis contínuas
+                                        (ex: nível INSE e proficiência). Valores próximos de +1 ou -1 indicam relação forte;
+                                        próximos de 0, ausência de relação linear.
+                                    </p>
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="r_w = \frac{\sum w_i (x_i - \bar{x}_w)(y_i - \bar{y}_w)}{\sqrt{\sum w_i (x_i - \bar{x}_w)^2 \cdot \sum w_i (y_i - \bar{y}_w)^2}}"></span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Cruzamentos -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-diagram-3 me-1"></i> Cruzamentos Tecnologia x Desempenho</div>
+                        <div class="card-body">
+                            <h6>Variáveis de interesse</h6>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <strong class="small">Nível Aluno (SAEB)</strong>
+                                            <ul class="small mb-0 mt-1">
+                                                <li>Computadores em casa</li>
+                                                <li>Celulares com internet</li>
+                                                <li>TV por streaming</li>
+                                                <li>Rede Wi-Fi em casa</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <strong class="small">Nível Escola (Diretor)</strong>
+                                            <ul class="small mb-0 mt-1">
+                                                <li>Computadores na escola</li>
+                                                <li>Softwares educacionais</li>
+                                                <li>Internet banda larga</li>
+                                                <li>Projetos de tecnologia</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <strong class="small">Nível Professor</strong>
+                                            <ul class="small mb-0 mt-1">
+                                                <li>Formação em tecnologia</li>
+                                                <li>Uso de TICs em sala</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6>Índice Digital Composto</h6>
+                            <p class="small">
+                                Soma de 4 variáveis de acesso digital do aluno, resultando em um índice de <strong>0 a 8</strong>.
+                                Classificado em três faixas: <strong>Baixo</strong> (0–2), <strong>Médio</strong> (3–5) e <strong>Alto</strong> (6–8).
+                            </p>
+                            <div class="text-center my-2"><span class="katex-formula" data-formula="I_{digital} = Q12b_{(0\text{-}3)} + Q12g_{(0\text{-}3)} + Q13a_{(0\text{-}1)} + Q13b_{(0\text{-}1)} \in [0,\, 8]"></span></div>
+
+                            <h6>Controle por INSE</h6>
+                            <p class="small">
+                                Cada análise de cruzamento é executada de duas formas:
+                            </p>
+                            <ol class="small">
+                                <li><strong>Bruta:</strong> Sem controle — estima a associação total entre tecnologia e proficiência.</li>
+                                <li><strong>Estratificada por INSE:</strong> Repetida dentro de cada nível INSE (1–8) — permite verificar se o efeito persiste após controlar pelo nível socioeconômico.</li>
+                            </ol>
+                            <div class="alert alert-info py-2 small">
+                                <i class="bi bi-lightbulb me-1"></i>
+                                Se o gap tecnológico <strong>desaparece</strong> ao estratificar por INSE, indica que o efeito observado
+                                é proxy do nível socioeconômico. Se <strong>persiste</strong>, sugere efeito independente da tecnologia.
+                                Se <strong>reduz parcialmente</strong>, há viés parcial.
+                            </div>
+
+                            <h6>Correção de Bonferroni</h6>
+                            <p class="small">
+                                Com ~12 variáveis testadas simultaneamente, o risco de falsos positivos aumenta.
+                                A correção de Bonferroni ajusta o nível de significância, reduzindo esse risco.
+                                Resultados com p &lt; 0,05 mas p &gt; 0,004 são sinalizados como
+                                "significativo sem correção".
+                            </p>
+                            <div class="text-center my-2"><span class="katex-formula" data-formula="\alpha_{ajustado} = \frac{0{,}05}{12} \approx 0{,}004"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Limitações -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-exclamation-diamond me-1"></i> Limitações Metodológicas</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-arrow-repeat text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Correlação ≠ causalidade</strong>
+                                            <p class="small mb-0">Os cruzamentos mostram associações, não efeitos causais. Fatores não observados podem confundir as relações.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-currency-dollar text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Viés socioeconômico</strong>
+                                            <p class="small mb-0">O acesso a tecnologia correlaciona fortemente com renda. A estratificação por INSE mitiga, mas não elimina completamente esse viés.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-geo-alt text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">TIC regional vs. SAEB escolar</strong>
+                                            <p class="small mb-0">Os dados TIC Educação são de nível regional (Sudeste), não podendo ser cruzados diretamente com escolas individuais do SAEB.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-question-circle text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Dados ausentes (missing data)</strong>
+                                            <p class="small mb-0">Respostas em branco são filtradas. Isso pode introduzir viés de seleção se o padrão de não-resposta não for aleatório.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-people text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Viés de seleção</strong>
+                                            <p class="small mb-0">A participação no SAEB não é universal para todas as redes e séries, o que pode afetar a representatividade.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-calendar text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Corte transversal</strong>
+                                            <p class="small mb-0">Os dados são de 2023, impossibilitando análise de tendências temporais.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Referências -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-book me-1"></i> Referências</div>
+                        <div class="card-body">
+                            <ul class="small mb-0">
+                                <li class="mb-2">BRASIL. Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira (INEP). <strong>Microdados do SAEB 2023.</strong> Brasília: INEP, 2024.</li>
+                                <li class="mb-2">CETIC.BR. <strong>TIC Educação 2023: Pesquisa sobre o uso das tecnologias de informação e comunicação nas escolas brasileiras.</strong> São Paulo: Comitê Gestor da Internet no Brasil, 2024.</li>
+                                <li class="mb-2">Cohen, J. (1988). <strong>Statistical Power Analysis for the Behavioral Sciences</strong> (2nd ed.). Lawrence Erlbaum Associates.</li>
+                                <li class="mb-2">OECD (2023). <strong>PISA 2022 Results (Volume I): The State of Learning and Equity in Education.</strong> OECD Publishing.</li>
+                                <li class="mb-2">UNESCO (2023). <strong>Global Education Monitoring Report 2023: Technology in education.</strong> UNESCO Publishing.</li>
+                                <li>Kish, L. (1965). <strong>Survey Sampling.</strong> John Wiley & Sons.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Sobre o Projeto -->
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="aboutModalLabel"><i class="bi bi-info-circle me-2"></i>Sobre o Projeto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Ética na Tomada de Decisão por Inteligência Artificial no Ambiente Escolar</h6>
+                    <p>
+                        Projeto PIBITI/PIBINOVA coordenado pelo Prof. Richard Fonseca, vinculado à
+                        Faculdade de Educação da Universidade Federal Fluminense (UFF).
+                    </p>
+                    <h6>Objetivo</h6>
+                    <p>
+                        Investigar os impactos éticos da inteligência artificial nos processos educacionais
+                        em escolas do estado do Rio de Janeiro, com foco em equidade, formação docente,
+                        infraestrutura tecnológica e dimensões éticas da IA na educação.
+                    </p>
+                    <h6>Fontes de Dados</h6>
+                    <ul>
+                        <li><strong>SAEB 2023</strong> — Microdados do Sistema de Avaliação da Educação Básica
+                            (INEP/MEC): 7,6 milhões de registros de alunos, escolas, professores e diretores.</li>
+                        <li><strong>TIC Educação 2023</strong> — Pesquisa sobre o uso de tecnologias de informação
+                            e comunicação nas escolas brasileiras (CETIC.br/NIC.br): 69 indicadores regionais.</li>
+                    </ul>
+                    <h6>Metodologia</h6>
+                    <ul>
+                        <li>Todas as estimativas utilizam <strong>pesos amostrais</strong> do SAEB.</li>
+                        <li>Intervalos de confiança calculados com design effect.</li>
+                        <li>Testes de significância: t-test ponderado, ANOVA, qui-quadrado.</li>
+                        <li>Tamanho de efeito: d de Cohen ponderado.</li>
+                        <li>Correção para comparações múltiplas: Bonferroni.</li>
+                        <li>Controle por nível socioeconômico (INSE) para separar efeito da tecnologia
+                            do viés socioeconômico.</li>
+                    </ul>
+                    <h6>Limitações</h6>
+                    <ul>
+                        <li>Correlação não implica causalidade.</li>
+                        <li>Dados TIC são de nível regional (Sudeste), não por UF.</li>
+                        <li>Respostas ausentes são filtradas, o que pode introduzir viés de seleção.</li>
+                    </ul>
+                    <hr>
+                    <p class="text-muted small mb-0">
+                        Universidade Federal Fluminense — Faculdade de Educação<br>
+                        Dashboard desenvolvido com FastAPI, DuckDB, Apache ECharts e Bootstrap 5.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Relatório PDF -->
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalLabel"><i class="bi bi-file-earmark-pdf me-2"></i>Gerar Relatório PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Seções:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="proficiencia" id="rep-sec-prof" checked>
+                            <label class="form-check-label" for="rep-sec-prof">Proficiência</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="equidade" id="rep-sec-eq" checked>
+                            <label class="form-check-label" for="rep-sec-eq">Equidade</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="tecnologia" id="rep-sec-tech" checked>
+                            <label class="form-check-label" for="rep-sec-tech">Tecnologia nas Escolas</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="cruzamentos" id="rep-sec-cross" checked>
+                            <label class="form-check-label" for="rep-sec-cross">Cruzamentos Tech x Desempenho</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="etica" id="rep-sec-ethics" checked>
+                            <label class="form-check-label" for="rep-sec-ethics">Ética e IA</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Séries:</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" value="5EF" id="rep-serie-5" checked>
+                            <label class="form-check-label" for="rep-serie-5">5º EF</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" value="9EF" id="rep-serie-9" checked>
+                            <label class="form-check-label" for="rep-serie-9">9º EF</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" value="34EM" id="rep-serie-em">
+                            <label class="form-check-label" for="rep-serie-em">3º/4º EM</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Disciplinas:</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" value="LP" id="rep-disc-lp" checked>
+                            <label class="form-check-label" for="rep-disc-lp">Língua Portuguesa</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" value="MT" id="rep-disc-mt" checked>
+                            <label class="form-check-label" for="rep-disc-mt">Matemática</label>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="rep-apendice" checked>
+                        <label class="form-check-label" for="rep-apendice">Incluir Apêndice Estatístico</label>
+                    </div>
+                    <div id="report-status" class="d-none">
+                        <div class="d-flex align-items-center" style="color: var(--clr-text-muted)">
+                            <div class="spinner-border spinner-border-sm me-2"></div>
+                            Gerando relatório... (pode levar alguns segundos)
+                        </div>
+                    </div>
+                    <div id="report-error" class="alert alert-danger d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btn-generate-report">
+                        <i class="bi bi-download me-1"></i> Gerar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/glossary.js"></script>
+    <script src="/static/js/explanations.js"></script>
+    <script src="/static/js/pages.js"></script>
+    <script src="/static/js/app.js"></script>
+    <script>
+    // Render KaTeX formulas
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.katex-formula').forEach(el => {
+            const formula = el.getAttribute('data-formula');
+            const displayMode = el.getAttribute('data-inline') !== 'true';
+            try {
+                katex.render(formula, el, { displayMode, throwOnError: false });
+            } catch (e) { el.textContent = formula; }
+        });
+    });
+    </script>
+</body>
+</html>

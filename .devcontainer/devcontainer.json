@@ -1,0 +1,20 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+	"name": "Dashboard IA e Educação - UFF",
+	"image": "mcr.microsoft.com/devcontainers/python:3-3.12-bookworm",
+
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
+
+	"forwardPorts": [8000],
+	"portsAttributes": {
+		"8000": {
+			"label": "Dashboard",
+			"onAutoForward": "openBrowser"
+		}
+	},
+
+	"postCreateCommand": "pip3 install --user -r backend/requirements.txt && sudo apt-get update && sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 libcairo2"
+}
