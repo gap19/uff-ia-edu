@@ -122,6 +122,61 @@
     color: var(--clr-primary-light);
 }
 
+[data-theme="dark"] .card-body {
+    color: var(--clr-text);
+}
+
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .card-body h5,
+[data-theme="dark"] .card-body h6 {
+    color: var(--clr-text);
+}
+
+[data-theme="dark"] .card-body p,
+[data-theme="dark"] .card-body li {
+    color: var(--clr-text);
+}
+
+[data-theme="dark"] .card-body .text-muted,
+[data-theme="dark"] .text-muted {
+    color: var(--clr-text-muted) !important;
+}
+
+[data-theme="dark"] .table-light {
+    --bs-table-bg: var(--clr-surface-alt);
+    --bs-table-color: var(--clr-text);
+}
+
+[data-theme="dark"] thead.table-light th {
+    background-color: var(--clr-surface-alt) !important;
+    color: var(--clr-text) !important;
+}
+
+[data-theme="dark"] .card-body code {
+    color: var(--clr-accent);
+    background-color: rgba(225, 87, 89, 0.1);
+}
+
+[data-theme="dark"] .alert-secondary {
+    background-color: rgba(160, 174, 192, 0.12);
+    border-color: rgba(160, 174, 192, 0.2);
+    color: var(--clr-text);
+}
+
+[data-theme="dark"] .card.bg-light,
+[data-theme="dark"] .bg-light .card-body {
+    background-color: var(--clr-surface-alt) !important;
+    color: var(--clr-text);
+}
+
+[data-theme="dark"] .card.border-primary .card-header.bg-primary {
+    background-color: var(--clr-primary-dark) !important;
+}
+
+[data-theme="dark"] .border {
+    border-color: var(--clr-border) !important;
+}
+
 /* ─── Base ───────────────────────────────────────────────── */
 
 body {
