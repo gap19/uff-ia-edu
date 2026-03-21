@@ -29,12 +29,12 @@ _PROFESSOR_PARQUET = str(SAEB_PARQUET_DIR / "TS_PROFESSOR.parquet")
 _GENDER_MAP: Dict[str, str] = {
     "A": "Masculino",
     "B": "Feminino",
-    "C": "Prefiro nao responder",
+    "C": "Não quero declarar",
 }
 
 _EDUCATION_MAP: Dict[str, str] = {
-    "A": "Ensino Medio - Magisterio/Normal",
-    "B": "Ensino Medio - Outros",
+    "A": "Ensino Médio - Magistério/Normal",
+    "B": "Ensino Médio - Outros",
     "C": "Ensino Superior - Pedagogia",
     "D": "Ensino Superior - Licenciatura LP",
     "E": "Ensino Superior - Licenciatura MT",

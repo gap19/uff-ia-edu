@@ -34,6 +34,7 @@ def precompute_all() -> list[str]:
     try:
         tables_created += _precompute_proficiency_by_uf(con)
         tables_created += _precompute_proficiency_by_inse(con)
+        tables_created += _precompute_proficiency_by_location(con)
         tables_created += _precompute_proficiency_levels_rj(con)
         tables_created += _precompute_proficiency_levels_nacional(con)
         tables_created += _precompute_questionnaire_aluno_rj(con)
@@ -148,6 +149,46 @@ def _precompute_proficiency_by_inse(con: duckdb.DuckDBPyConnection) -> list[str]
                   AND NU_TIPO_NIVEL_INSE IS NOT NULL
                   AND {peso_col} IS NOT NULL
                 GROUP BY NU_TIPO_NIVEL_INSE
+            """)
+
+    union_sql = "\nUNION ALL\n".join(queries)
+    con.execute(f"CREATE OR REPLACE TABLE {table} AS ({union_sql})")
+    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    print(f"  [{table}] {n} linhas")
+    return [table]
+
+
+# ---------------------------------------------------------------------------
+# Proficiência por localização (urbana/rural)
+# ---------------------------------------------------------------------------
+
+def _precompute_proficiency_by_location(con: duckdb.DuckDBPyConnection) -> list[str]:
+    """Média de proficiência por localização (urbana/rural) para RJ."""
+    table = "prof_by_location_rj"
+    queries = []
+
+    for aluno_file in ["TS_ALUNO_5EF", "TS_ALUNO_9EF", "TS_ALUNO_34EM"]:
+        pq = _parquet(aluno_file)
+        serie = aluno_file.replace("TS_ALUNO_", "")
+
+        for disc, prof_col, peso_col in [
+            ("LP", "PROFICIENCIA_LP_SAEB", "PESO_ALUNO_LP"),
+            ("MT", "PROFICIENCIA_MT_SAEB", "PESO_ALUNO_MT"),
+        ]:
+            queries.append(f"""
+                SELECT
+                    ID_LOCALIZACAO AS localizacao,
+                    '{serie}' AS serie,
+                    '{disc}' AS disciplina,
+                    SUM({prof_col} * {peso_col}) / NULLIF(SUM({peso_col}), 0) AS media_proficiencia,
+                    SUM({peso_col}) AS soma_pesos,
+                    COUNT(*) AS n_alunos
+                FROM read_parquet('{pq}')
+                WHERE ID_UF = {ID_UF_RJ}
+                  AND IN_PROFICIENCIA_{disc} = 1
+                  AND ID_LOCALIZACAO IS NOT NULL
+                  AND {peso_col} IS NOT NULL
+                GROUP BY ID_LOCALIZACAO
             """)
 
     union_sql = "\nUNION ALL\n".join(queries)
