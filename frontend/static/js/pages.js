@@ -47,6 +47,11 @@ async function loadOverview() {
 
     // Gráfico de barras: médias por série
     if (alunos.length > 0) {
+        const narrow = window.innerWidth < 576;
+        const lpName = narrow ? 'LP' : 'Língua Portuguesa';
+        const mtName = narrow ? 'MT' : 'Matemática';
+        const labelSize = narrow ? 9 : 11;
+
         renderChart('chart-overview-bars', {
             tooltip: {
                 trigger: 'axis',
@@ -54,26 +59,26 @@ async function loadOverview() {
                     `<strong>${p.seriesName}</strong>: ${tooltipVal(p.value)} pts`
                 ).join('<br>'),
             },
-            legend: { data: ['Língua Portuguesa', 'Matemática'], top: 0 },
-            grid: { top: 35 },
+            legend: { data: [lpName, mtName], top: 0 },
+            grid: { top: 35, left: narrow ? 40 : 60 },
             xAxis: { type: 'category', data: alunos.map(s => s.serie) },
-            yAxis: { type: 'value', name: 'Proficiência (escala SAEB)' },
+            yAxis: { type: 'value', name: narrow ? '' : 'Proficiência (escala SAEB)' },
             series: [
                 {
-                    name: 'Língua Portuguesa',
+                    name: lpName,
                     type: 'bar',
                     data: alunos.map(s => s.media_lp),
                     itemStyle: { color: gradientBar(COLORS.primary), borderRadius: [4, 4, 0, 0] },
-                    label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: 11 },
-                    barMaxWidth: 50,
+                    label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: labelSize },
+                    barMaxWidth: narrow ? 30 : 50,
                 },
                 {
-                    name: 'Matemática',
+                    name: mtName,
                     type: 'bar',
                     data: alunos.map(s => s.media_mt),
                     itemStyle: { color: gradientBar(COLORS.secondary), borderRadius: [4, 4, 0, 0] },
-                    label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: 11 },
-                    barMaxWidth: 50,
+                    label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: labelSize },
+                    barMaxWidth: narrow ? 30 : 50,
                 },
             ],
         });
@@ -312,7 +317,43 @@ async function loadEquity() {
         showEmpty('chart-eq-inse');
     }
 
-    showEmpty('chart-eq-location', 'Análise por localização (urbana/rural) em construção');
+    // Localização (urbana/rural)
+    const location = await fetchAPI('/saeb/equity/location');
+    if (location && location.data && location.data.length > 0) {
+        const filtered = location.data.filter(i =>
+            i.serie === state.serie && i.disciplina === state.disciplina
+        );
+        if (filtered.length >= 2) {
+            filtered.sort((a, b) => a.localizacao - b.localizacao);
+            const urbana = filtered.find(r => r.localizacao === 1);
+            const rural = filtered.find(r => r.localizacao === 2);
+            const gap = urbana && rural ? Math.abs(urbana.media_proficiencia - rural.media_proficiencia) : null;
+
+            renderChart('chart-eq-location', {
+                tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)} pts` },
+                graphic: gap != null ? [statAnnotation(`Lacuna: ${fmtNum(gap)} pontos`)] : [],
+                xAxis: { type: 'category', data: filtered.map(r => r.localizacao_label) },
+                yAxis: { type: 'value', name: 'Proficiência média' },
+                series: [{
+                    type: 'bar',
+                    data: filtered.map((r, idx) => ({
+                        value: r.media_proficiencia,
+                        itemStyle: {
+                            color: gradientBar(idx === 0 ? COLORS.primary : COLORS.teal),
+                            borderRadius: [4, 4, 0, 0],
+                        },
+                    })),
+                    label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: 12 },
+                    barMaxWidth: 80,
+                }],
+            });
+            renderExplanation('chart-eq-location');
+        } else {
+            showEmpty('chart-eq-location', 'Sem dados de localização para esta série/disciplina');
+        }
+    } else {
+        showEmpty('chart-eq-location', 'Dados de localização indisponíveis');
+    }
 }
 
 // =========================================================
@@ -390,13 +431,18 @@ async function loadTeachers() {
     const [genero, tech, recursos, formacao] = await Promise.all([
         fetchAPI('/saeb/questionnaire/professor', { questao: 'TX_Q001' }),
         fetchAPI('/saeb/questionnaire/professor', { questao: 'TX_Q029' }),
-        fetchAPI('/saeb/questionnaire/professor', { questao: 'TX_Q069' }),
+        fetchAPI('/saeb/questionnaire/professor', { questao: 'TX_Q072' }),
         fetchAPI('/saeb/teachers/formation'),
     ]);
 
-    _plotQuestionnaire('chart-teach-profile', genero, 'Gênero dos Professores (RJ)', COLORS.primary);
-    _plotQuestionnaire('chart-teach-practices', tech, 'Uso de Tecnologia em Aula', COLORS.secondary);
-    _plotQuestionnaire('chart-teach-infra', recursos, 'Recursos Tecnológicos na Escola', COLORS.teal);
+    // Labels oficiais do Questionário do Professor SAEB 2023 (INEP)
+    const GENDER_LABELS = { A: 'Masculino', B: 'Feminino', C: 'Não declarado' };
+    const Q029_LABELS = { A: 'Não contribuiu', B: 'Contribuiu pouco', C: 'Contribuiu razoavelmente', D: 'Contribuiu muito' };
+    const Q072_LABELS = { A: 'Não tem', B: 'Não uso', C: 'Muito inadequado', D: 'Inadequado', E: 'Adequado', F: 'Muito adequado' };
+
+    _plotQuestionnaire('chart-teach-profile', genero, 'Gênero dos Professores (RJ)', COLORS.primary, GENDER_LABELS);
+    _plotQuestionnaire('chart-teach-practices', tech, 'Contribuição da Formação em Tecnologia (RJ)', COLORS.secondary, Q029_LABELS);
+    _plotQuestionnaire('chart-teach-infra', recursos, 'Computador na Escola — Adequação (RJ)', COLORS.teal, Q072_LABELS);
 
     // Correlações: formação docente vs desempenho
     if (formacao && formacao.data && formacao.data.length > 0) {
@@ -428,7 +474,7 @@ async function loadTeachers() {
     }
 }
 
-function _plotQuestionnaire(elementId, response, title, color) {
+function _plotQuestionnaire(elementId, response, title, color, labelMap) {
     if (!response || !response.data || response.data.length === 0) {
         showEmpty(elementId, 'Sem dados para esta questão');
         return;
@@ -436,6 +482,7 @@ function _plotQuestionnaire(elementId, response, title, color) {
 
     const rows = response.data;
     const total = rows.reduce((s, r) => s + r.contagem, 0);
+    const labels = rows.map(r => (labelMap && labelMap[r.resposta]) || r.resposta);
 
     renderChart(elementId, {
         title: { text: title, left: 'center', top: 0, textStyle: { fontSize: 13, fontWeight: 600 } },
@@ -444,7 +491,7 @@ function _plotQuestionnaire(elementId, response, title, color) {
             formatter: params => `${params[0].name}<br>Contagem: <strong>${fmtInt(params[0].value)}</strong> (${tooltipVal((params[0].value / total) * 100)}%)`,
         },
         grid: { top: 40 },
-        xAxis: { type: 'category', data: rows.map(r => r.resposta), axisLabel: { fontSize: 10.5 } },
+        xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10, rotate: labels.some(l => l.length > 12) ? 20 : 0 } },
         yAxis: { type: 'value', name: 'Contagem' },
         series: [{
             type: 'bar',

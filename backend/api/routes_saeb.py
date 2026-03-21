@@ -236,7 +236,27 @@ async def equity_inse():
 
 
 # ---------------------------------------------------------------------------
-# 7. GET /teachers/formation
+# 7. GET /equity/location
+# ---------------------------------------------------------------------------
+
+@router.get("/equity/location")
+async def equity_location():
+    """Proficiência por localização (urbana/rural) no RJ."""
+    try:
+        rows = _query(
+            "SELECT * FROM prof_by_location_rj ORDER BY serie, disciplina, localizacao"
+        )
+        # Map ID_LOCALIZACAO: 1=Urbana, 2=Rural
+        loc_map = {1: "Urbana", 2: "Rural"}
+        for row in rows:
+            row["localizacao_label"] = loc_map.get(row["localizacao"], str(row["localizacao"]))
+        return {"data": rows}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# 8. GET /teachers/formation
 # ---------------------------------------------------------------------------
 
 @router.get("/teachers/formation")

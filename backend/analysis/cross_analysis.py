@@ -63,13 +63,13 @@ STUDENT_TECH_VARS: Dict[str, Dict[str, Any]] = {
     },
     "TX_RESP_Q13a": {
         "label": "TV por internet (streaming)",
-        "responses": {"A": "Nao", "B": "Sim"},
+        "responses": {"A": "Não", "B": "Sim"},
         "type": "binary",
         "numeric_map": {"A": 0, "B": 1},
     },
     "TX_RESP_Q13b": {
         "label": "Rede Wi-Fi em casa",
-        "responses": {"A": "Nao", "B": "Sim"},
+        "responses": {"A": "Não", "B": "Sim"},
         "type": "binary",
         "numeric_map": {"A": 0, "B": 1},
     },
@@ -102,13 +102,13 @@ DIRECTOR_TECH_VARS: Dict[str, Dict[str, Any]] = {
         "type": "ordinal",
     },
     "TX_Q194": {
-        "label": "Projetos de ciencia e tecnologia",
-        "responses": {"A": "Sim", "B": "Nao"},
+        "label": "Projetos de ciência e tecnologia",
+        "responses": {"A": "Sim", "B": "Não"},
         "type": "binary",
     },
     "TX_Q219": {
         "label": "Novas tecnologias educacionais",
-        "responses": {"A": "Sim", "B": "Nao"},
+        "responses": {"A": "Sim", "B": "Não"},
         "type": "binary",
     },
 }
@@ -116,18 +116,17 @@ DIRECTOR_TECH_VARS: Dict[str, Dict[str, Any]] = {
 # Professor technology questions
 PROFESSOR_TECH_VARS: Dict[str, Dict[str, Any]] = {
     "TX_Q029": {
-        "label": "Contribuicao da formacao em tecnologia",
+        "label": "Contribuição da formação em tecnologia",
         "responses": {
-            "A": "Nao participou",
-            "B": "Nenhuma contribuicao",
-            "C": "Pequena contribuicao",
-            "D": "Moderada contribuicao",
-            "E": "Grande contribuicao",
+            "A": "Não contribuiu",
+            "B": "Contribuiu pouco",
+            "C": "Contribuiu razoavelmente",
+            "D": "Contribuiu muito",
         },
         "type": "ordinal",
     },
     "TX_Q037": {
-        "label": "Uso de TICs na pratica pedagogica",
+        "label": "Uso de TICs na prática pedagógica",
         "responses": {
             "A": "Nunca", "B": "Raramente", "C": "Algumas vezes",
             "D": "Frequentemente", "E": "Sempre",
@@ -562,7 +561,7 @@ def get_digital_access_index(
     correlation = {"pearson_r": _safe_float(r), "p_value": _safe_float(p_r), "n": len(prof)}
 
     # Means by band
-    band_labels = {"Baixo": (0, 2), "Medio": (3, 5), "Alto": (6, 8)}
+    band_labels = {"Baixo": (0, 2), "Médio": (3, 5), "Alto": (6, 8)}
     faixas: List[Dict[str, Any]] = []
     for band_name, (lo, hi) in band_labels.items():
         mask = (index >= lo) & (index <= hi)

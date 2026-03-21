@@ -38,6 +38,11 @@ const CHART_EXPLANATIONS = {
         text: 'O <strong>INSE</strong> (Índice Socioeconômico) é o fator que mais influencia o desempenho escolar no Brasil. Este gráfico mostra como a proficiência aumenta conforme o nível socioeconômico sobe. Entender este padrão é essencial para interpretar corretamente qualquer outra análise — incluindo o impacto da tecnologia.',
     },
 
+    'chart-eq-location': {
+        title: 'Localização urbana vs rural',
+        text: 'Compara a proficiência média entre escolas urbanas e rurais do Rio de Janeiro. A diferença reflete desigualdades estruturais de acesso a recursos, infraestrutura e formação docente. No RJ, a grande maioria das escolas é urbana (~3.700), enquanto cerca de 500 são rurais — o que pode gerar maior variabilidade na estimativa rural.',
+    },
+
     // ── Tecnologia ──
     'chart-tech-infra': {
         title: 'Infraestrutura digital',
@@ -58,8 +63,16 @@ const CHART_EXPLANATIONS = {
 
     // ── Professores ──
     'chart-teach-profile': {
-        title: 'Perfil docente',
-        text: 'Distribuição das respostas dos professores do RJ a esta questão do questionário contextual do SAEB. Ajuda a traçar o perfil da força docente do estado.',
+        title: 'Gênero dos professores',
+        text: 'Distribuição por sexo dos professores do Rio de Janeiro que responderam ao questionário contextual do SAEB 2023 (questão Q001). A categoria "Não declarado" corresponde a professores que optaram por não informar o sexo.',
+    },
+    'chart-teach-practices': {
+        title: 'Contribuição da formação em tecnologia',
+        text: 'Respostas dos professores do RJ à questão Q029 do SAEB 2023: <em>"Indique o nível de contribuição das atividades formativas e cursos realizados neste ano para utilizar novas tecnologias para apoiar suas atividades."</em> Professores que não participaram de formação continuada não aparecem neste gráfico (a questão só é apresentada a quem participou). A escala vai de "Não contribuiu" a "Contribuiu muito".',
+    },
+    'chart-teach-infra': {
+        title: 'Computador na escola',
+        text: 'Respostas dos professores do RJ à questão Q072 do SAEB 2023: <em>"Indique os recursos que você normalmente usa nesta escola e qual a sua adequação — Computador (de mesa, portátil, tablet)."</em> A escala avalia tanto a disponibilidade ("Não tem" / "Não uso") quanto a adequação do recurso ("Muito inadequado" a "Muito adequado").',
     },
     'chart-teach-corr': {
         title: 'Formação e desempenho',
