@@ -373,13 +373,22 @@ async function loadTechnology() {
         fetchAPI('/tic/privacy'),
     ]);
 
-    _plotTicGroup('chart-tech-infra', infra, COLORS.primary);
-    _plotTicGroup('chart-tech-ai', ai, COLORS.accent);
-    _plotTicGroup('chart-tech-training', training, COLORS.green);
-    _plotTicGroup('chart-tech-privacy', privacy, COLORS.purple);
+    const INFRA_LABELS = {
+        'A1': 'Computador', 'A2': 'Portátil p/ alunos', 'A3': 'Tablet p/ alunos',
+        'A4': 'Internet', 'A5': 'Banda larga', 'A6': 'Wi-Fi',
+        'A7': 'Projetor', 'A8': 'Lousa digital',
+    };
+    const AI_LABELS = { 'E4A': 'Biometria', 'E4B': 'Reconhec. Facial', 'E5': 'Analytics', 'E6': 'Sist. IA', 'F6': 'Chatbot' };
+    const TRAINING_LABELS = { 'J1': 'Programação', 'J2': 'Robótica', 'J3': 'Uso pedagóg. TIC', 'J4': 'Segurança online' };
+    const PRIVACY_LABELS = { 'H1': 'Polít. privacidade', 'H3': 'Debate privacidade', 'H4': 'Consent. dados', 'H5': 'Proteção dados', 'H6': 'Não adoção', 'H7': 'Preocup. privac.' };
+
+    _plotTicGroup('chart-tech-infra', infra, COLORS.primary, INFRA_LABELS);
+    _plotTicGroup('chart-tech-ai', ai, COLORS.accent, AI_LABELS);
+    _plotTicGroup('chart-tech-training', training, COLORS.green, TRAINING_LABELS);
+    _plotTicGroup('chart-tech-privacy', privacy, COLORS.purple, PRIVACY_LABELS);
 }
 
-function _plotTicGroup(elementId, response, color) {
+function _plotTicGroup(elementId, response, color, labels) {
     if (!response || !response.data || response.data.length === 0) {
         showEmpty(elementId, response?.message || 'Dados TIC não disponíveis');
         return;
@@ -403,7 +412,7 @@ function _plotTicGroup(elementId, response, color) {
 
     renderChart(elementId, {
         tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)}%` },
-        xAxis: { type: 'category', data: indicators },
+        xAxis: { type: 'category', data: indicators.map(i => (labels && labels[i]) || i) },
         yAxis: { type: 'value', name: 'Proporção (%)', max: 105 },
         series: [{
             type: 'bar',
