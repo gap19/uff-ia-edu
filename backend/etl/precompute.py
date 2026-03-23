@@ -276,7 +276,7 @@ def _precompute_questionnaire_aluno_rj(con: duckdb.DuckDBPyConnection) -> list[s
     table = "quest_aluno_rj"
     queries = []
 
-    for aluno_file in ["TS_ALUNO_5EF", "TS_ALUNO_9EF"]:
+    for aluno_file in ["TS_ALUNO_5EF", "TS_ALUNO_9EF", "TS_ALUNO_34EM"]:
         pq = _parquet(aluno_file)
         serie = aluno_file.replace("TS_ALUNO_", "")
 
@@ -318,7 +318,7 @@ def _precompute_questionnaire_aluno_rj(con: duckdb.DuckDBPyConnection) -> list[s
         )
     """)
 
-    for aluno_file in ["TS_ALUNO_5EF", "TS_ALUNO_9EF"]:
+    for aluno_file in ["TS_ALUNO_5EF", "TS_ALUNO_9EF", "TS_ALUNO_34EM"]:
         pq = _parquet(aluno_file)
         serie = aluno_file.replace("TS_ALUNO_", "")
 
