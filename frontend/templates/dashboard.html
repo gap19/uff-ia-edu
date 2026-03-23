@@ -512,6 +512,7 @@
                                     </select>
                                 </div>
                             </div>
+                            <div id="corr-formation-note" class="small text-muted mb-2"></div>
                             <div id="chart-teach-corr" class="echarts-container" style="height:500px"></div>
                         </div>
                     </div>
@@ -519,25 +520,61 @@
 
                 <!-- Página 6: Questionários -->
                 <div id="page-questionnaires" class="page-section d-none">
-                    <h3 class="mb-4"><i class="bi bi-clipboard-data me-2" style="color: var(--clr-primary)"></i>Questionários (Explorador Interativo)</h3>
-                    <div class="row mb-3">
+                    <h3 class="mb-3"><i class="bi bi-clipboard-data me-2" style="color: var(--clr-primary)"></i>Questionários Contextuais do SAEB 2023</h3>
+                    <p class="text-muted mb-3">
+                        Explorador interativo dos <strong>questionários contextuais</strong> aplicados pelo INEP junto às provas do SAEB 2023.
+                        Esses questionários coletam informações sobre o perfil socioeconômico dos alunos, as práticas pedagógicas dos professores
+                        e as condições de infraestrutura reportadas pelos diretores. Os dados exibidos referem-se ao <strong>estado do Rio de Janeiro</strong>.
+                    </p>
+                    <div class="row g-2 mb-3">
                         <div class="col-md-4">
-                            <label class="form-label">Dataset:</label>
+                            <div class="d-flex gap-2 align-items-start">
+                                <i class="bi bi-person-raised-hand text-primary mt-1"></i>
+                                <div class="small"><strong>Aluno</strong> — Perfil familiar, acesso a bens e tecnologia, hábitos de estudo e percepção da escola.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-2 align-items-start">
+                                <i class="bi bi-person-workspace text-primary mt-1"></i>
+                                <div class="small"><strong>Professor</strong> — Formação, experiência, práticas pedagógicas, uso de tecnologia e condições de trabalho.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-2 align-items-start">
+                                <i class="bi bi-building text-primary mt-1"></i>
+                                <div class="small"><strong>Diretor</strong> — Gestão escolar, infraestrutura, recursos tecnológicos, projetos e formação da equipe.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 mb-3 align-items-end flex-wrap">
+                        <div style="min-width:160px">
+                            <label class="form-label mb-1">Dataset:</label>
                             <select id="quest-dataset" class="form-select">
                                 <option value="aluno_5ef">Aluno 5º EF</option>
                                 <option value="aluno_9ef">Aluno 9º EF</option>
+                                <option value="aluno_34em">Aluno 3ª/4ª EM</option>
                                 <option value="professor">Professor</option>
                                 <option value="diretor">Diretor</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Questão:</label>
+                        <div style="flex:1;max-width:700px">
+                            <label class="form-label mb-1">Questão:</label>
                             <select id="quest-question" class="form-select">
                                 <option value="">Selecione uma questão...</option>
                             </select>
                         </div>
                     </div>
+                    <div id="quest-question-text" class="alert alert-light py-2 mb-3 d-none" style="border-left: 4px solid var(--clr-primary)">
+                        <small class="text-muted d-block mb-1">Pergunta:</small>
+                        <span id="quest-question-label" class="fw-semibold"></span>
+                    </div>
                     <div id="chart-questionnaire" class="echarts-container" style="height:500px"></div>
+                    <p class="small text-muted mt-2 mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        O símbolo <strong>*</strong> indica respostas <em>nulas</em> (questão não respondida ou resposta inválida).
+                        Respostas em branco (campo deixado vazio) são filtradas e não aparecem no gráfico.
+                        Os dados são do questionário contextual do SAEB 2023, aplicado pelo INEP/MEC.
+                    </p>
                 </div>
 
                 <!-- Página 7: Ética e IA -->
@@ -707,10 +744,52 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Guia de leitura -->
+                                <div class="col-12">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info bg-opacity-10"><i class="bi bi-lightbulb me-1"></i> Como interpretar esta tabela</div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <h6 class="small"><i class="bi bi-tag me-1"></i> Coluna "Tipo"</h6>
+                                                    <p class="small mb-2">O teste estatístico depende da natureza da variável:</p>
+                                                    <ul class="small mb-0">
+                                                        <li><strong>t-test</strong> — variáveis binárias (sim/não). Reporta <strong>Cohen's d</strong> como tamanho de efeito.</li>
+                                                        <li><strong>anova</strong> — variáveis ordinais (múltiplas categorias, ex: A/B/C/D). Reporta <strong>estatística F</strong>. Valores de F e d não são diretamente comparáveis.</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <h6 class="small"><i class="bi bi-check-circle me-1"></i> Coluna "Sig." (Significância)</h6>
+                                                    <ul class="small mb-0">
+                                                        <li><span class="badge bg-success">Sim</span> — significativo mesmo após correção de Bonferroni (p &lt; 0,0045). Evidência forte.</li>
+                                                        <li><span class="badge bg-warning text-dark">*</span> — significativo pelo critério convencional (p &lt; 0,05), mas <strong>não</strong> após Bonferroni. Merece atenção, mas a evidência não é robusta.</li>
+                                                        <li><span class="badge bg-secondary">Não</span> — não significativo (p &ge; 0,05). Diferença pode ser devida ao acaso.</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <h6 class="small"><i class="bi bi-rulers me-1"></i> Cohen's d (tamanho de efeito)</h6>
+                                                    <ul class="small mb-0">
+                                                        <li><strong>|d| &lt; 0,2</strong> — Insignificante</li>
+                                                        <li><strong>0,2 – 0,5</strong> — Pequeno</li>
+                                                        <li><strong>0,5 – 0,8</strong> — Médio</li>
+                                                        <li><strong>&gt; 0,8</strong> — Grande</li>
+                                                    </ul>
+                                                    <p class="small text-muted mt-1 mb-0">Diferente do p-valor, o d mede a <em>magnitude prática</em> da diferença, não apenas se ela existe.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="col-12">
                                     <div class="card">
                                         <div class="card-header"><i class="bi bi-distribute-horizontal me-1"></i> Forest Plot — Tamanhos de Efeito</div>
-                                        <div class="card-body"><div id="chart-cross-forest" class="echarts-container" style="height:450px"></div></div>
+                                        <div class="card-body">
+                                            <p class="small text-muted mb-2">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                O forest plot exibe apenas as variáveis <strong>binárias</strong> (teste t), para as quais o Cohen's d é calculado. Variáveis ordinais (ANOVA) reportam a estatística F, que opera em escala diferente e não é representada neste gráfico.
+                                            </p>
+                                            <div id="chart-cross-forest" class="echarts-container" style="height:450px"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

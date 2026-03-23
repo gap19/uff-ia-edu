@@ -1,11 +1,39 @@
 """Rotas da API para dados SAEB 2023."""
 
+import json
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
 from backend.api.app import get_db
-from backend.config import ID_UF_RJ, ID_REGIAO_SUDESTE, UF_MAP, SERIES_MAP
+from backend.config import ID_UF_RJ, ID_REGIAO_SUDESTE, UF_MAP, SERIES_MAP, PROCESSED_DIR
+
+# ---------------------------------------------------------------------------
+# Questionnaire dictionary (question texts + response labels)
+# ---------------------------------------------------------------------------
+
+_QUEST_DICT: dict | None = None
+
+def _get_quest_dict() -> dict:
+    global _QUEST_DICT
+    if _QUEST_DICT is None:
+        dict_path = PROCESSED_DIR / "saeb_questionnaire_dict.json"
+        if dict_path.exists():
+            with open(dict_path, encoding="utf-8") as f:
+                _QUEST_DICT = json.load(f)
+        else:
+            _QUEST_DICT = {}
+    return _QUEST_DICT
+
+# Map dataset names to dict sheet keys
+_DATASET_TO_SHEET = {
+    "aluno_5ef": "TS_ALUNO_5EF",
+    "aluno_9ef": "TS_ALUNO_9EF",
+    "aluno_34em": "TS_ALUNO_34EM",
+    "professor": "TS_PROFESSOR",
+    "diretor": "TS_DIRETOR",
+}
 
 router = APIRouter()
 
@@ -276,6 +304,7 @@ async def teachers_formation():
 _QUESTIONNAIRE_TABLES = {
     "aluno_5ef": ("quest_aluno_rj", "5EF"),
     "aluno_9ef": ("quest_aluno_rj", "9EF"),
+    "aluno_34em": ("quest_aluno_rj", "34EM"),
     "professor": ("quest_professor_rj", None),
     "diretor": ("quest_diretor_rj", None),
 }
@@ -310,7 +339,42 @@ async def questionnaire(
         sql = f"SELECT * FROM {table}{where} ORDER BY questao, resposta"
 
         rows = _query(sql, params)
-        return {"dataset": dataset, "data": rows}
+
+        # Enrich with dictionary labels
+        qdict = _get_quest_dict()
+        sheet = _DATASET_TO_SHEET.get(dataset, "")
+        sheet_dict = qdict.get(sheet, {})
+
+        question_text = None
+        if questao and questao in sheet_dict:
+            question_text = sheet_dict[questao].get("text")
+            options = sheet_dict[questao].get("options", {})
+            for row in rows:
+                code = row.get("resposta", "")
+                if code in options:
+                    row["resposta_label"] = options[code]
+
+        # Build question list with texts for dropdown
+        question_list = None
+        if not questao:
+            question_list = []
+            seen = set()
+            for row in rows:
+                q = row.get("questao")
+                if q and q not in seen:
+                    seen.add(q)
+                    entry = {"code": q}
+                    if q in sheet_dict:
+                        entry["text"] = sheet_dict[q].get("text", "")
+                    question_list.append(entry)
+            question_list.sort(key=lambda x: x["code"])
+
+        result = {"dataset": dataset, "data": rows}
+        if question_text:
+            result["question_text"] = question_text
+        if question_list is not None:
+            result["questions"] = question_list
+        return result
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

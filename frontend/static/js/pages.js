@@ -478,13 +478,26 @@ function _renderTeachCorr(formacao) {
     const colKey = `media_${serie.toLowerCase()}_${disc.toLowerCase()}`;
     const serieLabel = serie === '5EF' ? '5º EF' : serie === '9EF' ? '9º EF' : 'EM';
     const discLabel = disc === 'LP' ? 'LP' : 'MT';
+    // Use the appropriate formation column per series:
+    // - inicial: specific to early EF (5EF)
+    // - final: specific to late EF/EM (9EF, EM - licenciatura)
+    const formCol = serie === '5EF' ? 'pc_formacao_docente_inicial' : 'pc_formacao_docente_final';
+    const formLabel = serie === '5EF' ? '% Formação Inicial Adequada' : '% Formação Final Adequada';
+
+    // Update formation note
+    const noteEl = document.getElementById('corr-formation-note');
+    if (noteEl) {
+        noteEl.innerHTML = serie === '5EF'
+            ? '<i class="bi bi-info-circle me-1"></i><strong>Formação Inicial Adequada:</strong> percentual de docentes da escola com formação mínima exigida para os anos iniciais do Ensino Fundamental (pedagogia ou magistério). Indicador do INEP específico para esta etapa.'
+            : '<i class="bi bi-info-circle me-1"></i><strong>Formação Final Adequada:</strong> percentual de docentes da escola com licenciatura na disciplina que lecionam. Indicador do INEP adequado para os anos finais do EF e Ensino Médio, onde se exige formação específica na área.';
+    }
 
     if (formacao && formacao.data && formacao.data.length > 0) {
         const rows = formacao.data.filter(r =>
-            r.pc_formacao_docente_inicial != null && r[colKey] != null
+            r[formCol] != null && r[colKey] != null
         );
         if (rows.length > 0) {
-            const scatterData = rows.map(r => [r.pc_formacao_docente_inicial, r[colKey]]);
+            const scatterData = rows.map(r => [r[formCol], r[colKey]]);
 
             // Compute linear regression for trend line
             const n = scatterData.length;
@@ -518,11 +531,11 @@ function _renderTeachCorr(formacao) {
                     trigger: 'item',
                     formatter: p => {
                         if (p.seriesType === 'line') return `Tendência: y = ${fmtNum(slope, 2)}x + ${fmtNum(intercept, 1)}`;
-                        return `Formação: ${tooltipVal(p.value[0], 0)}%<br>${discLabel} ${serieLabel}: ${tooltipVal(p.value[1])} pts`;
+                        return `${formLabel}: ${tooltipVal(p.value[0], 0)}%<br>${discLabel} ${serieLabel}: ${tooltipVal(p.value[1])} pts`;
                     },
                 },
                 graphic: [statAnnotation(`r = ${fmtNum(r, 3)}  (n = ${fmtInt(n)})`, { left: 15, top: 8, color: COLORS.accent })],
-                xAxis: { type: 'value', name: '% Formação Adequada', nameLocation: 'center', nameGap: 30 },
+                xAxis: { type: 'value', name: formLabel, nameLocation: 'center', nameGap: 30 },
                 yAxis: { type: 'value', name: `Proficiência ${discLabel} ${serieLabel}` },
                 series: [
                     {
@@ -588,17 +601,23 @@ function _plotQuestionnaire(elementId, response, title, color, labelMap) {
 async function loadQuestionnaires() {
     const dataset = document.getElementById('quest-dataset').value;
     const data = await fetchAPI(`/saeb/questionnaire/${dataset}`);
-    if (data && data.data) {
-        const questoes = [...new Set(data.data.map(r => r.questao))].sort();
+    if (data) {
         const select = document.getElementById('quest-question');
         select.innerHTML = '<option value="">Selecione uma questão...</option>';
-        questoes.forEach(q => {
+
+        const questions = data.questions || [];
+        questions.forEach(q => {
             const opt = document.createElement('option');
-            opt.value = q;
-            opt.textContent = q;
+            opt.value = q.code;
+            const full = q.text ? `${q.code} — ${q.text}` : q.code;
+            opt.textContent = full.length > 75 ? full.slice(0, 72) + '…' : full;
+            opt.title = full;
             select.appendChild(opt);
         });
     }
+    // Hide question text box when switching dataset
+    const textBox = document.getElementById('quest-question-text');
+    if (textBox) textBox.classList.add('d-none');
 }
 
 function renderQuestionnaireChart(dataset, questao) {
@@ -606,19 +625,40 @@ function renderQuestionnaireChart(dataset, questao) {
         if (!questao) return;
         showLoading('chart-questionnaire');
         const data = await fetchAPI(`/saeb/questionnaire/${dataset}`, { questao });
+
+        // Show question text
+        const textBox = document.getElementById('quest-question-text');
+        const textLabel = document.getElementById('quest-question-label');
+        if (data && data.question_text) {
+            textLabel.textContent = data.question_text;
+            textBox.classList.remove('d-none');
+        } else {
+            textBox.classList.add('d-none');
+        }
+
         if (data && data.data && data.data.length > 0) {
             const rows = data.data;
             const total = rows.reduce((s, r) => s + r.contagem, 0);
+            // Use descriptive labels if available, otherwise code
+            const labels = rows.map(r => r.resposta_label || r.resposta);
+            const needsRotate = labels.some(l => l.length > 18);
+
             renderChart('chart-questionnaire', {
                 tooltip: {
                     trigger: 'axis',
                     formatter: params => {
                         const r = rows[params[0].dataIndex];
                         const pct = ((r.contagem / total) * 100).toFixed(1);
-                        return `${params[0].name}<br>Contagem: <strong>${fmtInt(params[0].value)}</strong> (${pct}%)`;
+                        const label = r.resposta_label || r.resposta;
+                        return `<strong>${label}</strong> (${r.resposta})<br>Contagem: <strong>${fmtInt(params[0].value)}</strong> (${pct}%)`;
                     },
                 },
-                xAxis: { type: 'category', data: rows.map(r => r.resposta), name: 'Resposta' },
+                grid: needsRotate ? { top: 50, right: 30, bottom: 100, left: 60, containLabel: true } : undefined,
+                xAxis: {
+                    type: 'category',
+                    data: labels,
+                    axisLabel: { interval: 0, rotate: needsRotate ? 30 : 0, fontSize: 10.5 },
+                },
                 yAxis: { type: 'value', name: 'Contagem' },
                 series: [{
                     type: 'bar',

@@ -1,0 +1,4702 @@
+{
+  "TS_ALUNO_5EF": {
+    "TX_RESP_Q01": {
+      "text": "Qual é o seu sexo?",
+      "options": {
+        "A": "Masculino",
+        "B": "Feminino",
+        "C": "Não quero declarar"
+      }
+    },
+    "TX_RESP_Q02": {
+      "text": "Qual é a sua idade?",
+      "options": {
+        "A": "9 anos ou menos",
+        "B": "10 anos",
+        "C": "11 anos",
+        "D": "12 anos",
+        "E": "13 anos",
+        "F": "14 anos ou mais"
+      }
+    },
+    "TX_RESP_Q03": {
+      "text": "Qual língua que seus pais falam com mais frequência em casa?",
+      "options": {
+        "A": "Português",
+        "B": "Espanhol",
+        "C": "Língua de Sinais (Libras, Língua de Sinais Argentina, Língua de Sinais Boliviana etc.)",
+        "D": "Outra língua"
+      }
+    },
+    "TX_RESP_Q04": {
+      "text": "Qual é a sua cor ou raça?",
+      "options": {
+        "A": "Branca",
+        "B": "Preta",
+        "C": "Parda",
+        "D": "Amarela",
+        "E": "Indígena",
+        "F": "Não quero declarar"
+      }
+    },
+    "TX_RESP_Q05a": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Deficiência.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q05b": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Transtorno do espectro autista.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q05c": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Altas habilidades ou superdotação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q06": {
+      "text": "Quantas pessoas moram na sua casa, contando com você?",
+      "options": {
+        "A": "2 pessoas",
+        "B": "3 pessoas",
+        "C": "4 pessoas",
+        "D": "5 pessoas",
+        "E": "6 pessoas ou mais"
+      }
+    },
+    "TX_RESP_Q07a": {
+      "text": "Normalmente, quem mora na sua casa? - Mãe(s) ou madrasta(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07b": {
+      "text": "Normalmente, quem mora na sua casa? - Pai(s) ou padrasto(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07c": {
+      "text": "Normalmente, quem mora na sua casa? - Avó(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07d": {
+      "text": "Normalmente, quem mora na sua casa? - Avô(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07e": {
+      "text": "Normalmente, quem mora na sua casa? - Outros familiares, irmãos(ãs), tios(as), primos(as) etc.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q08": {
+      "text": "Qual é a maior escolaridade da sua mãe (ou madastra ou mulher responsável por você)?",
+      "options": {
+        "A": "Não completou o 5º ano do Ensino Fundamental",
+        "B": "Ensino Fundamental, até o 5º ano",
+        "C": "Ensino Fundamental completo",
+        "D": "Ensino Médio completo",
+        "E": "Ensino Superior completo (faculdade ou graduação)",
+        "F": "Não sei"
+      }
+    },
+    "TX_RESP_Q09": {
+      "text": "Qual é a maior escolaridade de seu pai (ou padrasto homem responsável por você)?",
+      "options": {
+        "A": "Não completou o 5º ano do Ensino Fundamental",
+        "B": "Ensino Fundamental, até o 5º ano",
+        "C": "Ensino Fundamental completo",
+        "D": "Ensino Médio completo",
+        "E": "Ensino Superior completo (faculdade ou graduação)",
+        "F": "Não sei"
+      }
+    },
+    "TX_RESP_Q10a": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Ler em casa.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10b": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Conversar com você sobre o que acontece na escola.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10c": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a estudar.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10d": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a fazer a tarefa de casa.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10e": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a comparecer às aulas.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10f": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Ir às reuniões de pais na escola.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q11a": {
+      "text": "Na rua em que você mora tem: - Asfalto ou calçamento.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q11b": {
+      "text": "Na rua em que você mora tem: - Água tratada.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q11c": {
+      "text": "Na rua em que você mora tem: - Iluminação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q12a": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Geladeira.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12b": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Computador (ou notebook).",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12c": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Quartos para dormir.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12d": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Televisão.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12e": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Banheiro.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12f": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Carro.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12g": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Celular com internet (smartphone).",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q13a": {
+      "text": "Na sua casa tem: - Tv por internet (Netflix, GloboPlay, etc.).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13b": {
+      "text": "Na sua casa tem: - Rede Wi-Fi.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13c": {
+      "text": "Na sua casa tem: - Um quarto só seu.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13d": {
+      "text": "Na sua casa tem: - Mesa para estudar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13e": {
+      "text": "Na sua casa tem: - Forno de microondas.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13f": {
+      "text": "Na sua casa tem: - Aspirador de pó.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13g": {
+      "text": "Na sua casa tem: - Máquina de lavar roupa.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13h": {
+      "text": "Na sua casa tem: - Freezer (independente ou segunda porta da geladeira).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13i": {
+      "text": "Na sua casa tem: - Garagem.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q14": {
+      "text": "Quanto tempo você demora para chegar à sua escola?",
+      "options": {
+        "A": "Menos de 30 minutos",
+        "B": "Entre 30 minutos e uma hora",
+        "C": "Mais de uma hora"
+      }
+    },
+    "TX_RESP_Q15a": {
+      "text": "Você utiliza para ir à escola: - Transporte gratuito escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q15b": {
+      "text": "Você utiliza para ir à escola: - Passe escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q16": {
+      "text": "Considerando a maior distância percorrida, normalmente de que forma você chega à sua escola?",
+      "options": {
+        "A": "À pé",
+        "B": "De bicicleta",
+        "C": "De Van (ou Kombi)",
+        "D": "De ônibus",
+        "E": "De metrô (ou trem urbano)",
+        "F": "De carro",
+        "G": "De barco",
+        "H": "De motocicleta",
+        "I": "Outro meio de transporte"
+      }
+    },
+    "TX_RESP_Q17": {
+      "text": "Com que idade você entrou na escola?",
+      "options": {
+        "A": "3 anos ou menos",
+        "B": "4 ou 5 anos",
+        "C": "6 ou 7 anos",
+        "D": "8 anos ou mais"
+      }
+    },
+    "TX_RESP_Q18": {
+      "text": "A partir do primeiro ano do ensino fundamental, em que tipo de escola você estudou?",
+      "options": {
+        "A": "Somente em escola pública",
+        "B": "Somente em escola particular",
+        "C": "Em escola pública e em escola particular"
+      }
+    },
+    "TX_RESP_Q19": {
+      "text": "Você já foi reprovado(a)?",
+      "options": {
+        "A": "Não",
+        "B": "Sim, uma vez",
+        "C": "Sim, duas vezes ou mais"
+      }
+    },
+    "TX_RESP_Q20": {
+      "text": "Alguma vez você abandonou a escola deixando de frequentá-la até o final do ano escolar?",
+      "options": {
+        "A": "Nunca",
+        "B": "Sim, uma vez",
+        "C": "Sim, duas vezes ou mais"
+      }
+    },
+    "TX_RESP_Q21a": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Estudar (lição de casa, trabalhos escolares, etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21b": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Fazer cursos ou atividades extracurriculares (idioma, artes, informática etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21c": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Trabalhar em casa (lavar louça, limpar quintal, cuidar dos irmãos, etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21d": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Trabalhar fora de casa (recebendo ou não um salário).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21e": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: -  Lazer (TV, brincar, internet, música etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q22a": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - No início do ano, eles(as) informaram sobre o que seria ensinado e aprendido?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22b": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Antes de iniciar um novo conteúdo, eles(as) perguntam o que vocês sabem sobre o conteúdo?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22c": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) trazem temas do cotidiano para serem debatidos em sala de aula?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22d": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas sobre desigualdade racial?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22e": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas sobre desigualdade de gênero?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22f": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas como bullying e outras formas de violência?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22g": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) desenvolvem trabalhos em grupos?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22h": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam questões relacionadas ao futuro profissional dos(as) estudantes?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q23a": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me interesso sobre o que foi ensinado na escola neste ano.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23b": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto motivado(a), no dia a dia, a usar o que foi ensinado.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23c": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Há espaço para diferentes opiniões na minha sala de aula.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23d": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto seguro(a) quando estou na escola.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23e": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto à vontade para discordar dos(as) meus(minhas) professores(as).",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23f": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu consigo argumentar sobre conteúdos difíceis.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23g": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Os resultados das avaliações representam o quanto eu aprendi.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23h": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: -Meus (Minhas) professores(as) acreditam que eu sou capaz de aprender.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23i": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: -Meus (Minhas) professores(as) me motivam a continuar meus estudos.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    }
+  },
+  "TS_ALUNO_9EF": {
+    "TX_RESP_Q01": {
+      "text": "Qual é o seu sexo?",
+      "options": {
+        "A": "Masculino",
+        "B": "Feminino",
+        "C": "Não quero declarar"
+      }
+    },
+    "TX_RESP_Q02": {
+      "text": "Qual é a sua idade?",
+      "options": {
+        "A": "13 anos ou menos",
+        "B": "14 anos",
+        "C": "15 anos",
+        "D": "16 anos",
+        "E": "17 anos",
+        "F": "18 anos ou mais"
+      }
+    },
+    "TX_RESP_Q03": {
+      "text": "Qual língua que seus pais falam com mais frequência em casa?",
+      "options": {
+        "A": "Português",
+        "B": "Espanhol",
+        "C": "Língua de Sinais (Libras, Língua de Sinais Argentina, Língua de Sinais Boliviana etc.)",
+        "D": "Outra língua"
+      }
+    },
+    "TX_RESP_Q04": {
+      "text": "Qual é a sua cor ou raça?",
+      "options": {
+        "A": "Branca",
+        "B": "Preta",
+        "C": "Parda",
+        "D": "Amarela",
+        "E": "Indígena",
+        "F": "Não quero declarar"
+      }
+    },
+    "TX_RESP_Q05a": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Deficiência.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q05b": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Transtorno do espectro autista.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q05c": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Altas habilidades ou superdotação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q06": {
+      "text": "Quantas pessoas moram na sua casa, contando com você?",
+      "options": {
+        "A": "2 pessoas",
+        "B": "3 pessoas",
+        "C": "4 pessoas",
+        "D": "5 pessoas",
+        "E": "6 pessoas ou mais"
+      }
+    },
+    "TX_RESP_Q07a": {
+      "text": "Normalmente, quem mora na sua casa? - Mãe(s) ou madrasta(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07b": {
+      "text": "Normalmente, quem mora na sua casa? - Pai(s) ou padrasto(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07c": {
+      "text": "Normalmente, quem mora na sua casa? - Avó(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07d": {
+      "text": "Normalmente, quem mora na sua casa? - Avô(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07e": {
+      "text": "Normalmente, quem mora na sua casa? - Outros familiares, irmãos(ãs), tios(as), primos(as) etc.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q08": {
+      "text": "Qual é a maior escolaridade da sua mãe (ou madastra ou mulher responsável por você)?",
+      "options": {
+        "A": "Não completou o 5º ano do Ensino Fundamental",
+        "B": "Ensino Fundamental, até o 5º ano",
+        "C": "Ensino Fundamental completo",
+        "D": "Ensino Médio completo",
+        "E": "Ensino Superior completo (faculdade ou graduação)",
+        "F": "Não sei"
+      }
+    },
+    "TX_RESP_Q09": {
+      "text": "Qual é a maior escolaridade de seu pai (ou padrasto homem responsável por você)?",
+      "options": {
+        "A": "Não completou o 5º ano do Ensino Fundamental",
+        "B": "Ensino Fundamental, até o 5º ano",
+        "C": "Ensino Fundamental completo",
+        "D": "Ensino Médio completo",
+        "E": "Ensino Superior completo (faculdade ou graduação)",
+        "F": "Não sei"
+      }
+    },
+    "TX_RESP_Q10a": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Ler em casa.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10b": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Conversar com você sobre o que acontece na escola.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10c": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a estudar.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10d": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a fazer a tarefa de casa.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10e": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a comparecer às aulas.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10f": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Ir às reuniões de pais na escola.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q11a": {
+      "text": "Na rua em que você mora tem: - Asfalto ou calçamento.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q11b": {
+      "text": "Na rua em que você mora tem: - Água tratada.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q11c": {
+      "text": "Na rua em que você mora tem: - Iluminação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q12a": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Geladeira.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12b": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Computador (ou notebook).",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12c": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Quartos para dormir.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12d": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Televisão.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12e": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Banheiro.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12f": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Carro.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12g": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Celular com internet (smartphone).",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q13a": {
+      "text": "Na sua casa tem: - Tv por internet (Netflix, GloboPlay, etc.).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13b": {
+      "text": "Na sua casa tem: - Rede Wi-Fi.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13c": {
+      "text": "Na sua casa tem: - Um quarto só seu.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13d": {
+      "text": "Na sua casa tem: - Mesa para estudar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13e": {
+      "text": "Na sua casa tem: - Forno de microondas.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13f": {
+      "text": "Na sua casa tem: - Aspirador de pó.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13g": {
+      "text": "Na sua casa tem: - Máquina de lavar roupa.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13h": {
+      "text": "Na sua casa tem: - Freezer (independente ou segunda porta da geladeira).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13i": {
+      "text": "Na sua casa tem: - Garagem.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q14": {
+      "text": "Quanto tempo você demora para chegar à sua escola?",
+      "options": {
+        "A": "Menos de 30 minutos",
+        "B": "Entre 30 minutos e uma hora",
+        "C": "Mais de uma hora"
+      }
+    },
+    "TX_RESP_Q15a": {
+      "text": "Você utiliza para ir à escola: - Transporte gratuito escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q15b": {
+      "text": "Você utiliza para ir à escola: - Passe escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q16": {
+      "text": "Considerando a maior distância percorrida, normalmente de que forma você chega à sua escola?",
+      "options": {
+        "A": "À pé",
+        "B": "De bicicleta",
+        "C": "De Van (ou Kombi)",
+        "D": "De ônibus",
+        "E": "De metrô (ou trem urbano)",
+        "F": "De carro",
+        "G": "De barco",
+        "H": "De motocicleta",
+        "I": "Outro meio de transporte"
+      }
+    },
+    "TX_RESP_Q17": {
+      "text": "Com que idade você entrou na escola?",
+      "options": {
+        "A": "3 anos ou menos",
+        "B": "4 ou 5 anos",
+        "C": "6 ou 7 anos",
+        "D": "8 anos ou mais"
+      }
+    },
+    "TX_RESP_Q18": {
+      "text": "A partir do primeiro ano do ensino fundamental, em que tipo de escola você estudou?",
+      "options": {
+        "A": "Somente em escola pública",
+        "B": "Somente em escola particular",
+        "C": "Em escola pública e em escola particular"
+      }
+    },
+    "TX_RESP_Q19": {
+      "text": "Você já foi reprovado(a)?",
+      "options": {
+        "A": "Não",
+        "B": "Sim, uma vez",
+        "C": "Sim, duas vezes ou mais"
+      }
+    },
+    "TX_RESP_Q20": {
+      "text": "Alguma vez você abandonou a escola deixando de frequentá-la até o final do ano escolar?",
+      "options": {
+        "A": "Nunca",
+        "B": "Sim, uma vez",
+        "C": "Sim, duas vezes ou mais"
+      }
+    },
+    "TX_RESP_Q21a": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Estudar (lição de casa, trabalhos escolares, etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21b": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Fazer cursos ou atividades extracurriculares (idioma, artes, informática etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21c": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Trabalhar em casa (lavar louça, limpar quintal, cuidar dos irmãos, etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21d": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Trabalhar fora de casa (recebendo ou não um salário).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21e": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: -  Lazer (TV, brincar, internet, música etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q22a": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - No início do ano, eles(as) informaram sobre o que seria ensinado e aprendido?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22b": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Antes de iniciar um novo conteúdo, eles(as) perguntam o que vocês sabem sobre o conteúdo?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22c": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) trazem temas do cotidiano para serem debatidos em sala de aula?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22d": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas sobre desigualdade racial?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22e": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas sobre desigualdade de gênero?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22f": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas como bullying e outras formas de violência?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22g": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) desenvolvem trabalhos em grupos?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22h": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam questões relacionadas ao futuro profissional dos(as) estudantes?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q23a": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me interesso sobre o que foi ensinado na escola neste ano.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23b": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto motivado(a), no dia a dia, a usar o que foi ensinado.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23c": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Há espaço para diferentes opiniões na minha sala de aula.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23d": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto seguro(a) quando estou na escola.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23e": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto à vontade para discordar dos(as) meus(minhas) professores(as).",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23f": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu consigo argumentar sobre conteúdos difíceis.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23g": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Os resultados das avaliações representam o quanto eu aprendi.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23h": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: -Meus (Minhas) professores(as) acreditam que eu sou capaz de aprender.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23i": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: -Meus (Minhas) professores(as) me motivam a continuar meus estudos.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q24": {
+      "text": "Quando terminar o Ensino Fundamental, você pretende:",
+      "options": {
+        "A": "Somente continuar estudando",
+        "B": "Somente trabalhar",
+        "C": "Continuar estudando e trabalhar",
+        "D": "Ainda não sei"
+      }
+    }
+  },
+  "TS_PROFESSOR": {
+    "TX_Q001": {
+      "text": "Qual é o seu sexo?",
+      "options": {
+        "A": "Masculino",
+        "B": "Feminino",
+        "C": "Não quero declarar"
+      }
+    },
+    "TX_Q003": {
+      "text": "Qual é a sua cor ou raça?",
+      "options": {
+        "A": "Branca",
+        "B": "Preta",
+        "C": "Parda",
+        "D": "Amarela",
+        "E": "Indígena",
+        "F": "Não quero declarar"
+      }
+    },
+    "TX_Q004": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q005": {
+      "text": "Indique qual é a sua condição:  Deficiência.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q006": {
+      "text": "Indique qual é a sua condição: Transtorno do espectro autista.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q007": {
+      "text": "Indique qual é a sua condição: Altas habilidades/superdotação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q008": {
+      "text": "Neste ano, o que normalmente você tem feito quando está fora do(s) seu(s) local(is) de trabalho? — Leio livros não relacionados à Educação.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q009": {
+      "text": "Neste ano, o que normalmente você tem feito quando está fora do(s) seu(s) local(is) de trabalho? — Acesso blogs, Youtube, redes sociais (Twitter, Instagram, Facebook etc.).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q010": {
+      "text": "Neste ano, o que normalmente você tem feito quando está fora do(s) seu(s) local(is) de trabalho? — Assisto a filmes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q011": {
+      "text": "Neste ano, o que normalmente você tem feito quando está fora do(s) seu(s) local(is) de trabalho? — Vou a exposições (museus, centros culturais).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q012": {
+      "text": "Neste ano, o que normalmente você tem feito quando está fora do(s) seu(s) local(is) de trabalho? — Assisto a espetáculos (teatro, shows, circo, etc)",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q013": {
+      "text": "Neste ano, o que normalmente você tem feito quando está fora do(s) seu(s) local(is) de trabalho? — Estudo.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q014": {
+      "text": "Neste ano, o que normalmente você tem feito quando está fora do(s) seu(s) local(is) de trabalho? — Assisto a telejornal.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q015": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo o seu trabalho como professor(a) da Educação Básica? — Tornar-me professor(a) foi a realização de um dos meus sonhos.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q016": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo o seu trabalho como professor(a) da Educação Básica? — A profissão de professor(a) é valorizada pela sociedade.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q017": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo o seu trabalho como professor(a) da Educação Básica? — As vantagens de ser professor(a) superam claramente as desvantagens.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q018": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo o seu trabalho como professor(a) da Educação Básica? — No geral, estou satisfeito(a) com o meu trabalho de professor(a).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q019": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo o seu trabalho como professor(a) da Educação Básica? — Tenho vontade de desistir da profissão",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q020": {
+      "text": "Qual é o MAIS ALTO nível de escolaridade que você concluiu?",
+      "options": {
+        "A": "Ensino Médio - Magistério",
+        "B": "Graduação",
+        "C": "Especialização",
+        "D": "Mestrado",
+        "E": "Doutorado"
+      }
+    },
+    "TX_Q021": {
+      "text": "Considerando a carga horária das atividades dormativas listadas abaixo, indique quantas você participou neste ano: — Atividades formativas com menos de 20 horas",
+      "options": {
+        "A": "Nenhuma",
+        "B": "Uma",
+        "C": "Duas",
+        "D": "Três ou mais"
+      }
+    },
+    "TX_Q022": {
+      "text": "Considerando a carga horária das atividades dormativas listadas abaixo, indique quantas você participou neste ano: — Curso com carga horária total de 20 horas até 179 horas.",
+      "options": {
+        "A": "Nenhuma",
+        "B": "Uma",
+        "C": "Duas",
+        "D": "Três ou mais"
+      }
+    },
+    "TX_Q023": {
+      "text": "Considerando a carga horária das atividades dormativas listadas abaixo, indique quantas você participou neste ano: — Curso com carga horária total com mais de 180 e menos 360 horas",
+      "options": {
+        "A": "Nenhuma",
+        "B": "Uma",
+        "C": "Duas",
+        "D": "Três ou mais"
+      }
+    },
+    "TX_Q024": {
+      "text": "Considerando as atividades formativas de curta duração (inferiores a 360 horas) das quais participou neste ano, com que frequência estava previsto: Participação de professor(es) da(s) escola(s) em que leciono?",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q025": {
+      "text": "Considerando as atividades formativas de curta duração (inferiores a 360 horas) das quais participou neste ano, com que frequência estava previsto: Atividades colaborativas de aprendizado?",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q026": {
+      "text": "Considerando as atividades formativas de curta duração (inferiores a 360 horas) das quais participou neste ano, com que frequência estava previsto: Atividades intercaladas com seu trabalho normal de sala de aula?",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q027": {
+      "text": "Indique o nível de contribuição das atividades formativas e cursos realizados neste ano para:  Aprofundar seus conhecimentos sobre as disciplinas que leciona.",
+      "options": {
+        "A": "Não contribuiu",
+        "B": "Contribuiu pouco",
+        "C": "Contribuiu razoavelmente",
+        "D": "Contribuiu muito"
+      }
+    },
+    "TX_Q028": {
+      "text": "Indique o nível de contribuição das atividades formativas e cursos realizados neste ano para:  Aprimorar os processos avaliativos.",
+      "options": {
+        "A": "Não contribuiu",
+        "B": "Contribuiu pouco",
+        "C": "Contribuiu razoavelmente",
+        "D": "Contribuiu muito"
+      }
+    },
+    "TX_Q029": {
+      "text": "Indique o nível de contribuição das atividades formativas e cursos realizados neste ano para:  Utilizar novas tecnologias para apoiar suas atividades.",
+      "options": {
+        "A": "Não contribuiu",
+        "B": "Contribuiu pouco",
+        "C": "Contribuiu razoavelmente",
+        "D": "Contribuiu muito"
+      }
+    },
+    "TX_Q030": {
+      "text": "Indique o nível de contribuição das atividades formativas e cursos realizados neste ano para:  Colaborar com seus colegas na preparação de atividades e projetos.",
+      "options": {
+        "A": "Não contribuiu",
+        "B": "Contribuiu pouco",
+        "C": "Contribuiu razoavelmente",
+        "D": "Contribuiu muito"
+      }
+    },
+    "TX_Q031": {
+      "text": "Indique o nível de contribuição das atividades formativas e cursos realizados neste ano para:  Aprimorar as metodologias de ensino.",
+      "options": {
+        "A": "Não contribuiu",
+        "B": "Contribuiu pouco",
+        "C": "Contribuiu razoavelmente",
+        "D": "Contribuiu muito"
+      }
+    },
+    "TX_Q032": {
+      "text": "Indique o nível de contribuição das atividades formativas e cursos realizados neste ano para:  Auxiliar na mediação de conflitos.",
+      "options": {
+        "A": "Não contribuiu",
+        "B": "Contribuiu pouco",
+        "C": "Contribuiu razoavelmente",
+        "D": "Contribuiu muito"
+      }
+    },
+    "TX_Q033": {
+      "text": "Dentre as atividades formativas listadas anteriormente das quais você participou neste ano, a instituição ou Secretaria de Educação financiou:",
+      "options": {
+        "A": "Todas as atividades formativas",
+        "B": "Algumas atividades formativas (ou parte delas)",
+        "C": "Nenhuma atividade formativa"
+      }
+    },
+    "TX_Q034": {
+      "text": "Durante este ano, indique se participou de algum dos cursos de pós-graduação listados abaixo:",
+      "options": {
+        "A": "Não fiz curso de pós-graduação",
+        "B": "Especialização (mínimo de 360 horas)",
+        "C": "Mestrado (acadêmico ou profissional)",
+        "D": "Doutorado"
+      }
+    },
+    "TX_Q035": {
+      "text": "Recebeu apoio da Secretaria ou mantenedora para realizá-lo?",
+      "options": {
+        "A": "SEM apoio",
+        "B": "Com apoio parcial",
+        "C": "Com apoio total"
+      }
+    },
+    "TX_Q036": {
+      "text": "Indique quem pagou por esse curso de pós-graduação:",
+      "options": {
+        "A": "Curso gratuito",
+        "B": "Curso pago por algum órgão ou instituição (total ou parcialmente)",
+        "C": "Eu paguei integralmente o curso"
+      }
+    },
+    "TX_Q037": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Uso de novas tecnologias de informação e comunicação.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q038": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Gestão de conflitos.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q039": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Metodologia de avaliação.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q040": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Metodologia de ensino para o público-alvo da educação especial.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q041": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Utilização de elementos da cultura local na prática pedagógica.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q042": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Identificação de problemas extraescolares.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q043": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Gestão democrática.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q044": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Ensino do conteúdo que leciono.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q045": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Desenvolvimento da aprendizagem.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q046": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Planejamento pedagógico.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q047": {
+      "text": "Para cada um dos temas relacionados abaixo, avalie o grau de necessidade de realização de atividades/cursos voltados para seu desenvolvimento profissional atualmente. — Recursos e práticas pedagógicas.",
+      "options": {
+        "A": "Nenhuma necessidade",
+        "B": "Pouca necessidade",
+        "C": "Moderada necessidade",
+        "D": "Muita necessidade"
+      }
+    },
+    "TX_Q050": {
+      "text": "Além de ser professor(a), você exerce outra atividade remunerada?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q051": {
+      "text": "Em quantas escolas você trabalha?",
+      "options": {
+        "A": "Apenas nesta",
+        "B": "Em 2",
+        "C": "Em 3 ou mais"
+      }
+    },
+    "TX_Q052": {
+      "text": "Qual o seu tipo de vínculo trabalhista nesta escola?",
+      "options": {
+        "A": "Concursado/efetivo/estável",
+        "B": "Contrato temporário",
+        "C": "Contrato CLT",
+        "D": "Outra situação trabalhista"
+      }
+    },
+    "TX_Q054": {
+      "text": "Considere como salário bruto os valores recebidos somente como professor(a) nas diversas escolas em que atua, sem descontos previdenciários ou de qualquer outra ordem, acrescido de eventuais gratificações. — Qual é o seu salário bruto como professor(a)? Indique a faixa salarial em que seu salário se encontra.",
+      "options": {
+        "A": "Até R$ 1.320,00",
+        "B": "De R$ 1.320,01 até R$ 2.640,00",
+        "C": "De R$ 2.640,01 até R$ 3.960,00",
+        "D": "De R$ 3.960,01 até R$ 5.280,00",
+        "E": "De R$ 5.280,01 até R$ 6.600,00",
+        "F": "De R$ 6.600,01 até R$ 7.920,00",
+        "G": "De R$ 7.920,01 até R$ 9.240,00",
+        "H": "Acima de R$ 9.240,00"
+      }
+    },
+    "TX_Q056": {
+      "text": "Esta escola, em seu planejamento, prevê um tempo para atividades como preparação de aulas, reuniões, atendimento aos pais etc.?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q057": {
+      "text": "Em uma semana normal de trabalho, você costuma levar trabalho desta escola para fazer em casa?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q058": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Tamanho da sala com relação ao número de estudantes.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q059": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Acústica.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q060": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Iluminação natural.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q061": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Ventilação natural.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q062": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Temperatura.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q063": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Instalações elétricas.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q064": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Limpeza.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q065": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Acessibilidade física.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q066": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Mobiliário (mesas, carteiras, armários).",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q067": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Infraestrutura (paredes, teto, assoalho, portas, piso).",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q068": {
+      "text": "Tendo como referência uma sala de aula ideal, avalie as condições da(s) sala(s) de aula que você utiliza nesta escola com relação aos seguintes elementos: — Lousa (quadro de giz ou quadro branco).",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q069": {
+      "text": "Indique os recursos que você normalmente usa nesta escola e qual a sua adequação para as atividades em sala de aula: — Livro didático.",
+      "options": {
+        "A": "Não tem",
+        "B": "Não uso",
+        "C": "Muito inadequado",
+        "D": "Inadequado",
+        "E": "Adequado",
+        "F": "Muito adequado"
+      }
+    },
+    "TX_Q070": {
+      "text": "Indique os recursos que você normalmente usa nesta escola e qual a sua adequação para as atividades em sala de aula: — Televisão.",
+      "options": {
+        "A": "Não tem",
+        "B": "Não uso",
+        "C": "Muito inadequado",
+        "D": "Inadequado",
+        "E": "Adequado",
+        "F": "Muito adequado"
+      }
+    },
+    "TX_Q071": {
+      "text": "Indique os recursos que você normalmente usa nesta escola e qual a sua adequação para as atividades em sala de aula: — Projetor multimídia (datashow).",
+      "options": {
+        "A": "Não tem",
+        "B": "Não uso",
+        "C": "Muito inadequado",
+        "D": "Inadequado",
+        "E": "Adequado",
+        "F": "Muito adequado"
+      }
+    },
+    "TX_Q072": {
+      "text": "Indique os recursos que você normalmente usa nesta escola e qual a sua adequação para as atividades em sala de aula: — Computador (de mesa, portátil, tablet).",
+      "options": {
+        "A": "Não tem",
+        "B": "Não uso",
+        "C": "Muito inadequado",
+        "D": "Inadequado",
+        "E": "Adequado",
+        "F": "Muito adequado"
+      }
+    },
+    "TX_Q073": {
+      "text": "Indique os recursos que você normalmente usa nesta escola e qual a sua adequação para as atividades em sala de aula: — Software.",
+      "options": {
+        "A": "Não tem",
+        "B": "Não uso",
+        "C": "Muito inadequado",
+        "D": "Inadequado",
+        "E": "Adequado",
+        "F": "Muito adequado"
+      }
+    },
+    "TX_Q074": {
+      "text": "Indique os recursos que você normalmente usa nesta escola e qual a sua adequação para as atividades em sala de aula: — Internet.",
+      "options": {
+        "A": "Não tem",
+        "B": "Não uso",
+        "C": "Muito inadequado",
+        "D": "Inadequado",
+        "E": "Adequado",
+        "F": "Muito adequado"
+      }
+    },
+    "TX_Q075": {
+      "text": "Indique os recursos que você normalmente usa nesta escola e qual a sua adequação para as atividades em sala de aula: — Recursos pedagógicos para atendimento educacional especializado.",
+      "options": {
+        "A": "Não tem",
+        "B": "Não uso",
+        "C": "Muito inadequado",
+        "D": "Inadequado",
+        "E": "Adequado",
+        "F": "Muito adequado"
+      }
+    },
+    "TX_Q076": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas: — Repetir de ano é bom para o(a) estudante que não apresentou desempenho satisfatório.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q077": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas: — A quantidade de avaliações externas (municipais, estaduais ou federais) é excessiva.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q078": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas: — As avaliações externas (municipais, estaduais ou federais) têm direcionado o que deve ser ensinado.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q079": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas: — As avaliações externas têm ajudado a melhorar o processo de ensino e aprendizagem.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q080": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas: — A maior parte dos estudantes apresentam problemas de aprendizagem.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q081": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Propor dever de casa.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q082": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Corrigir com os(as) estudantes o dever de casa.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q083": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Desenvolver trabalhos em grupo com os(as) estudantes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q084": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Solicitar que os(as) estudantes copiem textos e atividades do livro didático ou da lousa (quadro de giz ou quadro branco).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q085": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Estimular os(as) estudantes a expressarem suas opiniões e a desenvolverem argumentos a partir de temas diversos.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q086": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Propor situações de aprendizagem que sejam familiares ou de interesse dos(as) estudantes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q087": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Informar aos(às) estudantes, no início do ano, o que será  ensinado ou aprendido.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q088": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Perguntar aos(às) estudantes o que sabem sobre o tema, ao iniciar um novo conteúdo.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q089": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Trazer temas do cotidiano para serem debatidos em sala de aula.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q090": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Diversificar as metodologias de ensino conforme as dificuldades dos(as) estudantes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q091": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Considerar que os resultados das avaliações indicam o quanto os(as) estudantes aprenderam.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q092": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Buscar estratégias para melhorar a aprendizagem dos(as) estudantes com menor desempenho.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q093": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Abordar questões sobre desigualdade racial com os(as) estudantes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q094": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Abordar questões sobre desigualdade de gênero com os(as) estudantes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q095": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Abordar questões sobre bullying e outras formas de violência com os(as)  estudantes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q096": {
+      "text": "Neste ano e nesta escola, indique a frequência com que você desenvolve as seguintes práticas pedagógicas: — Abordar questões relacionadas ao futuro profissional dos(as) estudantes.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q097": {
+      "text": "Há estudantes público-alvo da educação especial nesta escola?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q098": {
+      "text": "Indique com que frequência a escola oferece suporte para os estudantes público-alvo da educação especial.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q099": {
+      "text": "Há um espaço para atendimento educacional especializado na escola?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q100": {
+      "text": "A escola possui Projeto Político-Pedagógico?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q101": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Seu conteúdo é discutido em reuniões?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q102": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os(As) professores(as) participaram da elaboração.",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q103": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os profissionais não docentes participaram da elaboração?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q104": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os pais participaram da elaboração?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q105": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os(As) estudantes participaram da elaboração?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q106": {
+      "text": "Há Conselho de Classe na sua escola?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q109": {
+      "text": "Neste ano e para esta escola, qual dos atores listados abaixo foi o principal responsável pelas seguintes definições pedagógicas: — Escolha do material didático.",
+      "options": {
+        "A": "Docente da turma",
+        "B": "Todo o corpo docente da escola",
+        "C": "Equipe gestora",
+        "D": "Decisão externa à escola (Secretaria de Educação, sistema apostilado de ensino etc.)"
+      }
+    },
+    "TX_Q110": {
+      "text": "Neste ano e para esta escola, qual dos atores listados abaixo foi o principal responsável pelas seguintes definições pedagógicas: — Metodologia de ensino.",
+      "options": {
+        "A": "Docente da turma",
+        "B": "Todo o corpo docente da escola",
+        "C": "Equipe gestora",
+        "D": "Decisão externa à escola (Secretaria de Educação, sistema apostilado de ensino etc.)"
+      }
+    },
+    "TX_Q111": {
+      "text": "Neste ano e para esta escola, qual dos atores listados abaixo foi o principal responsável pelas seguintes definições pedagógicas: — Conteúdos trabalhados em sala.",
+      "options": {
+        "A": "Docente da turma",
+        "B": "Todo o corpo docente da escola",
+        "C": "Equipe gestora",
+        "D": "Decisão externa à escola (Secretaria de Educação, sistema apostilado de ensino etc.)"
+      }
+    },
+    "TX_Q112": {
+      "text": "Neste ano e para esta escola, qual dos atores listados abaixo foi o principal responsável pelas seguintes definições pedagógicas: — Instrumentos para avaliar os(as) estudantes.",
+      "options": {
+        "A": "Docente da turma",
+        "B": "Todo o corpo docente da escola",
+        "C": "Equipe gestora",
+        "D": "Decisão externa à escola (Secretaria de Educação, sistema apostilado de ensino etc.)"
+      }
+    },
+    "TX_Q113": {
+      "text": "Neste ano e para esta escola, qual dos atores listados abaixo foi o principal responsável pelas seguintes definições pedagógicas: — Peso de cada instrumento de avaliação nas notas finais dos(as) estudantes.",
+      "options": {
+        "A": "Docente da turma",
+        "B": "Todo o corpo docente da escola",
+        "C": "Equipe gestora",
+        "D": "Decisão externa à escola (Secretaria de Educação, sistema apostilado de ensino etc.)"
+      }
+    },
+    "TX_Q114": {
+      "text": "Neste ano e para esta escola, qual dos atores listados abaixo foi o principal responsável pelas seguintes definições pedagógicas: — Seleção de conteúdos usados nas provas.",
+      "options": {
+        "A": "Docente da turma",
+        "B": "Todo o corpo docente da escola",
+        "C": "Equipe gestora",
+        "D": "Decisão externa à escola (Secretaria de Educação, sistema apostilado de ensino etc.)"
+      }
+    },
+    "TX_Q115": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — O(A) diretor(a) debate as metas educacionais com os(as) professores(as) nas reuniões.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q116": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — O(A) diretor(a) e os(as) professores(as) tratam a qualidade de ensino como uma responsabilidade coletiva.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q117": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — O(A) diretor(a) informa aos(às) professores(as) sobre as possibilidades de aperfeiçoamento profissional.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q118": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — O(A) diretor(a) dá atenção especial a aspectos relacionados à aprendizagem dos(as) estudantes.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q119": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — O(A) diretor(a) dá atenção especial a aspectos relacionados às normas administrativas.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q120": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — O(A) diretor(a) me anima e me motiva para o trabalho.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q121": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — Tenho confiança no(a) diretor(a) como profissional.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q122": {
+      "text": "Neste ano, em relação a esta escola, indique o quanto você concorda ou discorda com os seguintes temas: — O(A) diretor(a) e os(as) professores(as) asseguram que as questões relacionadas à qualidade da convivência e gestão de conflitos sejam uma responsabilidade coletiva.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q123": {
+      "text": "Nesta escola e neste ano, indique a frequência em que ocorreu: — Colaboração da família para superar problemas relacionados aos estudantes (ausências, acompanhamento das atividades escolares etc.).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q124": {
+      "text": "Nesta escola e neste ano, indique a frequência em que ocorreu: — Colaboração entre colegas (feedback, trocas, projetos interdisciplinares).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q125": {
+      "text": "Nesta escola e neste ano, indique a frequência em que ocorreu: — Colaboração da gestão da instituição (equipe gestora, equipe pedagógica) para superar dificuldades de sala de aula.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q126": {
+      "text": "Nesta escola e neste ano, indique a frequência em que ocorreu: — Apoio da Secretaria de Educação para superar as dificuldades do cotidiano escolar.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q127": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — Respeitam os acordos estabelecidos em sala.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q128": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — São assíduos(as).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q129": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — São respeitosos(as) comigo.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q130": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — São respeitosos(as) com os(as) colegas da turma.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q131": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — Expressam diferentes opiniões.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q132": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — Se interessam sobre o que ensinei neste ano.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q133": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — Sentem-se motivados(as) para aprender os temas ligados à minha disciplina.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q134": {
+      "text": "Indique o quanto você concorda ou discorda em relação aos seguintes temas envolvendo seus(suas) estudantes nesta escola. — São capazes de concluir a Educação Básica e prosseguir seus estudos.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q135": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Atentado à vida.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q136": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Lesão corporal.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q137": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Roubo ou furto.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q138": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Tráfico de drogas.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q139": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Permanência de pessoas sob efeito de álcool.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q140": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Permanência de pessoas sob efeito de drogas.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q141": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Porte de arma (revólver, faca, canivete).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q142": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Assédio sexual.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q143": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Discriminação (racial, gênero, orientação sexual, econômica/social, deficiência etc.).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q144": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Bullying (ameaças ou ofensas verbais).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q145": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Invasão do espaço escolar.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q146": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Depredação do patrimônio escolar (vandalismo).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q147": {
+      "text": "Nesta escola, neste ano e com relação aos episódios listados abaixo, indique a frequência com que ocorreram: — Tiroteio ou bala perdida.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    }
+  },
+  "TS_DIRETOR": {
+    "TX_Q001": {
+      "text": "Educação Infantil  -  Creche  (0 a 3 anos).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q002": {
+      "text": "Educação Infantil  -  Pré-escola  (4 e 5 anos) .",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q003": {
+      "text": "Anos Iniciais do Ensino Fundamental.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q004": {
+      "text": "Anos Finais do Ensino Fundamental.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q005": {
+      "text": "Ensino Médio.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q006": {
+      "text": "Sua escola é:",
+      "options": {
+        "A": "Pública",
+        "B": "Privada"
+      }
+    },
+    "TX_Q007": {
+      "text": "Qual é o seu sexo?",
+      "options": {
+        "A": "Masculino",
+        "B": "Feminino",
+        "C": "Não quero declarar"
+      }
+    },
+    "TX_Q009": {
+      "text": "Qual é a sua cor ou raça?",
+      "options": {
+        "A": "Branca",
+        "B": "Preta",
+        "C": "Parda",
+        "D": "Amarela",
+        "E": "Indígena",
+        "F": "Não quero declarar"
+      }
+    },
+    "TX_Q010": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q011": {
+      "text": "Indique qual a sua condição. Deficiência.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q012": {
+      "text": "Indique qual a sua condição. Transtorno do espectro autista.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q013": {
+      "text": "Indique qual a sua condição. Altas habilidades/superdotação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q014": {
+      "text": "Qual é o MAIS ALTO nível de escolaridade que você concluiu?",
+      "options": {
+        "A": "Ensino Fundamental",
+        "B": "Ensino Médio",
+        "C": "Graduação",
+        "D": "Especialização",
+        "E": "Mestrado",
+        "F": "Doutorado"
+      }
+    },
+    "TX_Q015_B": {
+      "text": "Quanto anos você trabalhou como professor(a) antes de se tornar diretor(a)? Nunca trabalhei",
+      "options": {
+        "B": "Nunca trabalhei"
+      }
+    },
+    "TX_Q025": {
+      "text": "Considere como salário bruto os valores recebidos somente como diretor(a) nas diversas escolas em que atua, sem descontos previdenciários ou de qualquer outra ordem, acrescido de eventuais gratificações. Indique a faixa salarial em que seu salário se encontra. — Qual é o seu salário bruto como diretor(a)?",
+      "options": {
+        "A": "Até R$ 1.320,00",
+        "B": "De R$ 1.320,01 até R$ 2.640,00",
+        "C": "De R$ 2.640,01 até R$ 3.960,00",
+        "D": "De R$ 3.960,01 até R$ 5.280,00",
+        "E": "De R$ 5.280,01 até R$ 6.600,00",
+        "F": "De R$ 6.600,01 até R$ 7.920,00",
+        "G": "De R$ 7.920,01 até R$ 9.240,00",
+        "H": "Acima de R$ 9.240,00"
+      }
+    },
+    "TX_Q026": {
+      "text": "Você possui outra atividade remunerada?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q027": {
+      "text": "Indique o quanto concorda ou discorda com as afirmativas abaixo: — Repetir de ano é bom para o(a) estudante que não apresentou desempenho satisfatório.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q028": {
+      "text": "Indique o quanto concorda ou discorda com as afirmativas abaixo: — As avaliações externas (municipais, estaduais ou federais) têm direcionado o que deve ser ensinado.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q029": {
+      "text": "Indique o quanto concorda ou discorda com as afirmativas abaixo: — As avaliações externas (federais, estaduais ou municipais) têm ajudado a melhorar o processo de ensino e aprendizagem.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q030": {
+      "text": "Indique o quanto concorda ou discorda com as afirmativas abaixo: — A maioria dos estudantes da escola apresenta problemas de aprendizagem.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q031": {
+      "text": "Indique o quanto concorda ou discorda com as afirmativas abaixo: — Eu acredito que a totalidade dos(as) estudantes da escola são capazes de concluir a Educação Básica e prosseguir seus estudos.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q032": {
+      "text": "Avalie, abaixo, as condições dos RECURSOS da sua escola: — Televisão.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q033": {
+      "text": "Avalie, abaixo, as condições dos RECURSOS da sua escola: — Projetor multimídia (datashow).",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q034": {
+      "text": "Avalie, abaixo, as condições dos RECURSOS da sua escola: — Computador (de mesa ou portátil).",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q035": {
+      "text": "Avalie, abaixo, as condições dos RECURSOS da sua escola: — Softwares educacionais.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q036": {
+      "text": "Avalie, abaixo, as condições dos RECURSOS da sua escola: — Internet banda larga.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q037": {
+      "text": "Avalie, abaixo, as condições dos RECURSOS da sua escola: — Recursos pedagógicos para atendimento educacional especializado.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q038": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Bebedouro ao alcance das crianças.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q039": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola:  Chuveiro para as crianças",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q040": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Área sombreada.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q041": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Área externa coberta.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q042": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Vegetação e jardim.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q043": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Horta.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q044": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Tanque de areia.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q045": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Gira-gira.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q046": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Gangorra.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q047": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Escorregador.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q048": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Casinha.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q049": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Balanço.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q050": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola:  Brinquedo para escalar.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q051": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1 e/ou Anos Iniciais = 1. Quando Q001=B ou Q002=B ou Q003=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Banheiro infantil.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q052": {
+      "text": "Item exclusivo Creche = 1. Quando Q001=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Espaço destinado à amamentação.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q053": {
+      "text": "Item exclusivo Creche = 1. Quando Q001=B. — Avalie, abaixo, as condições dos EQUIPAMENTOS da sua escola: Condições para armazenamento de leite materno.",
+      "options": {
+        "A": "Não tem",
+        "B": "Muito inadequado",
+        "C": "Inadequado",
+        "D": "Adequado",
+        "E": "Muito adequado"
+      }
+    },
+    "TX_Q054": {
+      "text": "Item exclusivo Creche = 1 e/ou Pré-escola = 1. Quando Q001=B ou Q002=B. — Caso sua escola ofereça Ensino Fundamental e/ou Médio, a área externa (pátio, área verde e parque) é utilizada em horários diferenciados pelos(as) alunos(as) da Educação Infantil?",
+      "options": {
+        "A": "A escola não oferece Ensino Fundamental e/ou Médio",
+        "B": "Os(As) alunos(as) da Educação Infantil utilizam a área externa em horário diferenciado",
+        "C": "Os(As) alunos(as) da Educação Infantil utilizam a área externa no mesmo horário"
+      }
+    },
+    "TX_Q055": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Os recursos financeiros foram suficientes.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q056": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Houve atraso no repasse de recursos financeiros para pagamento de pessoal.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q057": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — O quadro de professores estava completo.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q058": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Havia quantidade suficiente de pessoal de apoio (serviços gerais).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q059": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Havia quantidade suficiente de pessoal administrativo (secretaria).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q060": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Havia quantidade suficiente de pessoal para apoio pedagógico (coordenador e orientador).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q061": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Recebi apoio da Secretaria de Educação.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q062": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Os(As) professores(as) foram assíduos(as).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q063": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — As substituições das ausências de professores(as) foram facilmente realizadas.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q064": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Os(As) estudantes foram assíduos(as).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q065": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — A comunidade apoiou a gestão da escola.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q066": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — A comunidade executou trabalhos voluntários na escola.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q067": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — As famílias contribuíram com o trabalho pedagógico.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q068": {
+      "text": "Indique o quanto concorda ou discorda das afirmativas relativas às condições de funcionamento desta escola neste ano: — Os(As) estudantes com deficiência, transtorno do espectro autista ou com altas habilidades/superdotação receberam atendimento educacional especializado (AEE).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q069": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — No início do ano letivo, todos(as) os(as) estudantes receberam os livros didáticos.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q070": {
+      "text": "Neste ano, houve a necessidade de profissionais para atendimento educacional especializado?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q071": {
+      "text": "Caso tenha havido necessidade, indique se a quantidade de profissionais foi suficiente ou insuficiente para a necessidade da escola. Professor(a) de Braille.",
+      "options": {
+        "A": "Suficiente",
+        "B": "Insuficiente"
+      }
+    },
+    "TX_Q072": {
+      "text": "Caso tenha havido necessidade, indique se a quantidade de profissionais foi suficiente ou insuficiente para a necessidade da escola. Professor(a) bilíngue para surdos.",
+      "options": {
+        "A": "Suficiente",
+        "B": "Insuficiente"
+      }
+    },
+    "TX_Q073": {
+      "text": "Caso tenha havido necessidade, indique se a quantidade de profissionais foi suficiente ou insuficiente para a necessidade da escola. Professor ou Instrutor de Libras",
+      "options": {
+        "A": "Suficiente",
+        "B": "Insuficiente"
+      }
+    },
+    "TX_Q074": {
+      "text": "Caso tenha havido necessidade, indique se a quantidade de profissionais foi suficiente ou insuficiente para a necessidade da escola. Guia-interprete",
+      "options": {
+        "A": "Suficiente",
+        "B": "Insuficiente"
+      }
+    },
+    "TX_Q075": {
+      "text": "Caso tenha havido necessidade, indique se a quantidade de profissionais foi suficiente ou insuficiente para a necessidade da escola. Professor(a) da sala de recursos multifuncionais.",
+      "options": {
+        "A": "Suficiente",
+        "B": "Insuficiente"
+      }
+    },
+    "TX_Q076": {
+      "text": "Caso tenha havido necessidade, indique se a quantidade de profissionais foi suficiente ou insuficiente para a necessidade da escola. Professor(a) itinerante.",
+      "options": {
+        "A": "Suficiente",
+        "B": "Insuficiente"
+      }
+    },
+    "TX_Q077": {
+      "text": "Caso tenha havido necessidade, indique se a quantidade de profissionais foi suficiente ou insuficiente para a necessidade da escola. Monitor(a) de apoio à educação especial.",
+      "options": {
+        "A": "Suficiente",
+        "B": "Insuficiente"
+      }
+    },
+    "TX_Q078": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Falta de água.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q079": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Falta de energia.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q080": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Falta de merenda.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q081": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Greve de professores.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q082": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Episódios de violência.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q083": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Problemas de infraestrutura predial.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q084": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Paralisação do transporte.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q085": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Eventos climáticos (inundação, desmoronamento etc.).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q086": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Eventos comemorativos.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q087": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Problemas de saúde pública.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q088": {
+      "text": "O calendário escolar de 2023 foi interrompido durante VÁRIOS DIAS por algum dos eventos abaixo? — Outros.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q091": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Atentado à vida.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q092": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Lesão corporal.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q093": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Roubo ou furto.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q094": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Tráfico de drogas.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q095": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Permanência de pessoas sob efeito de álcool.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q096": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Permanência de pessoas sob efeito de drogas.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q097": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Porte de arma (revólver, faca, canivete).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q098": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Assédio sexual.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q099": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Discriminação (racial, gênero, orientação sexual, econômica/social, deficiência).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q100": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Bullying (ameaças ou ofensas verbais).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q101": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Invasão do espaço escolar.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q102": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Depredação do patrimônio escolar (vandalismo).",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q103": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Sobre os episódios listados abaixo, indique a frequência com que ocorreram neste ano, nesta escola: Tiroteio ou bala perdida.",
+      "options": {
+        "A": "Nunca",
+        "B": "Poucas vezes",
+        "C": "Muitas vezes",
+        "D": "Sempre"
+      }
+    },
+    "TX_Q104": {
+      "text": "Avalie os seguintes aspectos da escola: — Condições de segurança na entrada e saída da escola.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q105": {
+      "text": "Avalie os seguintes aspectos da escola: — Muros e/ou grades que isolam a escola do ambiente externo.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q106": {
+      "text": "Avalie os seguintes aspectos da escola: — Identificação externa que caracterize o prédio como uma instituição escolar.",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q107": {
+      "text": "Avalie os seguintes aspectos da escola: — O acesso à entrada principal adequado ao público-alvo da educação especial (rampas, marcadores no chão).",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q108": {
+      "text": "Avalie os seguintes aspectos da escola: — Condições de uso dos equipamentos da área externa de recreação (parque infantil, pátio, quadra poliesportiva).",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q109": {
+      "text": "Avalie os seguintes aspectos da escola: — O acesso dos(as) estudantes público-alvo da educação especial à área externa de recreação (parque infantil, pátio, quadra poliesportiva).",
+      "options": {
+        "A": "Muito inadequado",
+        "B": "Inadequado",
+        "C": "Adequado",
+        "D": "Muito adequado"
+      }
+    },
+    "TX_Q110": {
+      "text": "Há Conselho Escolar na sua escola?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q112": {
+      "text": "Há Conselho de Classe na sua escola?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q115": {
+      "text": "Existe Associação de Pais e Mestres – APM (ou caixa escolar) nesta escola?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q117": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Há grêmio estudantil na sua escola?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q118": {
+      "text": "O grêmio estudantil está:",
+      "options": {
+        "A": "Ativo",
+        "B": "Inativo"
+      }
+    },
+    "TX_Q119": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Com relação à gestão da escola: A escola é militar ou militarizada.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q120": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Com relação à gestão da escola: A escola é confessional ou segue uma orientação religiosa.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q121": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Serviços de saúde (postos de saúde).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q122": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Serviços de assistência social (CRAS e outros).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q123": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Segurança pública (polícia militar, guarda municipal e outros).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q124": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Conselho Tutelar (Ministério Público e outros).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q125": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Instituições de apoio ao público-alvo da educação especial (Apae).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q126": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Instituições de ensino superior (faculdades, universidades, IFs).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q127": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Instituições privadas (empresas, ONGs, corporações).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q128": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — A escola desenvolve REGULARMENTE trabalhos em conjunto com: Outros órgãos da prefeitura ou do governo estadual ou federal.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q129": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Quais as fontes de financiamento da escola? Recursos federais (Programa Dinheiro Direto na Escola etc.).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q130": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Quais as fontes de financiamento da escola? Recursos estaduais ou municipais.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q131": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Quais as fontes de financiamento da escola? Eventos da escola (festa, rifa etc.).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q132": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Quais as fontes de financiamento da escola? Empresas que apoiam a escola.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q133": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Quais as fontes de financiamento da escola? Organizações sem fins lucrativos que apoiam a escola.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q134": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Quais as fontes de financiamento da escola? Contribuições dos familiares dos(as) estudantes.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q135": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Quais as fontes de financiamento da escola? Contribuições dos(as) profissionais da escola.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q136": {
+      "text": "Item exclusivo  Creche = 1 ou Pré-escola = 1. Quando Q001=B ou Q002=B. — Como a escola adquire os seguintes recursos: Brinquedos.",
+      "options": {
+        "A": "Aquisição pela escola",
+        "B": "Doação",
+        "C": "Solicitação às famílias"
+      }
+    },
+    "TX_Q137": {
+      "text": "Item exclusivo  Creche = 1 ou Pré-escola = 1. Quando Q001=B ou Q002=B. — Como a escola adquire os seguintes recursos: Recursos pedagógicos.",
+      "options": {
+        "A": "Aquisição pela escola",
+        "B": "Doação",
+        "C": "Solicitação às famílias"
+      }
+    },
+    "TX_Q138": {
+      "text": "Item exclusivo  Creche = 1 ou Pré-escola = 1. Quando Q001=B ou Q002=B. — Como a escola adquire os seguintes recursos: Materiais de higiene pessoal.",
+      "options": {
+        "A": "Aquisição pela escola",
+        "B": "Doação",
+        "C": "Solicitação às famílias"
+      }
+    },
+    "TX_Q139": {
+      "text": "A escola oferece merenda aos(às) estudantes?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q140": {
+      "text": "Quantas refeições são oferecidas nesta escola em relação ao tempo de permanência dos(as) estudantes? Para estudantes que permanecem até 4 horas na escola:",
+      "options": {
+        "A": "Uma vez",
+        "B": "Duas vezes",
+        "C": "Três vezes ou mais",
+        "D": "Não se aplica"
+      }
+    },
+    "TX_Q141": {
+      "text": "Quantas refeições são oferecidas nesta escola em relação ao tempo de permanência dos(as) estudantes? Para estudantes que permanecem mais que 4 e menos que 7 horas na escola:",
+      "options": {
+        "A": "Uma vez",
+        "B": "Duas vezes",
+        "C": "Três vezes ou mais",
+        "D": "Não se aplica"
+      }
+    },
+    "TX_Q142": {
+      "text": "Quantas refeições são oferecidas nesta escola em relação ao tempo de permanência dos(as) estudantes? Para estudantes que permanecem 7 horas ou mais na escola:",
+      "options": {
+        "A": "Uma vez",
+        "B": "Duas vezes",
+        "C": "Três vezes ou mais",
+        "D": "Não se aplica"
+      }
+    },
+    "TX_Q143": {
+      "text": "Em relação à merenda escolar, como você avalia os seguintes aspectos: A quantidade de alimentos é suficiente para todos(as).",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q144": {
+      "text": "Em relação à merenda escolar, como você avalia os seguintes aspectos: Os alimentos são de boa qualidade.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q145": {
+      "text": "Em relação à merenda escolar, como você avalia os seguintes aspectos: Há dietas específicas para estudantes com restrições alimentares.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q146": {
+      "text": "Em relação à merenda escolar, como você avalia os seguintes aspectos: A cozinha atende as necessidades do preparo da merenda.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q147": {
+      "text": "Em relação à merenda escolar, como você avalia os seguintes aspectos: O local de alimentação é adequado.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q148": {
+      "text": "Em relação à merenda escolar, como você avalia os seguintes aspectos: O acesso ao local de alimentação é livre para estudantes com mobilidade reduzida.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q149": {
+      "text": "Em relação à merenda escolar, como você avalia os seguintes aspectos: Há pias para higienização das mãos próximas ao local de alimentação.",
+      "options": {
+        "A": "Discordo fortemente",
+        "B": "Discordo",
+        "C": "Concordo",
+        "D": "Concordo fortemente"
+      }
+    },
+    "TX_Q150": {
+      "text": "A merenda escolar é preparada na própria instituição?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q151": {
+      "text": "A escola possui Projeto Político-Pedagógico?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q152": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Seu conteúdo é discutido em reuniões?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q153": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os(As) professores(as) participaram da elaboração?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q154": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os profissionais não docentes participaram da elaboração?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q155": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os pais participaram da elaboração?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q156": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Os(As) estudantes participaram da elaboração?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q157": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Estabelece metas de aprendizagem?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q158": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Considera os resultados de avaliações externas (Saeb, estaduais, municipais etc.)?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q159": {
+      "text": "Indique se as situações abaixo se aplicam ou não ao Projeto Político-Pedagógico desta escola. Há metas de alcance de indicadores externos (Ideb, índices estaduais ou municipais)?",
+      "options": {
+        "A": "Não",
+        "B": "Sim",
+        "C": "Não sei"
+      }
+    },
+    "TX_Q160": {
+      "text": "Neste ano e nesta escola, todos que solicitaram vagas conseguiram se matricular?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q161": {
+      "text": "Quais foram os critérios de seleção para novas matrículas neste ano e nesta escola: Sorteio.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q162": {
+      "text": "Quais foram os critérios de seleção para novas matrículas neste ano e nesta escola: Local de moradia.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q163": {
+      "text": "Quais foram os critérios de seleção para novas matrículas neste ano e nesta escola: Prova de conhecimentos.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q164": {
+      "text": "Quais foram os critérios de seleção para novas matrículas neste ano e nesta escola: Ordem da inscrição/lista de espera.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q165": {
+      "text": "Quais foram os critérios de seleção para novas matrículas neste ano e nesta escola: Características socioeconômicas.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q166": {
+      "text": "Quais foram os critérios de seleção para novas matrículas neste ano e nesta escola: Desempenho do(a) estudante no ano anterior.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q167": {
+      "text": "Quais foram os critérios de seleção para novas matrículas neste ano e nesta escola: Outros critérios definidos pela Secretaria de Educação ou pelo Órgão Gestor de Educação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q169": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Idade.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q170": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Capacidade física da sala de aula.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q171": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Manter estudantes na mesma etapa de ensino.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q172": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Manter as turmas existentes do ano anterior.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q173": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Critérios disciplinares.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q174": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Desempenho escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q175": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Disponibilidade de vagas na turma.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q176": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Ordem da matrícula.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q177": {
+      "text": "Quais critérios foram considerados para a formação das turmas: — Atendimento à solicitação dos pais/responsáveis.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q178": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Preferência dos(as) professores(as).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q179": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Tempo de serviço.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q180": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Cursos de formação continuada realizados.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q181": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Professores(as) experientes nas turmas com facilidade de aprendizagem.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q182": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Professores(as) experientes nas turmas com dificuldade de aprendizagem.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q183": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Manutenção do(a) professor(a) com a mesma turma.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q184": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Revezamento dos(as) professores(as) entre séries/anos.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q185": {
+      "text": "Neste ano, quais critérios foram utilizados para atribuição das turmas aos(às) professores(as)? — Atribuição pela gestão da escola.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q186": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução da REPETÊNCIA ESCOLAR? Caso tenham sido realizadas, indique a eficácia das seguintes ações: Oferta de reforço escolar.",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q187": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução da REPETÊNCIA ESCOLAR?  Oferta de atendimento educacional especializado para estudantes com deficiência, transtornos do espectro autista ou com altas habilidades/superdotação.",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q188": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução da REPETÊNCIA ESCOLAR? Os(As) estudantes são estimulados(as) a apoiar uns(umas) aos(às) outros(as).",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q189": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução da REPETÊNCIA ESCOLAR? Revisão dos procedimentos de avaliação.",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q190": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução da REPETÊNCIA ESCOLAR? Revisão das práticas pedagógicas.",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q191": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução do ABANDONO ESCOLAR? Caso tenham sido realizadas, indique a eficácia das seguintes ações: Entrar em contato com os familiares/responsáveis do(a) estudante.",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q192": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução do ABANDONO ESCOLAR? Ir à residência do(a) estudante.",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q193": {
+      "text": "Item exclusivo Fundamental = 1 e Médio = 1. Quando Q003=B ou Q004=B ou Q005=B. — Neste ano, a escola realizou as seguintes ações para redução do ABANDONO ESCOLAR? Informar ao Conselho Tutelar.",
+      "options": {
+        "A": "Não foi realizada esta ação",
+        "B": "Nada efetiva",
+        "C": "Pouco efetiva",
+        "D": "Efetiva",
+        "E": "Muito efetiva"
+      }
+    },
+    "TX_Q194": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Ciência e tecnologia.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q195": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Combate à discriminação (racial, gênero, orientação sexual, econômica/social, deficiência, religiosa).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q196": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Combate à violência (física, verbal, bullying, entre outras).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q197": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Direitos humanos (de idosos, pessoas com deficiência, mulheres, crianças, adolescentes e outros).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q198": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Educação ambiental e consumo sustentável.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q199": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Educação para o trânsito.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q200": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Mundo do trabalho (direitos, relações, entre outros).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q201": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Nutrição e alimentação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q202": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Promoção da democracia e da cidadania.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q203": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Uso de drogas.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q204": {
+      "text": "Item exclusivo Pré-escola=1 e Fundamental = 1 e Médio = 1. Quando Q002=B ou Q003=B ou Q004=B ou Q005=B. — Nesta escola, há projetos com as seguintes temáticas: Sexualidade.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q205": {
+      "text": "Indique se as ações pedagógicas ocorrem na sua escola: — Preparação dos(as) estudantes para os testes de avaliação externos.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q206": {
+      "text": "Indique se as ações pedagógicas ocorrem na sua escola: — Inscrição dos(as) estudantes em olímpiadas de conhecimento.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q207": {
+      "text": "Indique se as ações pedagógicas ocorrem na sua escola: — Feira de ciências.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q208": {
+      "text": "Indique se as ações pedagógicas ocorrem na sua escola: — Feira de artes",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q209": {
+      "text": "Indique se as ações pedagógicas ocorrem na sua escola: — Campeonatos esportivos.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q210": {
+      "text": "Indique se as ações pedagógicas ocorrem na sua escola: — Outros.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q212": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Conteúdo e compreensão dos conceitos da(s) área(s) de ensino.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q213": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Avaliação da aprendizagem.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q214": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Avaliação em larga escala.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q215": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Metodologias de ensino.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q216": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Base Nacional Comum Curricular – BNCC.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q217": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Gestão da sala de aula.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q218": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Educação especial.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q219": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Novas tecnologias educacionais.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q220": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Gestão e administração escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q221": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Ensino híbrido.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q222": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Alfabetização e letramento.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_Q223": {
+      "text": "Indique se, neste ano, a equipe escolar recebeu atividades de formação nas seguintes áreas: — Gestão democrática.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    }
+  },
+  "TS_ALUNO_34EM": {
+    "TX_RESP_Q01": {
+      "text": "Qual é o seu sexo?",
+      "options": {
+        "A": "Masculino",
+        "B": "Feminino",
+        "C": "Não quero declarar"
+      }
+    },
+    "TX_RESP_Q02": {
+      "text": "Qual é a sua idade?",
+      "options": {
+        "A": "16 anos ou menos",
+        "B": "17 anos",
+        "C": "18 anos",
+        "D": "19 anos",
+        "E": "20 anos",
+        "F": "21 anos ou mais"
+      }
+    },
+    "TX_RESP_Q03": {
+      "text": "Qual língua que seus pais falam com mais frequência em casa?",
+      "options": {
+        "A": "Português",
+        "B": "Espanhol",
+        "C": "Língua de Sinais (Libras, Língua de Sinais Argentina, Língua de Sinais Boliviana etc.)",
+        "D": "Outra língua"
+      }
+    },
+    "TX_RESP_Q04": {
+      "text": "Qual é a sua cor ou raça?",
+      "options": {
+        "A": "Branca",
+        "B": "Preta",
+        "C": "Parda",
+        "D": "Amarela",
+        "E": "Indígena",
+        "F": "Não quero declarar"
+      }
+    },
+    "TX_RESP_Q05a": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Deficiência.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q05b": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Transtorno do espectro autista.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q05c": {
+      "text": "Você possui deficiência, transtorno do espectro autista ou superdotação? - Altas habilidades ou superdotação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q06": {
+      "text": "Quantas pessoas moram na sua casa, contando com você?",
+      "options": {
+        "A": "2 pessoas",
+        "B": "3 pessoas",
+        "C": "4 pessoas",
+        "D": "5 pessoas",
+        "E": "6 pessoas ou mais"
+      }
+    },
+    "TX_RESP_Q07a": {
+      "text": "Normalmente, quem mora na sua casa? - Mãe(s) ou madrasta(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07b": {
+      "text": "Normalmente, quem mora na sua casa? - Pai(s) ou padrasto(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07c": {
+      "text": "Normalmente, quem mora na sua casa? - Avó(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07d": {
+      "text": "Normalmente, quem mora na sua casa? - Avô(s).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q07e": {
+      "text": "Normalmente, quem mora na sua casa? - Outros familiares, irmãos(ãs), tios(as), primos(as) etc.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q08": {
+      "text": "Qual é a maior escolaridade da sua mãe (ou madastra ou mulher responsável por você)?",
+      "options": {
+        "A": "Não completou o 5º ano do Ensino Fundamental",
+        "B": "Ensino Fundamental, até o 5º ano",
+        "C": "Ensino Fundamental completo",
+        "D": "Ensino Médio completo",
+        "E": "Ensino Superior completo (faculdade ou graduação)",
+        "F": "Não sei"
+      }
+    },
+    "TX_RESP_Q09": {
+      "text": "Qual é a maior escolaridade de seu pai (ou padrasto homem responsável por você)?",
+      "options": {
+        "A": "Não completou o 5º ano do Ensino Fundamental",
+        "B": "Ensino Fundamental, até o 5º ano",
+        "C": "Ensino Fundamental completo",
+        "D": "Ensino Médio completo",
+        "E": "Ensino Superior completo (faculdade ou graduação)",
+        "F": "Não sei"
+      }
+    },
+    "TX_RESP_Q10a": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Ler em casa.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10b": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Conversar com você sobre o que acontece na escola.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10c": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a estudar.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10d": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a fazer a tarefa de casa.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10e": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Incentivar você a comparecer às aulas.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q10f": {
+      "text": "Com que frequência seus pais ou responsáveis costumam: - Ir às reuniões de pais na escola.",
+      "options": {
+        "A": "Nunca ou quase nunca",
+        "B": "De vez em quando",
+        "C": "Sempre ou quase sempre"
+      }
+    },
+    "TX_RESP_Q11a": {
+      "text": "Na rua em que você mora tem: - Asfalto ou calçamento.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q11b": {
+      "text": "Na rua em que você mora tem: - Água tratada.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q11c": {
+      "text": "Na rua em que você mora tem: - Iluminação.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q12a": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Geladeira.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12b": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Computador (ou notebook).",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12c": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Quartos para dormir.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12d": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Televisão.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12e": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Banheiro.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12f": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Carro.",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q12g": {
+      "text": "Dos itens relacionados abaixo, quantos existem na sua casa? - Celular com internet (smartphone).",
+      "options": {
+        "A": "Nenhum",
+        "B": "1",
+        "C": "2",
+        "D": "3 ou mais"
+      }
+    },
+    "TX_RESP_Q13a": {
+      "text": "Na sua casa tem: - Tv por internet (Netflix, GloboPlay, etc.).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13b": {
+      "text": "Na sua casa tem: - Rede Wi-Fi.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13c": {
+      "text": "Na sua casa tem: - Um quarto só seu.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13d": {
+      "text": "Na sua casa tem: - Mesa para estudar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13e": {
+      "text": "Na sua casa tem: - Forno de microondas.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13f": {
+      "text": "Na sua casa tem: - Aspirador de pó.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13g": {
+      "text": "Na sua casa tem: - Máquina de lavar roupa.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13h": {
+      "text": "Na sua casa tem: - Freezer (independente ou segunda porta da geladeira).",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q13i": {
+      "text": "Na sua casa tem: - Garagem.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q14": {
+      "text": "Quanto tempo você demora para chegar à sua escola?",
+      "options": {
+        "A": "Menos de 30 minutos",
+        "B": "Entre 30 minutos e uma hora",
+        "C": "Mais de uma hora"
+      }
+    },
+    "TX_RESP_Q15a": {
+      "text": "Você utiliza para ir à escola: - Transporte gratuito escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q15b": {
+      "text": "Você utiliza para ir à escola: - Passe escolar.",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    },
+    "TX_RESP_Q16": {
+      "text": "Considerando a maior distância percorrida, normalmente de que forma você chega à sua escola?",
+      "options": {
+        "A": "À pé",
+        "B": "De bicicleta",
+        "C": "De Van (ou Kombi)",
+        "D": "De ônibus",
+        "E": "De metrô (ou trem urbano)",
+        "F": "De carro",
+        "G": "De barco",
+        "H": "De motocicleta",
+        "I": "Outro meio de transporte"
+      }
+    },
+    "TX_RESP_Q17": {
+      "text": "Com que idade você entrou na escola?",
+      "options": {
+        "A": "3 anos ou menos",
+        "B": "4 ou 5 anos",
+        "C": "6 ou 7 anos",
+        "D": "8 anos ou mais"
+      }
+    },
+    "TX_RESP_Q18": {
+      "text": "A partir do primeiro ano do ensino fundamental, em que tipo de escola você estudou?",
+      "options": {
+        "A": "Somente em escola pública",
+        "B": "Somente em escola particular",
+        "C": "Em escola pública e em escola particular"
+      }
+    },
+    "TX_RESP_Q19": {
+      "text": "Você já foi reprovado(a)?",
+      "options": {
+        "A": "Não",
+        "B": "Sim, uma vez",
+        "C": "Sim, duas vezes ou mais"
+      }
+    },
+    "TX_RESP_Q20": {
+      "text": "Alguma vez você abandonou a escola deixando de frequentá-la até o final do ano escolar?",
+      "options": {
+        "A": "Nunca",
+        "B": "Sim, uma vez",
+        "C": "Sim, duas vezes ou mais"
+      }
+    },
+    "TX_RESP_Q21a": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Estudar (lição de casa, trabalhos escolares, etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21b": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Fazer cursos ou atividades extracurriculares (idioma, artes, informática etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21c": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Trabalhar em casa (lavar louça, limpar quintal, cuidar dos irmãos, etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21d": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: - Trabalhar fora de casa (recebendo ou não um salário).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q21e": {
+      "text": "Fora da escola em dias de aula, quanto tempo você usa para: -  Lazer (TV, brincar, internet, música etc.).",
+      "options": {
+        "A": "Não uso meu tempo para isso",
+        "B": "Menos de 1 hora",
+        "C": "Entre 1 e 2 horas",
+        "D": "Mais de 2 horas"
+      }
+    },
+    "TX_RESP_Q22a": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - No início do ano, eles(as) informaram sobre o que seria ensinado e aprendido?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22b": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Antes de iniciar um novo conteúdo, eles(as) perguntam o que vocês sabem sobre o conteúdo?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22c": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) trazem temas do cotidiano para serem debatidos em sala de aula?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22d": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas sobre desigualdade racial?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22e": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas sobre desigualdade de gênero?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22f": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam temas como bullying e outras formas de violência?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22g": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) desenvolvem trabalhos em grupos?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q22h": {
+      "text": "Para os próximos itens, indique qual é a proporção de professores(as) da sua turma que abordam os seguintes temas em sala de aula: - Eles(as) abordam questões relacionadas ao futuro profissional dos(as) estudantes?",
+      "options": {
+        "A": "Todos eles",
+        "B": "A maior parte deles",
+        "C": "Poucos deles",
+        "D": "Nenhum deles"
+      }
+    },
+    "TX_RESP_Q23a": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me interesso sobre o que foi ensinado na escola neste ano.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23b": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto motivado(a), no dia a dia, a usar o que foi ensinado.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23c": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Há espaço para diferentes opiniões na minha sala de aula.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23d": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto seguro(a) quando estou na escola.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23e": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu me sinto à vontade para discordar dos(as) meus(minhas) professores(as).",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23f": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Eu consigo argumentar sobre conteúdos difíceis.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23g": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: - Os resultados das avaliações representam o quanto eu aprendi.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23h": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: -Meus (Minhas) professores(as) acreditam que eu sou capaz de aprender.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q23i": {
+      "text": "Sobre sua escola, indique o quanto você concorda ou discorda das afirmações abaixo: -Meus (Minhas) professores(as) me motivam a continuar meus estudos.",
+      "options": {
+        "A": "Concordo totalmente",
+        "B": "Concordo",
+        "C": "Discordo",
+        "D": "Discordo totalmente"
+      }
+    },
+    "TX_RESP_Q24": {
+      "text": "Quando terminar o Ensino Médio, você pretende:",
+      "options": {
+        "A": "Somente continuar estudando",
+        "B": "Somente trabalhar",
+        "C": "Continuar estudando e trabalhar",
+        "D": "Ainda não sei"
+      }
+    },
+    "TX_RESP_Q25": {
+      "text": "Você concluiu o Ensino Fundamental na Educação de Jovens e Adultos (EJA), antigo supletivo?",
+      "options": {
+        "A": "Não",
+        "B": "Sim"
+      }
+    }
+  }
+}
