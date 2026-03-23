@@ -274,7 +274,7 @@ def chart_tic_group(group: str, title: str) -> str:
         ax.text(i, v + 1.5, f"{v:.1f}%", ha="center", fontsize=9)
 
     ax.set_ylabel("Proporção (%)")
-    ax.set_ylim(0, 105)
+    ax.set_ylim(0, 100)
     ax.set_title(f"TIC Educação 2023 (Sudeste) - {title}")
 
     return _fig_to_base64(fig)
