@@ -63,7 +63,7 @@ const CHART_EXPLANATIONS = {
 
     // ── Professores ──
     'chart-teach-profile': {
-        title: 'Gênero dos professores',
+        title: 'Sexo dos professores',
         text: 'Distribuição por sexo dos professores do Rio de Janeiro que responderam ao questionário contextual do SAEB 2023 (questão Q001). A categoria "Não declarado" corresponde a professores que optaram por não informar o sexo.',
     },
     'chart-teach-practices': {

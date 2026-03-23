@@ -18,6 +18,7 @@ async function loadPage(page) {
         case 'questionnaires': return loadQuestionnaires();
         case 'ethics': return loadEthics();
         case 'cross-analysis': return loadCrossAnalysis();
+        case 'data-docs': return _initDataDocsKatex();
         case 'methodology': return; // Static content
     }
 }
@@ -378,9 +379,9 @@ async function loadTechnology() {
         'A4': 'Internet', 'A5': 'Banda larga', 'A6': 'Wi-Fi',
         'A7': 'Projetor', 'A8': 'Lousa digital',
     };
-    const AI_LABELS = { 'E4A': 'Biometria', 'E4B': 'Reconhec. Facial', 'E5': 'Analytics', 'E6': 'Sist. IA', 'F6': 'Chatbot' };
-    const TRAINING_LABELS = { 'J1': 'Programação', 'J2': 'Robótica', 'J3': 'Uso pedagóg. TIC', 'J4': 'Segurança online' };
-    const PRIVACY_LABELS = { 'H1': 'Polít. privacidade', 'H3': 'Debate privacidade', 'H4': 'Consent. dados', 'H5': 'Proteção dados', 'H6': 'Não adoção', 'H7': 'Preocup. privac.' };
+    const AI_LABELS = { 'E4A': 'Biometria', 'E4B': 'Reconhec. facial', 'E5': 'Analytics', 'E6': 'Sistema de IA', 'F6': 'Chatbot' };
+    const TRAINING_LABELS = { 'J1': 'Programação', 'J2': 'Robótica', 'J3': 'Uso pedagógico\nde TIC', 'J4': 'Segurança\nonline' };
+    const PRIVACY_LABELS = { 'H1': 'Política de\nprivacidade', 'H3': 'Debate sobre\nprivacidade', 'H4': 'Consentimento\nde dados', 'H5': 'Proteção\nde dados', 'H6': 'Não adoção', 'H7': 'Preocupação\ncom privacidade' };
 
     _plotTicGroup('chart-tech-infra', infra, COLORS.primary, INFRA_LABELS);
     _plotTicGroup('chart-tech-ai', ai, COLORS.accent, AI_LABELS);
@@ -410,10 +411,15 @@ function _plotTicGroup(elementId, response, color, labels) {
     const indicators = Object.keys(byIndicator).sort();
     const values = indicators.map(i => byIndicator[i]);
 
+    const xLabels = indicators.map(i => (labels && labels[i]) || i);
+    const hasMultiline = xLabels.some(l => l.includes('\n'));
+    const needsRotate = !hasMultiline && (xLabels.length > 4 || xLabels.some(l => l.length > 14));
+
     renderChart(elementId, {
-        tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)}%` },
-        xAxis: { type: 'category', data: indicators.map(i => (labels && labels[i]) || i) },
-        yAxis: { type: 'value', name: 'Proporção (%)', max: 105 },
+        tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name.replace(/\n/g, ' ')}</strong>: ${tooltipVal(params[0].value)}%` },
+        grid: (needsRotate || hasMultiline) ? { top: 50, right: 30, bottom: hasMultiline ? 70 : 80, left: 60, containLabel: true } : undefined,
+        xAxis: { type: 'category', data: xLabels, axisLabel: { interval: 0, rotate: needsRotate ? 25 : 0, fontSize: 10.5 } },
+        yAxis: { type: 'value', name: 'Proporção (%)', max: 100 },
         series: [{
             type: 'bar',
             data: values.map(v => ({
@@ -449,30 +455,93 @@ async function loadTeachers() {
     const Q029_LABELS = { A: 'Não contribuiu', B: 'Contribuiu pouco', C: 'Contribuiu razoavelmente', D: 'Contribuiu muito' };
     const Q072_LABELS = { A: 'Não tem', B: 'Não uso', C: 'Muito inadequado', D: 'Inadequado', E: 'Adequado', F: 'Muito adequado' };
 
-    _plotQuestionnaire('chart-teach-profile', genero, 'Gênero dos Professores (RJ)', COLORS.primary, GENDER_LABELS);
+    _plotQuestionnaire('chart-teach-profile', genero, 'Sexo dos Professores (RJ)', COLORS.primary, GENDER_LABELS);
     _plotQuestionnaire('chart-teach-practices', tech, 'Contribuição da Formação em Tecnologia (RJ)', COLORS.secondary, Q029_LABELS);
     _plotQuestionnaire('chart-teach-infra', recursos, 'Computador na Escola — Adequação (RJ)', COLORS.teal, Q072_LABELS);
 
     // Correlações: formação docente vs desempenho
+    // Store formation data for filter changes
+    window._teachFormacao = formacao;
+
+    // Init filter listeners (only once)
+    if (!window._corrFiltersInit) {
+        window._corrFiltersInit = true;
+        document.getElementById('corr-serie').addEventListener('change', () => _renderTeachCorr(window._teachFormacao));
+        document.getElementById('corr-disciplina').addEventListener('change', () => _renderTeachCorr(window._teachFormacao));
+    }
+
+    _renderTeachCorr(formacao);
+}
+
+function _renderTeachCorr(formacao) {
+    const serie = document.getElementById('corr-serie')?.value || '5EF';
+    const disc = document.getElementById('corr-disciplina')?.value || 'LP';
+    const colKey = `media_${serie.toLowerCase()}_${disc.toLowerCase()}`;
+    const serieLabel = serie === '5EF' ? '5º EF' : '9º EF';
+    const discLabel = disc === 'LP' ? 'LP' : 'MT';
+
     if (formacao && formacao.data && formacao.data.length > 0) {
         const rows = formacao.data.filter(r =>
-            r.pc_formacao_docente_inicial != null && r.media_5ef_lp != null
+            r.pc_formacao_docente_inicial != null && r[colKey] != null
         );
         if (rows.length > 0) {
+            const scatterData = rows.map(r => [r.pc_formacao_docente_inicial, r[colKey]]);
+
+            // Compute linear regression for trend line
+            const n = scatterData.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            for (const [x, y] of scatterData) {
+                sumX += x; sumY += y; sumXY += x * y; sumX2 += x * x;
+            }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+
+            // Compute Pearson r
+            const meanX = sumX / n, meanY = sumY / n;
+            let ssXY = 0, ssX2 = 0, ssY2 = 0;
+            for (const [x, y] of scatterData) {
+                ssXY += (x - meanX) * (y - meanY);
+                ssX2 += (x - meanX) ** 2;
+                ssY2 += (y - meanY) ** 2;
+            }
+            const r = ssXY / Math.sqrt(ssX2 * ssY2);
+
+            // Trend line endpoints
+            const xMin = Math.min(...scatterData.map(d => d[0]));
+            const xMax = Math.max(...scatterData.map(d => d[0]));
+            const trendData = [
+                [xMin, slope * xMin + intercept],
+                [xMax, slope * xMax + intercept],
+            ];
+
             renderChart('chart-teach-corr', {
                 tooltip: {
                     trigger: 'item',
-                    formatter: p => `Formação: ${tooltipVal(p.value[0], 0)}%<br>LP 5EF: ${tooltipVal(p.value[1])} pts`,
+                    formatter: p => {
+                        if (p.seriesType === 'line') return `Tendência: y = ${fmtNum(slope, 2)}x + ${fmtNum(intercept, 1)}`;
+                        return `Formação: ${tooltipVal(p.value[0], 0)}%<br>${discLabel} ${serieLabel}: ${tooltipVal(p.value[1])} pts`;
+                    },
                 },
+                graphic: [statAnnotation(`r = ${fmtNum(r, 3)}  (n = ${fmtInt(n)})`, { left: 15, top: 8, color: COLORS.accent })],
                 xAxis: { type: 'value', name: '% Formação Adequada', nameLocation: 'center', nameGap: 30 },
-                yAxis: { type: 'value', name: 'Proficiência LP 5EF' },
-                series: [{
-                    type: 'scatter',
-                    data: rows.map(r => [r.pc_formacao_docente_inicial, r.media_5ef_lp]),
-                    symbolSize: 8,
-                    itemStyle: { color: COLORS.primary, opacity: 0.55 },
-                    emphasis: { itemStyle: { opacity: 0.9, shadowBlur: 4, shadowColor: 'rgba(0,0,0,0.2)' } },
-                }],
+                yAxis: { type: 'value', name: `Proficiência ${discLabel} ${serieLabel}` },
+                series: [
+                    {
+                        type: 'scatter',
+                        data: scatterData,
+                        symbolSize: 8,
+                        itemStyle: { color: COLORS.primary, opacity: 0.55 },
+                        emphasis: { itemStyle: { opacity: 0.9, shadowBlur: 4, shadowColor: 'rgba(0,0,0,0.2)' } },
+                    },
+                    {
+                        type: 'line',
+                        data: trendData,
+                        symbol: 'none',
+                        lineStyle: { color: COLORS.accent, width: 2, type: 'dashed' },
+                        tooltip: { show: true },
+                        silent: false,
+                    },
+                ],
             });
             renderExplanation('chart-teach-corr');
         } else {
@@ -591,12 +660,12 @@ async function loadEthics() {
         const filtered = ai.data.filter(d => d.tipo === 'proporcao' && d.valor_corte === 'TOTAL');
         const byInd = {};
         for (const d of filtered) { if (!(d.indicador in byInd)) byInd[d.indicador] = d.valor; }
-        const labels = { 'E4A': 'Biometria', 'E4B': 'Reconhec. Facial', 'E5': 'Analytics', 'E6': 'Sist. IA', 'F6': 'Chatbot' };
+        const labels = { 'E4A': 'Biometria', 'E4B': 'Reconhec. facial', 'E5': 'Analytics', 'E6': 'Sistema de IA', 'F6': 'Chatbot' };
         const inds = Object.keys(byInd).sort();
         renderChart('chart-ethics-tech', {
             tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name}</strong>: ${tooltipVal(p[0].value)}%` },
-            xAxis: { type: 'category', data: inds.map(i => labels[i] || i) },
-            yAxis: { type: 'value', name: 'Proporção (%)', max: 105 },
+            xAxis: { type: 'category', data: inds.map(i => labels[i] || i), axisLabel: { interval: 0, fontSize: 10.5 } },
+            yAxis: { type: 'value', name: 'Proporção (%)', max: 100 },
             series: [{
                 type: 'bar',
                 data: inds.map(i => ({ value: byInd[i], itemStyle: { color: gradientBar(COLORS.accent), borderRadius: [4, 4, 0, 0] } })),
@@ -638,12 +707,12 @@ async function loadEthics() {
         const filtered = training.data.filter(d => d.tipo === 'proporcao' && d.valor_corte === 'TOTAL');
         const byInd = {};
         for (const d of filtered) { if (!(d.indicador in byInd)) byInd[d.indicador] = d.valor; }
-        const labels = { 'J1': 'Programação', 'J2': 'Robótica', 'J3': 'Uso pedagóg. TIC', 'J4': 'Segurança online' };
+        const labels = { 'J1': 'Programação', 'J2': 'Robótica', 'J3': 'Uso pedagógico de TIC', 'J4': 'Segurança online' };
         const inds = Object.keys(byInd).sort();
         renderChart('chart-ethics-teachers', {
             tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name}</strong>: ${tooltipVal(p[0].value)}%` },
-            xAxis: { type: 'category', data: inds.map(i => labels[i] || i) },
-            yAxis: { type: 'value', name: 'Proporção de escolas (%)', max: 105 },
+            xAxis: { type: 'category', data: inds.map(i => labels[i] || i), axisLabel: { interval: 0, fontSize: 10.5 } },
+            yAxis: { type: 'value', name: 'Proporção de escolas (%)', max: 100 },
             series: [{
                 type: 'bar',
                 data: inds.map(i => ({ value: byInd[i], itemStyle: { color: gradientBar(COLORS.green), borderRadius: [4, 4, 0, 0] } })),
@@ -661,12 +730,13 @@ async function loadEthics() {
         const filtered = privacy.data.filter(d => d.tipo === 'proporcao' && d.valor_corte === 'TOTAL');
         const byInd = {};
         for (const d of filtered) { if (!(d.indicador in byInd)) byInd[d.indicador] = d.valor; }
-        const labels = { 'H1': 'Polít. privacidade', 'H3': 'Debate privacidade', 'H4': 'Consent. dados', 'H5': 'Proteção dados', 'H6': 'Não adoção', 'H7': 'Preocup. privac.' };
+        const labels = { 'H1': 'Política de\nprivacidade', 'H3': 'Debate sobre\nprivacidade', 'H4': 'Consentimento\nde dados', 'H5': 'Proteção\nde dados', 'H6': 'Não adoção', 'H7': 'Preocupação\ncom privacidade' };
         const inds = Object.keys(byInd).sort();
         renderChart('chart-ethics-dimensions', {
-            tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name}</strong>: ${tooltipVal(p[0].value)}%` },
-            xAxis: { type: 'category', data: inds.map(i => labels[i] || i) },
-            yAxis: { type: 'value', name: 'Proporção (%)', max: 105 },
+            tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name.replace(/\n/g, ' ')}</strong>: ${tooltipVal(p[0].value)}%` },
+            grid: { top: 50, right: 30, bottom: 70, left: 60, containLabel: true },
+            xAxis: { type: 'category', data: inds.map(i => labels[i] || i), axisLabel: { interval: 0, fontSize: 10 } },
+            yAxis: { type: 'value', name: 'Proporção (%)', max: 100 },
             series: [{
                 type: 'bar',
                 data: inds.map(i => ({ value: byInd[i], itemStyle: { color: gradientBar(COLORS.purple), borderRadius: [4, 4, 0, 0] } })),
@@ -1087,4 +1157,23 @@ function _plotCrossGap(elementId, response) {
         }],
     });
     renderExplanation(elementId);
+}
+
+// =========================================================
+// Dados page: re-render KaTeX formulas on navigation
+// =========================================================
+
+function _initDataDocsKatex() {
+    if (typeof katex === 'undefined') return;
+    const container = document.getElementById('page-data-docs');
+    if (!container) return;
+    container.querySelectorAll('.katex-formula').forEach(el => {
+        // Skip already rendered
+        if (el.querySelector('.katex')) return;
+        const formula = el.getAttribute('data-formula');
+        const displayMode = el.getAttribute('data-inline') !== 'true';
+        try {
+            katex.render(formula, el, { displayMode, throwOnError: false });
+        } catch (e) { el.textContent = formula; }
+    });
 }

@@ -77,6 +77,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link text-white-50" href="#" data-page="data-docs">
+                        <i class="bi bi-book"></i>
+                        <span class="nav-label">Dados</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link text-white-50" href="#" data-page="methodology">
                         <i class="bi bi-journal-bookmark"></i>
                         <span class="nav-label">Metodologia</span>
@@ -495,6 +501,22 @@
                             <div id="chart-teach-infra" class="echarts-container" style="height:500px"></div>
                         </div>
                         <div class="tab-pane fade" id="tab-teach-corr">
+                            <div class="d-flex gap-3 mb-3 mt-2 align-items-center flex-wrap">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label for="corr-serie" class="form-label mb-0 small fw-semibold text-muted">Série:</label>
+                                    <select id="corr-serie" class="form-select form-select-sm" style="width:auto">
+                                        <option value="5EF">5º EF</option>
+                                        <option value="9EF" selected>9º EF</option>
+                                    </select>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <label for="corr-disciplina" class="form-label mb-0 small fw-semibold text-muted">Disciplina:</label>
+                                    <select id="corr-disciplina" class="form-select form-select-sm" style="width:auto">
+                                        <option value="LP" selected>Língua Portuguesa</option>
+                                        <option value="MT">Matemática</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div id="chart-teach-corr" class="echarts-container" style="height:500px"></div>
                         </div>
                     </div>
@@ -724,6 +746,970 @@
                         </div>
                     </div>
                 </div>
+                <!-- Página: Dados e Métodos -->
+                <div id="page-data-docs" class="page-section d-none">
+                    <h3 class="mb-3"><i class="bi bi-book me-2" style="color: var(--clr-primary)"></i>Dados e Métodos</h3>
+                    <p class="text-muted mb-4">Documentação completa e didática de todas as fontes de dados, como são processados, quais análises estatísticas são realizadas e o que cada resultado significa.</p>
+
+                    <!-- Sumário -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-list-nested me-1"></i> Sumário</div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <ol class="small mb-0">
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-1').scrollIntoView({behavior:'smooth'});return false">Visão geral das fontes de dados</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-2').scrollIntoView({behavior:'smooth'});return false">SAEB 2023 — Microdados</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-3').scrollIntoView({behavior:'smooth'});return false">TIC Educação 2023 — Tecnologia nas escolas</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-4').scrollIntoView({behavior:'smooth'});return false">Como os dados são processados (ETL)</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-5').scrollIntoView({behavior:'smooth'});return false">Dados apresentados diretamente</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-6').scrollIntoView({behavior:'smooth'});return false">Dados cruzados</a></li>
+                                    </ol>
+                                </div>
+                                <div class="col-md-6">
+                                    <ol class="small mb-0" start="7">
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-7').scrollIntoView({behavior:'smooth'});return false">Dados criados por manipulação estatística</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-8').scrollIntoView({behavior:'smooth'});return false">Métodos estatísticos explicados</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-9').scrollIntoView({behavior:'smooth'});return false">Índice Digital Composto</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-10').scrollIntoView({behavior:'smooth'});return false">Correção de Bonferroni</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-11').scrollIntoView({behavior:'smooth'});return false">Fluxo completo dos dados</a></li>
+                                        <li><a href="#" onclick="document.getElementById('dd-sec-12').scrollIntoView({behavior:'smooth'});return false">Limitações e glossário</a></li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1. Visão geral -->
+                    <div class="card mb-4" id="dd-sec-1">
+                        <div class="card-header"><i class="bi bi-eye me-1"></i> 1. Visão Geral das Fontes de Dados</div>
+                        <div class="card-body">
+                            <p>A aplicação utiliza <strong>duas grandes fontes públicas</strong> de dados educacionais brasileiros, combinadas para responder à pergunta central: <em>qual é a relação entre o acesso à tecnologia e o desempenho educacional no Rio de Janeiro?</em></p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Fonte</th><th>Órgão</th><th>Ano</th><th>O que mede</th><th>Abrangência</th></tr></thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>SAEB</strong></td>
+                                            <td>INEP/MEC</td>
+                                            <td>2023</td>
+                                            <td>Desempenho dos alunos em provas padronizadas, perfil de professores, diretores e escolas</td>
+                                            <td>Nacional (todos os estados)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>TIC Educação</strong></td>
+                                            <td>CETIC.br / NIC.br</td>
+                                            <td>2023</td>
+                                            <td>Uso de tecnologia, IA e infraestrutura digital nas escolas</td>
+                                            <td>Por região (não por estado)</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-mortarboard text-primary mt-1" style="font-size:1.2em"></i>
+                                        <div>
+                                            <strong class="small">Por que o SAEB?</strong>
+                                            <p class="small mb-0">É a principal avaliação em larga escala da educação básica no Brasil. Permite medir a proficiência dos alunos e, por meio dos questionários contextuais, entender as condições de ensino.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-wifi text-primary mt-1" style="font-size:1.2em"></i>
+                                        <div>
+                                            <strong class="small">Por que a TIC Educação?</strong>
+                                            <p class="small mb-0">É a pesquisa de referência sobre tecnologia nas escolas brasileiras, incluindo indicadores sobre inteligência artificial, privacidade de dados e formação digital docente.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. SAEB -->
+                    <div class="card mb-4" id="dd-sec-2">
+                        <div class="card-header"><i class="bi bi-mortarboard me-1"></i> 2. SAEB 2023 — Microdados do Desempenho Escolar</div>
+                        <div class="card-body">
+                            <h6>2.1 Arquivos utilizados</h6>
+                            <p class="small">Os microdados do SAEB são registros individuais contendo centenas de variáveis. A aplicação utiliza:</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Arquivo</th><th>Conteúdo</th><th>Volume</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>TS_ALUNO_5EF</code></td><td>Alunos do 5º ano do Ensino Fundamental</td><td>~2,4 milhões</td></tr>
+                                        <tr><td><code>TS_ALUNO_9EF</code></td><td>Alunos do 9º ano do Ensino Fundamental</td><td>~2,5 milhões</td></tr>
+                                        <tr><td><code>TS_ALUNO_34EM</code></td><td>Alunos do Ensino Médio (3ª/4ª séries)</td><td>~2,1 milhões</td></tr>
+                                        <tr><td><code>TS_ESCOLA</code></td><td>Dados agregados por escola</td><td>~70 mil</td></tr>
+                                        <tr><td><code>TS_PROFESSOR</code></td><td>Respostas dos professores</td><td>~411 mil</td></tr>
+                                        <tr><td><code>TS_DIRETOR</code></td><td>Respostas dos diretores</td><td>~107 mil</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-4">2.2 Variáveis de proficiência</h6>
+                            <p class="small">Cada aluno possui uma nota na <strong>escala SAEB</strong> (tipicamente entre 100 e 400 pontos). Essas não são notas de 0 a 10 — são valores em uma escala contínua baseada na Teoria de Resposta ao Item (TRI) que permite comparar desempenho entre séries, anos e regiões.</p>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <div class="border rounded p-2 bg-light text-center">
+                                        <code>PROFICIENCIA_LP_SAEB</code>
+                                        <div class="small text-muted">Língua Portuguesa</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border rounded p-2 bg-light text-center">
+                                        <code>PROFICIENCIA_MT_SAEB</code>
+                                        <div class="small text-muted">Matemática</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="mt-4">2.3 Pesos amostrais</h6>
+                            <div class="alert alert-info py-2 small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                O SAEB utiliza <strong>amostragem estratificada</strong>, onde cada aluno recebe um <strong>peso</strong> que indica quantos alunos da população ele "representa". <strong>Toda média desta aplicação é ponderada</strong> por esses pesos.
+                            </div>
+                            <p class="small"><strong>Exemplo:</strong> Se um aluno tem peso 3,5, ele "vale por" 3,5 alunos na estimativa populacional. Sem os pesos, os resultados superestimariam regiões com maior cobertura amostral.</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Disciplina</th><th>Coluna de peso</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Língua Portuguesa</td><td><code>PESO_ALUNO_LP</code></td></tr>
+                                        <tr><td>Matemática</td><td><code>PESO_ALUNO_MT</code></td></tr>
+                                        <tr><td>Ciências Humanas</td><td><code>PESO_ALUNO_CH</code></td></tr>
+                                        <tr><td>Ciências da Natureza</td><td><code>PESO_ALUNO_CN</code></td></tr>
+                                        <tr><td>Indicador Socioeconômico</td><td><code>PESO_ALUNO_INSE</code></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-4">2.4 Variáveis socioeconômicas e geográficas</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Variável</th><th>Descrição</th><th>Valores</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>INSE_ALUNO</code></td><td>Índice de Nível Socioeconômico</td><td>Escala contínua (0 a ~200)</td></tr>
+                                        <tr><td><code>NU_TIPO_NIVEL_INSE</code></td><td>Nível INSE categorizado</td><td>1 (mais baixo) a 8 (mais alto)</td></tr>
+                                        <tr><td><code>IN_PUBLICA</code></td><td>Rede escolar</td><td>1 = Pública, 0 = Privada</td></tr>
+                                        <tr><td><code>ID_LOCALIZACAO</code></td><td>Localização</td><td>1 = Urbana, 2 = Rural</td></tr>
+                                        <tr><td><code>ID_UF</code></td><td>Unidade da Federação</td><td>33 = Rio de Janeiro</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-4">2.5 Acesso à tecnologia (questionário do aluno)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Código</th><th>Pergunta</th><th>Respostas</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>TX_RESP_Q12b</code></td><td>Quantos computadores há na sua casa?</td><td>A = Nenhum, B = 1, C = 2, D = 3+</td></tr>
+                                        <tr><td><code>TX_RESP_Q12g</code></td><td>Quantos celulares com internet?</td><td>A = Nenhum, B = 1, C = 2, D = 3+</td></tr>
+                                        <tr><td><code>TX_RESP_Q13a</code></td><td>Tem TV por streaming em casa?</td><td>A = Não, B = Sim</td></tr>
+                                        <tr><td><code>TX_RESP_Q13b</code></td><td>Tem Wi-Fi em casa?</td><td>A = Não, B = Sim</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-4">2.6 Questionário do professor</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Código</th><th>Pergunta</th><th>Respostas</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>TX_Q001</code></td><td>Sexo</td><td>A = Masculino, B = Feminino, C = Não declarado</td></tr>
+                                        <tr><td><code>TX_Q029</code></td><td>Contribuição da formação em tecnologia</td><td>A = Não contribuiu, B = Pouco, C = Razoavelmente, D = Muito</td></tr>
+                                        <tr><td><code>TX_Q037</code></td><td>Frequência de uso de tecnologia no ensino</td><td>A = Nunca ... E = Sempre</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-4">2.7 Questionário do diretor</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Código</th><th>Pergunta</th><th>Respostas</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>TX_Q034</code></td><td>Qualidade dos computadores da escola</td><td>A = Não tem ... E = Excelente</td></tr>
+                                        <tr><td><code>TX_Q035</code></td><td>Software educacional</td><td>A = Não tem ... E = Excelente</td></tr>
+                                        <tr><td><code>TX_Q036</code></td><td>Internet banda larga</td><td>A = Não tem ... E = Excelente</td></tr>
+                                        <tr><td><code>TX_Q194</code></td><td>Projetos de ciência/tecnologia</td><td>A = Sim, B = Não</td></tr>
+                                        <tr><td><code>TX_Q219</code></td><td>Novas tecnologias educacionais</td><td>A = Sim, B = Não</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-4">2.8 Dados agregados por escola</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Coluna</th><th>Descrição</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>MEDIA_5EF_LP</code>, <code>MEDIA_5EF_MT</code></td><td>Proficiência média dos alunos do 5º ano (LP e MT)</td></tr>
+                                        <tr><td><code>MEDIA_9EF_LP</code>, <code>MEDIA_9EF_MT</code></td><td>Proficiência média dos alunos do 9º ano (LP e MT)</td></tr>
+                                        <tr><td><code>PC_FORMACAO_DOCENTE_INICIAL</code></td><td>% de professores com formação adequada</td></tr>
+                                        <tr><td><code>NIVEL_0_LP5</code> a <code>NIVEL_9_LP5</code></td><td>% de alunos em cada nível de proficiência</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. TIC Educação -->
+                    <div class="card mb-4" id="dd-sec-3">
+                        <div class="card-header"><i class="bi bi-wifi me-1"></i> 3. TIC Educação 2023 — Tecnologia nas Escolas</div>
+                        <div class="card-body">
+                            <div class="alert alert-warning py-2 small">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                <strong>Importante:</strong> Os dados da TIC Educação são disponibilizados <strong>por região</strong>, não por estado. Na aplicação, utilizamos os dados da <strong>região Sudeste</strong> como proxy para o Rio de Janeiro.
+                            </div>
+
+                            <h6>Indicadores de Infraestrutura (A1–A8)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Indicador</th><th>O que mede</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>A1</td><td>% de escolas com computador</td></tr>
+                                        <tr><td>A2</td><td>% com portátil disponível para alunos</td></tr>
+                                        <tr><td>A3</td><td>% com tablet disponível para alunos</td></tr>
+                                        <tr><td>A4</td><td>% com acesso à internet</td></tr>
+                                        <tr><td>A5</td><td>% com banda larga</td></tr>
+                                        <tr><td>A6</td><td>% com Wi-Fi</td></tr>
+                                        <tr><td>A7</td><td>% com projetor</td></tr>
+                                        <tr><td>A8</td><td>% com lousa digital</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-3">Indicadores de IA e Sistemas de Dados (E4A, E4B, E5, E6, F6)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Indicador</th><th>O que mede</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>E4A</td><td>% de escolas usando biometria</td></tr>
+                                        <tr><td>E4B</td><td>% usando reconhecimento facial</td></tr>
+                                        <tr><td>E5</td><td>% usando analytics / learning analytics</td></tr>
+                                        <tr><td>E6</td><td>% usando sistemas de inteligência artificial</td></tr>
+                                        <tr><td>F6</td><td>% usando chatbot</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-3">Formação Digital Docente (J1–J4)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Indicador</th><th>O que mede</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>J1</td><td>% de escolas com formação em programação</td></tr>
+                                        <tr><td>J2</td><td>% com formação em robótica</td></tr>
+                                        <tr><td>J3</td><td>% com formação em uso pedagógico de TIC</td></tr>
+                                        <tr><td>J4</td><td>% com formação em segurança online</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-3">Privacidade e Ética (H1–H7)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Indicador</th><th>O que mede</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>H1</td><td>% de escolas com política de privacidade</td></tr>
+                                        <tr><td>H3</td><td>% que promovem debate sobre privacidade</td></tr>
+                                        <tr><td>H4</td><td>% que obtêm consentimento para uso de dados</td></tr>
+                                        <tr><td>H5</td><td>% com proteção de dados implementada</td></tr>
+                                        <tr><td>H6</td><td>% que não adotaram medidas de privacidade</td></tr>
+                                        <tr><td>H7</td><td>% com preocupação com privacidade</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <p class="small text-muted mt-3 mb-0"><strong>Filtros aplicados:</strong> <code>tipo = 'proporcao'</code> (proporção, não contagem absoluta) e <code>valor_corte = 'TOTAL'</code> (total geral, sem subdivisão).</p>
+                        </div>
+                    </div>
+
+                    <!-- 4. ETL -->
+                    <div class="card mb-4" id="dd-sec-4">
+                        <div class="card-header"><i class="bi bi-gear me-1"></i> 4. Como os Dados São Processados (ETL)</div>
+                        <div class="card-body">
+                            <p class="small"><strong>ETL</strong> significa <em>Extract, Transform, Load</em> (Extrair, Transformar, Carregar) — é o processo que transforma os dados brutos em tabelas prontas para consulta.</p>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="card border-primary h-100">
+                                        <div class="card-body text-center py-3">
+                                            <i class="bi bi-box-arrow-in-down text-primary" style="font-size:2em"></i>
+                                            <h6 class="mt-2 mb-1">1. Extração</h6>
+                                            <p class="small text-muted mb-0">Dados brutos (CSV, XLSX) das fontes oficiais</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-warning h-100">
+                                        <div class="card-body text-center py-3">
+                                            <i class="bi bi-arrow-repeat text-warning" style="font-size:2em"></i>
+                                            <h6 class="mt-2 mb-1">2. Transformação</h6>
+                                            <p class="small text-muted mb-0">Conversão para Parquet + pré-computação de 17 tabelas agregadas no DuckDB</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-success h-100">
+                                        <div class="card-body text-center py-3">
+                                            <i class="bi bi-lightning-charge text-success" style="font-size:2em"></i>
+                                            <h6 class="mt-2 mb-1">3. Carregamento</h6>
+                                            <p class="small text-muted mb-0">Consultas em milissegundos via API FastAPI</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6>Tabelas pré-computadas</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Tabela</th><th>Conteúdo</th><th>Tipo</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><code>kpi_rj</code></td><td>Totais de alunos e médias gerais do RJ</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>kpi_escolas_rj</code></td><td>Contagem de escolas (total, públicas, privadas)</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>prof_by_uf_serie_disc</code></td><td>Proficiência por UF, série e disciplina</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>prof_niveis_rj</code></td><td>Distribuição por nível de proficiência (RJ)</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>quest_aluno_rj</code></td><td>Respostas dos questionários dos alunos</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>quest_professor_rj</code></td><td>Respostas dos questionários dos professores</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>quest_diretor_rj</code></td><td>Respostas dos questionários dos diretores</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>tic_indicadores</code></td><td>Indicadores TIC Educação</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>prof_by_inse</code></td><td>Proficiência por nível socioeconômico (RJ)</td><td><span class="badge bg-warning text-dark">Cruzamento</span></td></tr>
+                                        <tr><td><code>prof_by_location_rj</code></td><td>Proficiência urbana vs. rural (RJ)</td><td><span class="badge bg-warning text-dark">Cruzamento</span></td></tr>
+                                        <tr><td><code>escola_formacao_rj</code></td><td>Formação docente vs. proficiência</td><td><span class="badge bg-warning text-dark">Cruzamento</span></td></tr>
+                                        <tr><td><code>escola_inse_rj</code></td><td>INSE da escola vs. proficiência</td><td><span class="badge bg-warning text-dark">Cruzamento</span></td></tr>
+                                        <tr><td><code>cross_aluno_tech_rj</code></td><td>Tecnologia do aluno vs. proficiência</td><td><span class="badge bg-danger">Estatístico</span></td></tr>
+                                        <tr><td><code>cross_diretor_tech_rj</code></td><td>Infraestrutura (diretor) vs. proficiência</td><td><span class="badge bg-danger">Estatístico</span></td></tr>
+                                        <tr><td><code>cross_professor_tech_rj</code></td><td>Formação do professor vs. proficiência</td><td><span class="badge bg-danger">Estatístico</span></td></tr>
+                                        <tr><td><code>cross_digital_index_rj</code></td><td>Índice digital composto vs. proficiência</td><td><span class="badge bg-danger">Estatístico</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mt-4">A média ponderada — operação fundamental</h6>
+                            <p class="small">A operação mais importante de toda a aplicação. Em vez de simplesmente somar e dividir, cada valor é multiplicado pelo seu peso:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="\bar{x}_w = \frac{\displaystyle\sum_{i=1}^{n} w_i \cdot x_i}{\displaystyle\sum_{i=1}^{n} w_i}"></span></div>
+
+                            <div class="card bg-light mb-0">
+                                <div class="card-body py-2">
+                                    <strong class="small">Exemplo concreto:</strong>
+                                    <div class="table-responsive mt-2">
+                                        <table class="table table-sm table-bordered mb-2" style="max-width:400px">
+                                            <thead class="table-light"><tr><th>Aluno</th><th>Proficiência</th><th>Peso</th></tr></thead>
+                                            <tbody>
+                                                <tr><td>Ana</td><td>200</td><td>2,0</td></tr>
+                                                <tr><td>Bruno</td><td>250</td><td>1,5</td></tr>
+                                                <tr><td>Clara</td><td>180</td><td>3,0</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p class="small mb-1"><strong>Média simples:</strong> (200 + 250 + 180) / 3 = <strong>210,0</strong></p>
+                                    <p class="small mb-0"><strong>Média ponderada:</strong> (200&times;2,0 + 250&times;1,5 + 180&times;3,0) / (2,0 + 1,5 + 3,0) = <strong>202,3</strong></p>
+                                    <p class="small text-muted mb-0 mt-1">A média ponderada é menor porque Clara (nota mais baixa) tem o maior peso — ela "representa" mais alunos.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Dados descritivos -->
+                    <div class="card mb-4" id="dd-sec-5">
+                        <div class="card-header"><i class="bi bi-bar-chart me-1"></i> 5. Dados Apresentados Diretamente (Descritivos)</div>
+                        <div class="card-body">
+                            <p class="small">Dados que vêm das fontes originais e são exibidos <strong>sem transformação estatística complexa</strong> — apenas contagens, médias e proporções.</p>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small"><i class="bi bi-speedometer2 me-1 text-primary"></i> Visão Geral (KPIs)</h6>
+                                            <p class="small mb-0">Total de alunos por série, total de escolas, médias de proficiência em LP e MT. Médias ponderadas diretas dos microdados.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small"><i class="bi bi-sort-numeric-down me-1 text-primary"></i> Ranking por UF</h6>
+                                            <p class="small mb-0">Média ponderada de proficiência por estado, permitindo visualizar a posição do RJ no cenário nacional.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small"><i class="bi bi-layers me-1 text-primary"></i> Níveis de proficiência</h6>
+                                            <p class="small mb-0">% de alunos em cada nível (0 a 9/10). Cada nível corresponde a habilidades dominadas. Dados da tabela <code>TS_ESCOLA</code>, pré-calculados pelo INEP.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small"><i class="bi bi-people me-1 text-primary"></i> Perfil dos professores</h6>
+                                            <p class="small mb-0">Contagens diretas das respostas ao questionário contextual: sexo, contribuição da formação em tecnologia, adequação dos computadores.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small"><i class="bi bi-wifi me-1 text-primary"></i> Indicadores TIC</h6>
+                                            <p class="small mb-0">Proporções exibidas diretamente como informadas pela TIC Educação — ex: "92,4% das escolas do Sudeste possuem computador".</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Cruzamentos -->
+                    <div class="card mb-4" id="dd-sec-6">
+                        <div class="card-header"><i class="bi bi-diagram-3 me-1"></i> 6. Dados Cruzados (Análises Comparativas)</div>
+                        <div class="card-body">
+                            <p class="small">Dados que <strong>combinam duas variáveis</strong> para responder a perguntas do tipo: <em>"Alunos com acesso a X têm desempenho diferente de alunos sem acesso?"</em></p>
+
+                            <div class="accordion" id="accCross">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cross1"><small><strong>6.1 Lacuna Pública vs. Privada</strong></small></button></h2>
+                                    <div id="cross1" class="accordion-collapse collapse" data-bs-parent="#accCross">
+                                        <div class="accordion-body small">
+                                            <p>Separam-se os alunos por <code>IN_PUBLICA</code>, calcula-se a média ponderada para cada grupo e a <strong>lacuna</strong> é a subtração:</p>
+                                            <div class="text-center my-2"><span class="katex-formula" data-formula="\text{Lacuna} = \bar{x}_{privada} - \bar{x}_{pública}"></span></div>
+                                            <p class="mb-0">Teste aplicado: <strong>t de Welch</strong> + <strong>Cohen's d</strong>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cross2"><small><strong>6.2 Proficiência por nível socioeconômico (INSE)</strong></small></button></h2>
+                                    <div id="cross2" class="accordion-collapse collapse" data-bs-parent="#accCross">
+                                        <div class="accordion-body small">
+                                            <p>Alunos agrupados por nível INSE (1 a 8) com média ponderada por nível, mais <strong>correlação de Pearson</strong> entre INSE contínuo e proficiência.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cross3"><small><strong>6.3 Proficiência urbana vs. rural</strong></small></button></h2>
+                                    <div id="cross3" class="accordion-collapse collapse" data-bs-parent="#accCross">
+                                        <div class="accordion-body small">
+                                            <p>Separação por <code>ID_LOCALIZACAO</code> (1 = Urbana, 2 = Rural). A lacuna é calculada e testada com <strong>t de Welch</strong> + <strong>Cohen's d</strong>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cross4"><small><strong>6.4 Formação docente vs. proficiência</strong></small></button></h2>
+                                    <div id="cross4" class="accordion-collapse collapse" data-bs-parent="#accCross">
+                                        <div class="accordion-body small">
+                                            <p>Para cada escola do RJ, cruza-se <code>PC_FORMACAO_DOCENTE_INICIAL</code> com a proficiência média. O gráfico de dispersão mostra a relação, com <strong>linha de tendência</strong> (regressão linear) e <strong>Pearson r</strong>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cross5"><small><strong>6.5 Tecnologia do aluno vs. proficiência</strong></small></button></h2>
+                                    <div id="cross5" class="accordion-collapse collapse" data-bs-parent="#accCross">
+                                        <div class="accordion-body small">
+                                            <p>Para cada variável de tecnologia (computador, Wi-Fi, celular, streaming), compara-se a proficiência média entre os grupos de resposta.</p>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered mb-2" style="max-width:350px">
+                                                    <thead class="table-light"><tr><th>Grupo</th><th>Proficiência</th></tr></thead>
+                                                    <tbody>
+                                                        <tr><td>Sem Wi-Fi (A)</td><td>195,3</td></tr>
+                                                        <tr><td>Com Wi-Fi (B)</td><td>218,7</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <p class="mb-0">A diferença de 23,4 pontos é testada estatisticamente (t de Welch).</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header"><button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cross6"><small><strong>6.6 Infraestrutura escolar (diretor) e formação do professor</strong></small></button></h2>
+                                    <div id="cross6" class="accordion-collapse collapse" data-bs-parent="#accCross">
+                                        <div class="accordion-body small">
+                                            <p>Respostas dos diretores sobre tecnologia na escola cruzadas com a proficiência média (join via <code>ID_ESCOLA</code>). Respostas dos professores cruzadas com a proficiência dos seus alunos (join via <code>ID_TURMA</code>).</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 7. Dados criados -->
+                    <div class="card mb-4" id="dd-sec-7">
+                        <div class="card-header"><i class="bi bi-cpu me-1"></i> 7. Dados Criados por Manipulação Estatística</div>
+                        <div class="card-body">
+                            <p class="small">Dados que <strong>não existem diretamente nas fontes originais</strong> — são construídos pela aplicação por meio de cálculos e transformações.</p>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card border-danger h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small text-danger"><i class="bi bi-calculator me-1"></i> Índice Digital Composto (0–8)</h6>
+                                            <p class="small mb-0">Combina 4 perguntas do questionário do aluno em um único índice numérico. Classificado em faixas: Baixo, Médio, Alto. Veja <a href="#" onclick="document.getElementById('dd-sec-9').scrollIntoView({behavior:'smooth'});return false">seção 9</a>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-danger h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small text-danger"><i class="bi bi-arrows-expand me-1"></i> Intervalos de confiança</h6>
+                                            <p class="small mb-0">Faixa que indica onde provavelmente está o verdadeiro valor da população, com 95% de confiança.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-danger h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small text-danger"><i class="bi bi-rulers me-1"></i> Tamanho de efeito (Cohen's d)</h6>
+                                            <p class="small mb-0">Expressa a magnitude prática de uma diferença, independentemente do tamanho da amostra.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-danger h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small text-danger"><i class="bi bi-graph-up me-1"></i> Correlações e p-valores</h6>
+                                            <p class="small mb-0">Coeficientes de Pearson (r), estatísticas t e F, e todos os p-valores — calculados a partir dos dados brutos.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-danger h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small text-danger"><i class="bi bi-graph-up-arrow me-1"></i> Linha de tendência</h6>
+                                            <p class="small mb-0">Regressão linear simples calculada no frontend para o gráfico formação × proficiência.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-danger h-100">
+                                        <div class="card-body py-2">
+                                            <h6 class="small text-danger"><i class="bi bi-table me-1"></i> Resumo dos 11 cruzamentos</h6>
+                                            <p class="small mb-0">Tabela que executa 11 análises (4 aluno + 5 diretor + 2 professor), ordenadas por tamanho de efeito, com correção de Bonferroni.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Métodos estatísticos -->
+                    <div class="card mb-4" id="dd-sec-8">
+                        <div class="card-header"><i class="bi bi-calculator me-1"></i> 8. Métodos Estatísticos Explicados</div>
+                        <div class="card-body">
+
+                            <!-- 8.1 IC -->
+                            <h5 class="mt-2">8.1 Intervalo de confiança</h5>
+                            <p class="small">Quando calculamos a proficiência média a partir de uma amostra, estamos <em>estimando</em> a média real da população. O intervalo de confiança nos diz: <em>"temos 95% de confiança de que a verdadeira média está entre X e Y."</em></p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="IC_{95\%} = \bar{x}_w \pm t_{\alpha/2,\,\text{gl}} \times EP"></span></div>
+                            <p class="small">Onde o erro padrão (EP) é:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="EP = \sqrt{s_w^2 \cdot \frac{\sum w_i^2}{\left(\sum w_i\right)^2}}"></span></div>
+                            <div class="card bg-light mb-3">
+                                <div class="card-body py-2 small">
+                                    <strong>Exemplo:</strong> Se a proficiência média de LP no 9º ano do RJ é 245,3 com IC [243,1 ; 247,5], isso significa: "estimamos que a verdadeira média da população está entre 243,1 e 247,5 pontos, com 95% de confiança."
+                                </div>
+                            </div>
+                            <p class="small"><strong>Efeito do desenho amostral (DEFF):</strong> O SAEB usa amostragem estratificada, não simples. O DEFF mede quanto a variância é inflada pelo desenho. Quando DEFF &gt; 1, os intervalos ficam mais largos para refletir a incerteza adicional.</p>
+
+                            <hr>
+
+                            <!-- 8.2 Teste t -->
+                            <h5>8.2 Teste t de Welch</h5>
+                            <p class="small">Responde: <em>"a diferença observada entre dois grupos é grande o suficiente para não ser atribuída ao acaso?"</em> Usado sempre que comparamos dois grupos (públicas vs. privadas, com vs. sem Wi-Fi, etc.).</p>
+
+                            <h6 class="small mt-3">Passo a passo:</h6>
+                            <ol class="small">
+                                <li>Calcular a média e a variância ponderada de cada grupo</li>
+                                <li>Calcular a diferença das médias</li>
+                                <li>Calcular o erro padrão da diferença:
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="EP = \sqrt{EP_1^2 + EP_2^2} \quad \text{onde} \quad EP_g = \sqrt{s_{w,g}^2 \cdot \frac{\sum w_{g,i}^2}{\left(\sum w_{g,i}\right)^2}}"></span></div>
+                                </li>
+                                <li>Calcular a estatística t:
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="t = \frac{\bar{x}_{w,1} - \bar{x}_{w,2}}{EP}"></span></div>
+                                </li>
+                                <li>Calcular os graus de liberdade (fórmula de Welch-Satterthwaite):
+                                    <div class="text-center my-2"><span class="katex-formula" data-formula="\text{gl} = \frac{\left(EP_1^2 + EP_2^2\right)^2}{\dfrac{EP_1^4}{n_1 - 1} + \dfrac{EP_2^4}{n_2 - 1}}"></span></div>
+                                </li>
+                                <li>Calcular o p-valor (bicaudal): a probabilidade de observar uma diferença tão grande se não houvesse diferença real.</li>
+                            </ol>
+
+                            <div class="alert alert-secondary py-2 small">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <strong>Interpretação do p-valor:</strong>
+                                <span class="katex-formula" data-formula="p < 0{,}05" data-inline="true"></span> = significativo (improvável por acaso);
+                                <span class="katex-formula" data-formula="p < 0{,}001" data-inline="true"></span> = altamente significativo;
+                                <span class="katex-formula" data-formula="p \geq 0{,}05" data-inline="true"></span> = não se pode afirmar diferença real.
+                            </div>
+
+                            <div class="alert alert-warning py-2 small">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                <strong>Cuidado:</strong> Um p-valor pequeno não diz nada sobre a <em>magnitude</em> da diferença. Uma diferença de 0,5 pontos pode ser significativa com milhões de alunos, mas ser irrelevante na prática. Por isso a aplicação calcula também o d de Cohen.
+                            </div>
+
+                            <hr>
+
+                            <!-- 8.3 Cohen's d -->
+                            <h5>8.3 Tamanho de efeito (d de Cohen)</h5>
+                            <p class="small">Mede a <strong>magnitude prática</strong> de uma diferença entre dois grupos. Enquanto o p-valor diz <em>se</em> a diferença é significativa, o d de Cohen diz <em>se ela é grande o suficiente para importar</em>.</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="d = \frac{\bar{x}_{w,1} - \bar{x}_{w,2}}{s_{\text{pooled}}}"></span></div>
+                            <p class="small">Onde a variância combinada (pooled) é:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="s_{\text{pooled}} = \sqrt{\frac{(\Sigma w_1 - 1) \cdot s_{w,1}^2 + (\Sigma w_2 - 1) \cdot s_{w,2}^2}{\Sigma w_1 + \Sigma w_2 - 2}}"></span></div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered" style="max-width:500px">
+                                    <thead class="table-light"><tr><th>|d|</th><th>Classificação</th><th>Significado prático</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>&lt; 0,2</td><td><span class="badge bg-secondary">Insignificante</span></td><td>Diferença negligenciável</td></tr>
+                                        <tr><td>0,2 – 0,5</td><td><span class="badge bg-info text-dark">Pequeno</span></td><td>Diferença perceptível, mas modesta</td></tr>
+                                        <tr><td>0,5 – 0,8</td><td><span class="badge bg-warning text-dark">Médio</span></td><td>Diferença substantiva</td></tr>
+                                        <tr><td>&gt; 0,8</td><td><span class="badge bg-danger">Grande</span></td><td>Diferença muito expressiva</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="card bg-light mb-3">
+                                <div class="card-body py-2 small">
+                                    <strong>Exemplo:</strong> Se d = 0,45 na comparação com/sem Wi-Fi, a diferença equivale a quase metade de um desvio padrão — um efeito <strong>pequeno a médio</strong>, perceptível mas não dramático.
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <!-- 8.4 ANOVA -->
+                            <h5>8.4 ANOVA (Análise de Variância)</h5>
+                            <p class="small">Enquanto o teste t compara <strong>dois</strong> grupos, a ANOVA compara <strong>três ou mais</strong>. Responde: <em>"há pelo menos um grupo significativamente diferente dos demais?"</em> Usada quando a variável tem múltiplas categorias (ex: "computadores na escola" com respostas A a E).</p>
+
+                            <p class="small">A ANOVA decompõe a variação total em duas partes:</p>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2 text-center">
+                                            <strong class="small">Variação <em>entre</em> grupos</strong>
+                                            <div class="my-2"><span class="katex-formula" data-formula="SS_{\text{entre}} = \sum_g \left[\Sigma w_g \cdot \left(\bar{x}_g - \bar{x}_{\text{geral}}\right)^2\right]"></span></div>
+                                            <p class="small text-muted mb-0">Quanto as médias dos grupos diferem da média geral</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2 text-center">
+                                            <strong class="small">Variação <em>dentro</em> dos grupos</strong>
+                                            <div class="my-2"><span class="katex-formula" data-formula="SS_{\text{dentro}} = \sum_g \sum_i w_i \cdot \left(x_i - \bar{x}_g\right)^2"></span></div>
+                                            <p class="small text-muted mb-0">Quanto os indivíduos variam dentro de cada grupo</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="small">A estatística F é a razão entre as variações:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="F = \frac{SS_{\text{entre}} \,/\, (k - 1)}{SS_{\text{dentro}} \,/\, (N - k)} = \frac{MS_{\text{entre}}}{MS_{\text{dentro}}}"></span></div>
+                            <p class="small">Se F é grande, a variação entre os grupos é muito maior do que dentro deles — os grupos são genuinamente diferentes. Se F &asymp; 1, as diferenças são comparáveis à variação natural (sem efeito).</p>
+
+                            <hr>
+
+                            <!-- 8.5 Pearson -->
+                            <h5>8.5 Correlação de Pearson (ponderada)</h5>
+                            <p class="small">Mede a <strong>força e direção</strong> da relação linear entre duas variáveis numéricas. O valor r varia de &minus;1 a +1.</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="r_w = \frac{\displaystyle\sum w_i (x_i - \bar{x}_w)(y_i - \bar{y}_w)}{\sqrt{\displaystyle\sum w_i (x_i - \bar{x}_w)^2 \;\cdot\; \sum w_i (y_i - \bar{y}_w)^2}}"></span></div>
+
+                            <p class="small">Para testar se r é significativamente diferente de zero:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="t = \frac{r \cdot \sqrt{n - 2}}{\sqrt{1 - r^2}} \qquad \text{p-valor bicaudal com } (n-2) \text{ g.l.}"></span></div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered" style="max-width:400px">
+                                    <thead class="table-light"><tr><th>|r|</th><th>Interpretação</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>0,0 – 0,1</td><td>Negligenciável</td></tr>
+                                        <tr><td>0,1 – 0,3</td><td>Fraca</td></tr>
+                                        <tr><td>0,3 – 0,5</td><td>Moderada</td></tr>
+                                        <tr><td>0,5 – 0,7</td><td>Forte</td></tr>
+                                        <tr><td>0,7 – 1,0</td><td>Muito forte</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="alert alert-danger py-2 small">
+                                <i class="bi bi-exclamation-octagon me-1"></i>
+                                <strong>Correlação &ne; causalidade!</strong> O fato de alunos com mais tecnologia terem melhores notas não significa que a tecnologia <em>causou</em> as melhores notas. O nível socioeconômico é um <strong>fator confundidor</strong>: famílias mais ricas têm mais tecnologia E melhores condições de estudo. Por isso a aplicação oferece a <strong>estratificação por INSE</strong>.
+                            </div>
+
+                            <hr>
+
+                            <!-- 8.6 Regressão Linear -->
+                            <h5>8.6 Regressão linear simples</h5>
+                            <p class="small">No gráfico de formação docente vs. proficiência, a linha de tendência é calculada por regressão linear — encontrando a reta que melhor descreve a relação:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="y = a \cdot x + b"></span></div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="text-center"><span class="katex-formula" data-formula="a = \frac{n \sum x_i y_i - \sum x_i \sum y_i}{n \sum x_i^2 - \left(\sum x_i\right)^2}"></span></div>
+                                    <p class="small text-center text-muted">Inclinação (slope)</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center"><span class="katex-formula" data-formula="b = \frac{\sum y_i - a \sum x_i}{n}"></span></div>
+                                    <p class="small text-center text-muted">Intercepto</p>
+                                </div>
+                            </div>
+                            <p class="small">Se a reta sobe (inclinação positiva), mais formação tende a estar associada a maior proficiência. Se é quase horizontal, não há relação clara.</p>
+                        </div>
+                    </div>
+
+                    <!-- 9. Índice Digital -->
+                    <div class="card mb-4" id="dd-sec-9">
+                        <div class="card-header"><i class="bi bi-phone me-1"></i> 9. Índice Digital Composto</div>
+                        <div class="card-body">
+                            <p class="small">As quatro perguntas sobre tecnologia medem aspectos diferentes do acesso digital. Combiná-las em um único índice permite uma visão completa: <em>qual o nível geral de acesso digital do aluno?</em></p>
+
+                            <h6>Construção do índice</h6>
+                            <p class="small">Cada resposta é convertida em valor numérico e somada:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="I_{\text{digital}} = Q12b_{(0\text{-}3)} + Q12g_{(0\text{-}3)} + Q13a_{(0\text{-}1)} + Q13b_{(0\text{-}1)} \;\in\; [0,\; 8]"></span></div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light"><tr><th>Pergunta</th><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Q12b (computadores)</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+                                        <tr><td>Q12g (celulares c/ internet)</td><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+                                        <tr><td>Q13a (streaming)</td><td>0</td><td>1</td><td>—</td><td>—</td></tr>
+                                        <tr><td>Q13b (Wi-Fi)</td><td>0</td><td>1</td><td>—</td><td>—</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="card bg-light mb-3">
+                                <div class="card-body py-2 small">
+                                    <strong>Exemplo:</strong> Aluno com 1 computador (B=1), 2 celulares com internet (C=2), sem streaming (A=0), com Wi-Fi (B=1):<br>
+                                    <span class="katex-formula" data-formula="I = 1 + 2 + 0 + 1 = 4 \;\to\; \text{Faixa Médio}" data-inline="true"></span>
+                                </div>
+                            </div>
+
+                            <h6>Faixas interpretativas</h6>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <div class="card border-danger text-center py-2">
+                                        <strong class="text-danger">Baixo (0–2)</strong>
+                                        <p class="small mb-0">Acesso digital muito limitado</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-warning text-center py-2">
+                                        <strong class="text-warning">Médio (3–5)</strong>
+                                        <p class="small mb-0">Acesso parcial</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-success text-center py-2">
+                                        <strong class="text-success">Alto (6–8)</strong>
+                                        <p class="small mb-0">Acesso amplo a tecnologias</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="mt-3">Análises realizadas com o índice</h6>
+                            <ol class="small">
+                                <li>Média de proficiência para cada valor (0, 1, 2, ..., 8)</li>
+                                <li>Correlação de Pearson entre o índice e a proficiência</li>
+                                <li>Médias por faixa (Baixo, Médio, Alto)</li>
+                                <li>Estratificação por INSE para controlar o efeito socioeconômico</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- 10. Bonferroni -->
+                    <div class="card mb-4" id="dd-sec-10">
+                        <div class="card-header"><i class="bi bi-shield-check me-1"></i> 10. Correção para Comparações Múltiplas (Bonferroni)</div>
+                        <div class="card-body">
+                            <h6>O problema</h6>
+                            <p class="small">Quando realizamos muitos testes simultaneamente, a chance de encontrar um resultado "significativo" por acaso aumenta. Com 11 testes e &alpha; = 0,05:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="P(\text{ao menos 1 falso positivo}) = 1 - (1 - 0{,}05)^{11} \approx 43\%"></span></div>
+                            <p class="small">Quase metade das vezes encontraríamos pelo menos um resultado "significativo" que na verdade é falso!</p>
+
+                            <h6>A solução</h6>
+                            <p class="small">A correção de Bonferroni divide o nível de significância pelo número de testes:</p>
+                            <div class="text-center my-3"><span class="katex-formula" data-formula="\alpha_{\text{ajustado}} = \frac{0{,}05}{11} \approx 0{,}0045"></span></div>
+
+                            <h6>Na aplicação</h6>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <div class="border rounded p-2 text-center">
+                                        <span class="badge bg-success">Sim</span>
+                                        <p class="small mb-0 mt-1">Significativo após Bonferroni<br>(<span class="katex-formula" data-formula="p < \alpha_{\text{ajustado}}" data-inline="true"></span>)</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="border rounded p-2 text-center">
+                                        <span class="badge bg-warning text-dark">*</span>
+                                        <p class="small mb-0 mt-1">Significativo convencional<br>(<span class="katex-formula" data-formula="p < 0{,}05" data-inline="true"></span> mas <span class="katex-formula" data-formula="p > \alpha_{\text{ajustado}}" data-inline="true"></span>)</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="border rounded p-2 text-center">
+                                        <span class="badge bg-secondary">Não</span>
+                                        <p class="small mb-0 mt-1">Não significativo<br>(<span class="katex-formula" data-formula="p \geq 0{,}05" data-inline="true"></span>)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 11. Fluxo dos dados -->
+                    <div class="card mb-4" id="dd-sec-11">
+                        <div class="card-header"><i class="bi bi-diagram-2 me-1"></i> 11. Fluxo Completo dos Dados</div>
+                        <div class="card-body">
+                            <div class="row g-0 text-center">
+                                <!-- Fontes -->
+                                <div class="col-12 mb-3">
+                                    <div class="card border-primary">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-primary mb-2"><i class="bi bi-cloud-download me-1"></i> Fontes Originais</h6>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <strong class="small">SAEB 2023 (INEP/MEC)</strong>
+                                                    <p class="small mb-0 text-muted">~9 milhões de alunos, ~411 mil professores, ~107 mil diretores, ~70 mil escolas</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <strong class="small">TIC Educação 2023 (CETIC.br)</strong>
+                                                    <p class="small mb-0 text-muted">69 indicadores, região Sudeste</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-2"><i class="bi bi-arrow-down" style="font-size:1.5em;color:var(--clr-primary)"></i></div>
+                                <!-- ETL -->
+                                <div class="col-12 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-warning mb-2"><i class="bi bi-gear me-1"></i> Conversão e Pré-computação</h6>
+                                            <p class="small mb-0">CSV/XLSX &rarr; Parquet &rarr; 17 tabelas agregadas no DuckDB</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-2"><i class="bi bi-arrow-down" style="font-size:1.5em;color:var(--clr-primary)"></i></div>
+                                <!-- API -->
+                                <div class="col-12 mb-3">
+                                    <div class="card border-success">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-success mb-2"><i class="bi bi-hdd-network me-1"></i> API (FastAPI)</h6>
+                                            <div class="row g-1 small">
+                                                <div class="col-md-4"><code>/saeb/*</code> — Proficiência, equidade, professores, questionários</div>
+                                                <div class="col-md-4"><code>/tic/*</code> — Indicadores de tecnologia nas escolas</div>
+                                                <div class="col-md-4"><code>/cross/*</code> — Cruzamentos tech &times; desempenho com testes estatísticos</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-2"><i class="bi bi-arrow-down" style="font-size:1.5em;color:var(--clr-primary)"></i></div>
+                                <!-- Dashboard -->
+                                <div class="col-12">
+                                    <div class="card border-info">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-info mb-2"><i class="bi bi-display me-1"></i> Dashboard Interativo</h6>
+                                            <p class="small mb-0">Gráficos ECharts (barras, dispersão, forest plot, linhas) + cálculos no frontend (regressão linear, Pearson r)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 12. Limitações e Glossário -->
+                    <div class="card mb-4" id="dd-sec-12">
+                        <div class="card-header"><i class="bi bi-exclamation-diamond me-1"></i> 12. Limitações e Cuidados na Interpretação</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-arrow-repeat text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Correlação &ne; Causalidade</strong>
+                                            <p class="small mb-0">Associações não provam causas. Alunos com Wi-Fi têm notas mais altas, mas famílias com mais recursos financeiros têm mais chance de ter Wi-Fi E melhores condições de estudo.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-geo-alt text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">TIC por região, não por estado</strong>
+                                            <p class="small mb-0">Os dados de tecnologia da TIC Educação são para a região Sudeste (SP, MG, ES, RJ). Os valores específicos do RJ podem diferir.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-building text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Escola vs. indivíduo</strong>
+                                            <p class="small mb-0">Análises em nível de escola tendem a mostrar correlações mais fortes (suavizam variação individual) — fenômeno chamado <em>falácia ecológica</em>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-chat-left-dots text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Respostas autodeclaradas</strong>
+                                            <p class="small mb-0">Dados de questionários estão sujeitos a vieses de resposta social e erros de interpretação.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-rulers text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Significância vs. relevância prática</strong>
+                                            <p class="small mb-0">Com milhões de alunos, até diferenças minúsculas podem ser "significativas". O d de Cohen complementa o p-valor mostrando a magnitude real.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <i class="bi bi-layers text-warning mt-1"></i>
+                                        <div>
+                                            <strong class="small">Bonferroni é conservador</strong>
+                                            <p class="small mb-0">A correção reduz falsos positivos, mas pode deixar de detectar efeitos reais (falsos negativos).</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Glossário -->
+                    <div class="card mb-4">
+                        <div class="card-header"><i class="bi bi-journal-text me-1"></i> Glossário de Termos Técnicos</div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-striped">
+                                    <thead class="table-light"><tr><th style="width:25%">Termo</th><th>Significado</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><strong>ANOVA</strong></td><td>Análise de Variância — teste que compara médias de 3 ou mais grupos</td></tr>
+                                        <tr><td><strong>Bonferroni</strong></td><td>Correção que ajusta o nível de significância quando múltiplos testes são realizados</td></tr>
+                                        <tr><td><strong>Cohen's d</strong></td><td>Medida do tamanho de efeito — diferença entre dois grupos em unidades de desvio padrão</td></tr>
+                                        <tr><td><strong>Correlação de Pearson (r)</strong></td><td>Força e direção da relação linear entre duas variáveis (&minus;1 a +1)</td></tr>
+                                        <tr><td><strong>DEFF</strong></td><td>Design Effect — fator que ajusta intervalos de confiança para amostragens complexas</td></tr>
+                                        <tr><td><strong>Desvio padrão</strong></td><td>Medida de dispersão — quanto os valores se afastam da média</td></tr>
+                                        <tr><td><strong>ETL</strong></td><td>Extract, Transform, Load — processo de preparação dos dados</td></tr>
+                                        <tr><td><strong>Estatística F</strong></td><td>Razão entre variação entre/dentro de grupos (usada na ANOVA)</td></tr>
+                                        <tr><td><strong>Graus de liberdade</strong></td><td>Parâmetro que reflete o tamanho efetivo da amostra</td></tr>
+                                        <tr><td><strong>INSE</strong></td><td>Indicador de Nível Socioeconômico do aluno</td></tr>
+                                        <tr><td><strong>Intervalo de confiança</strong></td><td>Faixa de valores onde provavelmente está o verdadeiro parâmetro</td></tr>
+                                        <tr><td><strong>Lacuna (gap)</strong></td><td>Diferença de proficiência entre dois grupos</td></tr>
+                                        <tr><td><strong>Média ponderada</strong></td><td>Média que leva em conta o peso de cada observação</td></tr>
+                                        <tr><td><strong>Microdados</strong></td><td>Registros individuais de uma pesquisa</td></tr>
+                                        <tr><td><strong>p-valor</strong></td><td>Probabilidade de observar os dados se não houvesse efeito real</td></tr>
+                                        <tr><td><strong>Peso amostral</strong></td><td>Fator que indica quantas pessoas cada indivíduo representa</td></tr>
+                                        <tr><td><strong>Proficiência (escala SAEB)</strong></td><td>Nota padronizada (~100 a ~400) que mede habilidades do aluno</td></tr>
+                                        <tr><td><strong>Regressão linear</strong></td><td>Modelo que encontra a reta que melhor descreve a relação entre duas variáveis</td></tr>
+                                        <tr><td><strong>SAEB</strong></td><td>Sistema de Avaliação da Educação Básica</td></tr>
+                                        <tr><td><strong>Teste t de Welch</strong></td><td>Teste que compara médias de dois grupos, sem assumir variâncias iguais</td></tr>
+                                        <tr><td><strong>TIC</strong></td><td>Tecnologias da Informação e Comunicação</td></tr>
+                                        <tr><td><strong>Variância</strong></td><td>Média dos quadrados dos desvios em relação à média</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Página 9: Metodologia -->
                 <div id="page-methodology" class="page-section d-none">
                     <h3 class="mb-3"><i class="bi bi-journal-bookmark me-2" style="color: var(--clr-primary)"></i>Metodologia</h3>
