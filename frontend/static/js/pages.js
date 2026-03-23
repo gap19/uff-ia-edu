@@ -18,8 +18,7 @@ async function loadPage(page) {
         case 'questionnaires': return loadQuestionnaires();
         case 'ethics': return loadEthics();
         case 'cross-analysis': return loadCrossAnalysis();
-        case 'data-docs': return _initDataDocsKatex();
-        case 'methodology': return; // Static content
+        case 'methodology': return _initMethodologyKatex();
     }
 }
 
@@ -1163,9 +1162,9 @@ function _plotCrossGap(elementId, response) {
 // Dados page: re-render KaTeX formulas on navigation
 // =========================================================
 
-function _initDataDocsKatex() {
+function _initMethodologyKatex() {
     if (typeof katex === 'undefined') return;
-    const container = document.getElementById('page-data-docs');
+    const container = document.getElementById('page-methodology');
     if (!container) return;
     container.querySelectorAll('.katex-formula').forEach(el => {
         // Skip already rendered
