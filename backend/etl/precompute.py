@@ -453,7 +453,9 @@ def _precompute_escola_formacao_rj(con: duckdb.DuckDBPyConnection) -> list[str]:
             AVG(TRY_CAST(MEDIA_5EF_LP AS DOUBLE)) AS media_5ef_lp,
             AVG(TRY_CAST(MEDIA_5EF_MT AS DOUBLE)) AS media_5ef_mt,
             AVG(TRY_CAST(MEDIA_9EF_LP AS DOUBLE)) AS media_9ef_lp,
-            AVG(TRY_CAST(MEDIA_9EF_MT AS DOUBLE)) AS media_9ef_mt
+            AVG(TRY_CAST(MEDIA_9EF_MT AS DOUBLE)) AS media_9ef_mt,
+            AVG(TRY_CAST(MEDIA_EM_LP AS DOUBLE)) AS media_em_lp,
+            AVG(TRY_CAST(MEDIA_EM_MT AS DOUBLE)) AS media_em_mt
         FROM read_parquet('{pq}')
         WHERE ID_UF = {ID_UF_RJ}
         GROUP BY
