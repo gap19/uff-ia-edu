@@ -79,7 +79,7 @@ async def dashboard(request: Request):
     """Página principal do dashboard."""
     import logging
     try:
-        return templates.TemplateResponse("dashboard.html", {"request": request})
+        return templates.TemplateResponse(request, "dashboard.html")
     except Exception:
         logging.exception("Failed to render dashboard template")
         raise
@@ -102,7 +102,7 @@ async def debug_template(request: Request):
     """Debug endpoint — testa renderização do template."""
     import traceback
     try:
-        resp = templates.TemplateResponse("dashboard.html", {"request": request})
+        resp = templates.TemplateResponse(request, "dashboard.html")
         return {"status": "ok", "body_length": len(resp.body)}
     except Exception as e:
         return {
