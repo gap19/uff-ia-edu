@@ -476,7 +476,7 @@ function _renderTeachCorr(formacao) {
     const serie = document.getElementById('corr-serie')?.value || '5EF';
     const disc = document.getElementById('corr-disciplina')?.value || 'LP';
     const colKey = `media_${serie.toLowerCase()}_${disc.toLowerCase()}`;
-    const serieLabel = serie === '5EF' ? '5º EF' : '9º EF';
+    const serieLabel = serie === '5EF' ? '5º EF' : serie === '9EF' ? '9º EF' : 'EM';
     const discLabel = disc === 'LP' ? 'LP' : 'MT';
 
     if (formacao && formacao.data && formacao.data.length > 0) {
