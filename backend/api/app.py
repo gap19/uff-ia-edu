@@ -77,7 +77,12 @@ async def index():
 @app.get("/dashboard")
 async def dashboard(request: Request):
     """Página principal do dashboard."""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    import logging
+    try:
+        return templates.TemplateResponse("dashboard.html", {"request": request})
+    except Exception:
+        logging.exception("Failed to render dashboard template")
+        raise
 
 
 @app.get("/api/health")
@@ -90,3 +95,18 @@ async def health():
         "tables": [t[0] for t in tables],
         "table_count": len(tables),
     }
+
+
+@app.get("/api/debug/template")
+async def debug_template(request: Request):
+    """Debug endpoint — testa renderização do template."""
+    import traceback
+    try:
+        resp = templates.TemplateResponse("dashboard.html", {"request": request})
+        return {"status": "ok", "body_length": len(resp.body)}
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
