@@ -4,6 +4,8 @@ Dashboard analítico do projeto PIBITI/PIBINOVA **"Ética na Tomada de Decisão 
 
 Analisa microdados do **SAEB 2023** (7,6M+ registros) e da **TIC Educação 2023** (69 indicadores) para investigar impactos éticos da IA nos processos educacionais em escolas do Rio de Janeiro.
 
+**🌐 Site publicado:** <https://uff-ia-edu-94f5b.web.app>
+
 ## Stack Tecnológico
 
 | Camada | Tecnologia |
@@ -14,6 +16,7 @@ Analisa microdados do **SAEB 2023** (7,6M+ registros) e da **TIC Educação 2023
 | Tipografia/Ícones | Google Fonts (Inter) + Bootstrap Icons |
 | Relatórios PDF | WeasyPrint + matplotlib/seaborn |
 | Containerização | Docker + docker-compose |
+| Hospedagem | Firebase Hosting (site estático pré-computado) |
 
 ## Pré-requisitos
 
@@ -57,6 +60,19 @@ docker-compose up --build
 ```
 
 O dashboard estará acessível em **http://localhost:8000**.
+
+## Deploy (Firebase Hosting)
+
+O site público é uma exportação estática do dashboard: todas as respostas da
+API são pré-computadas como JSON e publicadas no Firebase Hosting (plano
+gratuito). Para atualizar o site após mudanças em código ou dados:
+
+```bash
+python scripts/export_static.py
+firebase deploy --only hosting
+```
+
+Detalhes e setup inicial em [DEPLOY.md](DEPLOY.md).
 
 ## Estrutura do Projeto
 

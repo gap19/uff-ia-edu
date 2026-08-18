@@ -11,6 +11,19 @@
 
 const API_BASE = '/api';
 
+// Modo estático (Firebase Hosting): dados pré-computados como arquivos JSON.
+// A flag window.STATIC_DATA é injetada em index.html por scripts/export_static.py.
+const STATIC_MODE = typeof window !== 'undefined' && Boolean(window.STATIC_DATA);
+
+// Espelha slug_path() de scripts/export_static.py — manter em sincronia.
+function staticDataURL(path, params = {}) {
+    const pairs = Object.entries(params)
+        .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+        .map(([k, v]) => `${k}-${v}`)
+        .sort();
+    return `${API_BASE}${path}${pairs.length ? '__' + pairs.join('__') : ''}.json`;
+}
+
 // Estado global dos filtros
 const state = {
     page: 'overview',
@@ -83,12 +96,17 @@ function initFilters() {
 // =========================================================
 
 async function fetchAPI(path, params = {}) {
-    const url = new URL(API_BASE + path, window.location.origin);
-    Object.entries(params).forEach(([k, v]) => {
-        if (v !== '' && v !== null && v !== undefined) {
-            url.searchParams.set(k, v);
-        }
-    });
+    let url;
+    if (STATIC_MODE) {
+        url = staticDataURL(path, params);
+    } else {
+        url = new URL(API_BASE + path, window.location.origin);
+        Object.entries(params).forEach(([k, v]) => {
+            if (v !== '' && v !== null && v !== undefined) {
+                url.searchParams.set(k, v);
+            }
+        });
+    }
     try {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -183,6 +201,28 @@ function initQuestionnaires() {
 function initReport() {
     const btn = document.getElementById('btn-generate-report');
     if (!btn) return;
+
+    if (STATIC_MODE) {
+        // Hospedagem estática: sem geração sob demanda — baixa o relatório
+        // completo pré-gerado (todas as seções, séries e disciplinas).
+        document.querySelectorAll('[id^="rep-"]').forEach(el => { el.disabled = true; });
+        const modalBody = document.querySelector('#reportModal .modal-body');
+        if (modalBody) {
+            const note = document.createElement('div');
+            note.className = 'alert alert-info small mb-3';
+            note.innerHTML = '<i class="bi bi-info-circle"></i> Nesta versão do site, o relatório completo (todas as seções, séries e disciplinas, com apêndice) é pré-gerado. Os filtros acima não se aplicam.';
+            modalBody.appendChild(note);
+        }
+        btn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = '/reports/relatorio_ia_educacao_uff.pdf';
+            link.download = 'relatorio_ia_educacao_uff.pdf';
+            link.click();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
+            if (modal) modal.hide();
+        });
+        return;
+    }
 
     btn.addEventListener('click', async () => {
         const statusEl = document.getElementById('report-status');

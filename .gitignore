@@ -1,0 +1,44 @@
+# Ambiente virtual Python
+.venv/
+venv/
+env/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Dados brutos (baixar manualmente — ver README.md)
+data/MICRODADOS_SAEB_2023/
+data/tic_educacao_2023_escolas_tabelas_xlsx_v1.0/
+data/Dicionario_Saeb_2023.xlsx
+
+# Dados processados são incluídos no repositório (prontos para uso)
+# Para regenerar a partir dos brutos: python scripts/init_db.py
+
+# Documentos pessoais do projeto
+*.pdf
+
+# Materiais da pesquisa PPE (apenas locais, nunca versionados)
+pesquisa_ppe/
+/Complementos_Secao_VI_PPE.docx
+
+# Build estático para Firebase Hosting (gerar com scripts/export_static.py)
+dist/
+.firebase/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
