@@ -4,7 +4,7 @@ Dashboard analítico do projeto PIBITI/PIBINOVA **"Ética na Tomada de Decisão 
 
 Analisa microdados do **SAEB 2023** (7,6M+ registros) e da **TIC Educação 2023** (69 indicadores) para investigar impactos éticos da IA nos processos educacionais em escolas do Rio de Janeiro.
 
-**🌐 Site publicado:** <https://uff-ia-edu-94f5b.web.app>
+**Site publicado:** <https://uff-ia-edu-94f5b.web.app>
 
 ## Stack Tecnológico
 
