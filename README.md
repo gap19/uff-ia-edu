@@ -113,6 +113,7 @@ uff-ia-edu/
 │   ├── setup.sh              # Setup com um comando
 │   ├── init_db.py            # ETL completo
 │   ├── run.py                # Servidor de desenvolvimento
+│   ├── export_static.py      # Exportação estática para o Firebase Hosting
 │   └── validate_stats.py     # Validação cruzada de estatísticas
 ├── tests/                    # Testes pytest (41 testes)
 ├── data/
@@ -122,8 +123,9 @@ uff-ia-edu/
 │       └── tic/*.parquet     # Indicadores TIC (~356 KB)
 ├── Dockerfile
 ├── docker-compose.yml
-├── METODOLOGIA.md            # Metodologia estatística
-└── PLANO.md                  # Plano detalhado do projeto
+├── firebase.json             # Configuração do Firebase Hosting
+├── DEPLOY.md                 # Guia de deploy (site estático)
+└── METODOLOGIA.md            # Metodologia estatística
 ```
 
 ## Páginas do Dashboard
@@ -139,7 +141,9 @@ uff-ia-edu/
 
 ## API
 
-A documentação interativa da API (Swagger) está disponível em `/docs`.
+A documentação interativa da API (Swagger) está disponível em `/docs` ao rodar o servidor localmente.
+
+> **Nota:** o site publicado (Firebase Hosting) não roda a API dinâmica — ele serve versões pré-computadas de todas as respostas como arquivos JSON estáticos, gerados por `scripts/export_static.py`.
 
 ### Endpoints Principais
 
@@ -174,6 +178,8 @@ O dashboard permite gerar relatórios PDF acadêmicos com seções customizávei
 1. Clicar em **"Gerar Relatório PDF"** na sidebar
 2. Selecionar seções, séries e disciplinas desejadas
 3. O PDF é gerado com gráficos vetoriais (matplotlib/seaborn) e tabelas formatadas
+
+> **Nota:** a customização de seções requer o servidor local. No site publicado, o botão baixa o relatório completo pré-gerado (todas as seções, séries e disciplinas, com apêndice).
 
 Também disponível via API:
 ```bash
@@ -253,7 +259,7 @@ Este projeto é licenciado sob [**Creative Commons Atribuição 4.0 Internaciona
 Você pode **compartilhar** (copiar, redistribuir) e **adaptar** (remixar, transformar, criar a partir de) este material para qualquer finalidade, inclusive comercial, desde que atribua crédito adequado ao projeto original e indique se alterações foram feitas.
 
 **Atribuição sugerida:**
-> Dashboard de Pesquisa: IA na Educação — UFF. Projeto PIBITI/PIBINOVA, Faculdade de Educação, Universidade Federal Fluminense. Disponível em: [URL do repositório].
+> Dashboard de Pesquisa: IA na Educação — UFF. Projeto PIBITI/PIBINOVA, Faculdade de Educação, Universidade Federal Fluminense. Disponível em: https://uff-ia-edu-94f5b.web.app (código-fonte: https://github.com/gap19/uff-ia-edu).
 
 ## Usando como Base para Outros Projetos
 
