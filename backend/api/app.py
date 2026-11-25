@@ -1,37 +1,22 @@
 """Aplicação FastAPI principal do dashboard."""
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 
-import duckdb
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from backend.config import DUCKDB_PATH, PROJECT_ROOT
-
-# Conexão DuckDB compartilhada (read-only)
-_db: duckdb.DuckDBPyConnection | None = None
-
-
-def get_db() -> duckdb.DuckDBPyConnection:
-    """Retorna a conexão DuckDB compartilhada."""
-    global _db
-    if _db is None:
-        _db = duckdb.connect(str(DUCKDB_PATH), read_only=True)
-    return _db
+from backend.config import PROJECT_ROOT
+from backend.db import close_db, db_query, get_db  # noqa: F401  (get_db: compatibilidade)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Gerencia ciclo de vida da aplicação."""
-    global _db
-    _db = duckdb.connect(str(DUCKDB_PATH), read_only=True)
+    get_db()  # abre a conexão compartilhada na inicialização
     yield
-    if _db:
-        _db.close()
-        _db = None
+    close_db()
 
 
 app = FastAPI(
@@ -41,12 +26,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS
+# CORS — API pública somente leitura, sem cookies/credenciais
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -54,6 +39,21 @@ app.add_middleware(
 frontend_dir = PROJECT_ROOT / "frontend"
 app.mount("/static", StaticFiles(directory=str(frontend_dir / "static")), name="static")
 templates = Jinja2Templates(directory=str(frontend_dir / "templates"))
+
+
+def _asset_version() -> str:
+    """Hash curto do conteúdo de CSS/JS, usado como ``?v=`` (cache busting).
+
+    O Firebase Hosting guarda JS/CSS em cache por 1 h: sem a versão, um
+    navegador poderia combinar JS antigo com JSONs novos após um deploy.
+    """
+    import hashlib
+
+    digest = hashlib.sha256()
+    for path in sorted((frontend_dir / "static").rglob("*")):
+        if path.is_file() and path.suffix in (".js", ".css"):
+            digest.update(path.read_bytes())
+    return digest.hexdigest()[:10]
 
 # Registrar rotas
 from backend.api.routes_saeb import router as saeb_router
@@ -77,16 +77,17 @@ async def index():
 @app.get("/dashboard")
 async def dashboard(request: Request):
     """Página principal do dashboard."""
-    return templates.TemplateResponse(request, "dashboard.html")
+    return templates.TemplateResponse(
+        request, "dashboard.html", {"asset_version": _asset_version()}
+    )
 
 
 @app.get("/api/health")
-async def health():
+def health():
     """Health check."""
-    db = get_db()
-    tables = db.execute("SHOW TABLES").fetchall()
+    tables = db_query("SHOW TABLES")
     return {
         "status": "ok",
-        "tables": [t[0] for t in tables],
+        "tables": [t["name"] for t in tables],
         "table_count": len(tables),
     }

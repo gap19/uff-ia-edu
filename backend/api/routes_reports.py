@@ -11,9 +11,9 @@ router = APIRouter()
 
 
 @router.post("/generate")
-async def generate_report(
+def generate_report(
     secoes: Optional[list[str]] = Query(
-        None, description="Seções: proficiencia, equidade, tecnologia, etica"
+        None, description="Seções: proficiencia, equidade, tecnologia, cruzamentos, etica"
     ),
     series: Optional[list[str]] = Query(
         None, description="Séries: 5EF, 9EF, 34EM"
@@ -40,9 +40,9 @@ async def generate_report(
 
 
 @router.get("/generate")
-async def generate_report_get(
+def generate_report_get(
     secoes: Optional[list[str]] = Query(
-        None, description="Seções: proficiencia, equidade, tecnologia, etica"
+        None, description="Seções: proficiencia, equidade, tecnologia, cruzamentos, etica"
     ),
     series: Optional[list[str]] = Query(
         None, description="Séries: 5EF, 9EF, 34EM"

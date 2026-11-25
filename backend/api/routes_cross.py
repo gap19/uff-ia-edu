@@ -2,12 +2,14 @@
 
 from typing import Optional
 
+import duckdb
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.api.app import get_db
+from backend.config import ID_UF_RJ, SAEB_PARQUET_DIR
+from backend.db import db_query
 from backend.analysis.cross_analysis import (
     DIRECTOR_TECH_VARS,
-    PROFESSOR_TECH_VARS,
+    SCHOOL_MEDIA_COLS,
     STUDENT_TECH_VARS,
     get_cross_summary,
     get_digital_access_index,
@@ -18,12 +20,9 @@ from backend.analysis.cross_analysis import (
 
 router = APIRouter()
 
+_query = db_query
 
-def _query(sql: str, params: list | None = None) -> list[dict]:
-    db = get_db()
-    rel = db.execute(sql, params or [])
-    columns = [desc[0] for desc in rel.description]
-    return [dict(zip(columns, row)) for row in rel.fetchall()]
+_FAIXA_LABELS = {"Baixo": "Baixo", "Medio": "Médio", "Alto": "Alto"}
 
 
 # ---------------------------------------------------------------------------
@@ -31,7 +30,7 @@ def _query(sql: str, params: list | None = None) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 @router.get("/student-tech")
-async def student_tech(
+def student_tech(
     serie: str = Query("9EF", description="Serie (5EF, 9EF, 34EM)"),
     disciplina: str = Query("LP", description="Disciplina (LP, MT)"),
     variable: Optional[str] = Query(None, description="Variavel tech (TX_RESP_Q12b, Q12g, Q13a, Q13b)"),
@@ -62,23 +61,12 @@ async def student_tech(
                     }
                     for r in rows
                 ]
-                result = {
+                return {
                     "variable": variable,
                     "label": var_info.get("label", variable),
                     "serie": serie, "disciplina": disciplina,
                     "groups": groups, "source": "precomputed",
                 }
-                if stratify_inse:
-                    inse_rows = _query(
-                        """SELECT nivel_inse, tech_response, media_proficiencia, n_alunos
-                           FROM cross_aluno_tech_rj
-                           WHERE serie = ? AND disciplina = ? AND tech_variable = ?
-                             AND nivel_inse IS NOT NULL
-                           ORDER BY nivel_inse, tech_response""",
-                        [serie.upper(), disciplina.upper(), variable],
-                    )
-                    result["by_inse"] = inse_rows
-                return result
 
         # Full statistical analysis
         if variable:
@@ -105,43 +93,24 @@ async def student_tech(
 # ---------------------------------------------------------------------------
 
 @router.get("/director-tech")
-async def director_tech(
+def director_tech(
     variable: str = Query("TX_Q194", description="Variavel tech do diretor"),
     serie: str = Query("9EF", description="Serie"),
     disciplina: str = Query("LP", description="Disciplina"),
-    use_precomputed: bool = Query(True, description="Usar tabela pre-computada"),
+    use_precomputed: bool = Query(
+        True,
+        description="Ignorado (mantido por compatibilidade): a análise é sempre "
+                    "calculada a partir dos parquets de escola/diretor, que são pequenos.",
+    ),
 ):
-    """Infraestrutura tech da escola (diretor) vs proficiencia."""
+    """Infraestrutura tech da escola (diretor) vs proficiencia.
+
+    Sempre usa a análise completa (uma linha por escola, com teste t/ANOVA).
+    A antiga tabela ``cross_diretor_tech_rj`` contava escolas repetidas
+    (TS_DIRETOR tem uma linha por escola e série) e não é mais utilizada.
+    """
     try:
-        if use_precomputed:
-            rows = _query(
-                """SELECT tech_response, media_proficiencia, n_escolas
-                   FROM cross_diretor_tech_rj
-                   WHERE tech_variable = ? AND serie = ? AND disciplina = ?
-                   ORDER BY tech_response""",
-                [variable, serie.upper(), disciplina.upper()],
-            )
-            if rows:
-                var_info = DIRECTOR_TECH_VARS.get(variable, {})
-                responses = var_info.get("responses", {})
-                groups = [
-                    {
-                        "code": r["tech_response"],
-                        "label": responses.get(r["tech_response"], r["tech_response"]),
-                        "mean": r["media_proficiencia"],
-                        "n": r["n_escolas"],
-                    }
-                    for r in rows
-                ]
-                return {
-                    "variable": variable,
-                    "label": var_info.get("label", variable),
-                    "serie": serie, "disciplina": disciplina,
-                    "groups": groups, "source": "precomputed",
-                }
-
         return get_director_tech_gap(variable, serie, disciplina)
-
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
@@ -153,43 +122,23 @@ async def director_tech(
 # ---------------------------------------------------------------------------
 
 @router.get("/teacher-tech")
-async def teacher_tech(
+def teacher_tech(
     variable: str = Query("TX_Q029", description="Variavel tech do professor"),
     serie: str = Query("9EF", description="Serie"),
     disciplina: str = Query("LP", description="Disciplina"),
-    use_precomputed: bool = Query(True, description="Usar tabela pre-computada"),
+    use_precomputed: bool = Query(
+        True,
+        description="Ignorado (mantido por compatibilidade): a análise é sempre "
+                    "calculada com ponderação por número de professores da turma.",
+    ),
 ):
-    """Formacao/uso de tecnologia do professor vs proficiencia do aluno."""
+    """Formacao/necessidade de tecnologia do professor vs proficiencia do aluno.
+
+    Sempre usa a análise completa: a antiga tabela ``cross_professor_tech_rj``
+    contava duas vezes alunos de turmas com mais de um professor respondente.
+    """
     try:
-        if use_precomputed:
-            rows = _query(
-                """SELECT tech_response, media_proficiencia, soma_pesos, n_alunos
-                   FROM cross_professor_tech_rj
-                   WHERE tech_variable = ? AND serie = ? AND disciplina = ?
-                   ORDER BY tech_response""",
-                [variable, serie.upper(), disciplina.upper()],
-            )
-            if rows:
-                var_info = PROFESSOR_TECH_VARS.get(variable, {})
-                responses = var_info.get("responses", {})
-                groups = [
-                    {
-                        "code": r["tech_response"],
-                        "label": responses.get(r["tech_response"], r["tech_response"]),
-                        "mean": r["media_proficiencia"],
-                        "n": r["n_alunos"],
-                    }
-                    for r in rows
-                ]
-                return {
-                    "variable": variable,
-                    "label": var_info.get("label", variable),
-                    "serie": serie, "disciplina": disciplina,
-                    "groups": groups, "source": "precomputed",
-                }
-
         return get_teacher_tech_impact(serie, disciplina, variable)
-
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
@@ -201,7 +150,7 @@ async def teacher_tech(
 # ---------------------------------------------------------------------------
 
 @router.get("/digital-index")
-async def digital_index(
+def digital_index(
     serie: str = Query("9EF", description="Serie"),
     disciplina: str = Query("LP", description="Disciplina"),
     stratify_inse: bool = Query(False, description="Estratificar por INSE"),
@@ -236,7 +185,8 @@ async def digital_index(
                     fm = faixas_map.get(f_name)
                     if fm and fm["total_weight"] > 0:
                         faixas.append({
-                            "label": f_name,
+                            "code": f_name,
+                            "label": _FAIXA_LABELS[f_name],
                             "mean": fm["weighted_sum"] / fm["total_weight"],
                             "n": fm["total_n"],
                         })
@@ -250,7 +200,7 @@ async def digital_index(
                 if stratify_inse:
                     inse_rows = _query(
                         """SELECT nivel_inse, digital_index, faixa_digital,
-                                  media_proficiencia, n_alunos
+                                  media_proficiencia, soma_pesos, n_alunos
                            FROM cross_digital_index_rj
                            WHERE serie = ? AND disciplina = ? AND nivel_inse IS NOT NULL
                            ORDER BY nivel_inse, digital_index""",
@@ -273,7 +223,7 @@ async def digital_index(
 # ---------------------------------------------------------------------------
 
 @router.get("/summary")
-async def summary(
+def summary(
     serie: str = Query("9EF", description="Serie"),
     disciplina: str = Query("LP", description="Disciplina"),
 ):
@@ -289,44 +239,55 @@ async def summary(
 # ---------------------------------------------------------------------------
 
 @router.get("/school-scatter")
-async def school_scatter(
+def school_scatter(
     serie: str = Query("9EF", description="Serie"),
     disciplina: str = Query("LP", description="Disciplina"),
     tech_var: str = Query("TX_Q034", description="Variavel tech do diretor para eixo X"),
 ):
     """Dados scatter escola: INSE x proficiencia x tech (para grafico de dispersao)."""
+    # tech_var é interpolado no SQL como nome de coluna: só aceitar a whitelist
+    if tech_var not in DIRECTOR_TECH_VARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Variavel '{tech_var}' invalida. Opcoes: {list(DIRECTOR_TECH_VARS)}",
+        )
+    media_col = SCHOOL_MEDIA_COLS.get((serie.upper(), disciplina.upper()))
+    if not media_col:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Combinacao serie={serie}, disciplina={disciplina} invalida",
+        )
+
+    pq_esc = str(SAEB_PARQUET_DIR / "TS_ESCOLA.parquet")
+    pq_dir = str(SAEB_PARQUET_DIR / "TS_DIRETOR.parquet")
     try:
-        media_map = {
-            ("5EF", "LP"): "MEDIA_5EF_LP", ("5EF", "MT"): "MEDIA_5EF_MT",
-            ("9EF", "LP"): "MEDIA_9EF_LP", ("9EF", "MT"): "MEDIA_9EF_MT",
-            ("34EM", "LP"): "MEDIA_EM_LP", ("34EM", "MT"): "MEDIA_EM_MT",
-            ("EM", "LP"): "MEDIA_EM_LP", ("EM", "MT"): "MEDIA_EM_MT",
-        }
-        media_col = media_map.get((serie.upper(), disciplina.upper()))
-        if not media_col:
-            raise ValueError(f"Combinacao serie={serie}, disciplina={disciplina} invalida")
-
-        from backend.config import SAEB_PARQUET_DIR
-        pq_esc = str(SAEB_PARQUET_DIR / "TS_ESCOLA.parquet")
-        pq_dir = str(SAEB_PARQUET_DIR / "TS_DIRETOR.parquet")
-
-        import duckdb
         con = duckdb.connect()
-        rows = con.execute(f"""
-            SELECT
-                e.NIVEL_SOCIO_ECONOMICO AS inse,
-                TRY_CAST(e.{media_col} AS DOUBLE) AS proficiencia,
-                d.{tech_var} AS tech_value,
-                e.IN_PUBLICA AS rede
-            FROM '{pq_esc}' e
-            LEFT JOIN '{pq_dir}' d ON e.ID_ESCOLA = d.ID_ESCOLA
-            WHERE e.ID_UF = 33
-              AND e.{media_col} IS NOT NULL
-              AND d.{tech_var} IS NOT NULL
-              AND d.{tech_var} NOT IN ('*', '.', '')
-            LIMIT 5000
-        """).fetchall()
-        con.close()
+        try:
+            rows = con.execute(f"""
+                WITH dir AS (
+                    -- TS_DIRETOR repete a escola em uma linha por série avaliada
+                    SELECT ID_ESCOLA, MIN({tech_var}) AS tech_value
+                    FROM '{pq_dir}'
+                    WHERE ID_UF = ?
+                      AND {tech_var} IS NOT NULL
+                      AND {tech_var} NOT IN ('*', '.', '')
+                      AND IN_PREENCHIMENTO_QUESTIONARIO = 1
+                    GROUP BY ID_ESCOLA
+                )
+                SELECT
+                    e.NIVEL_SOCIO_ECONOMICO AS inse,
+                    TRY_CAST(e.{media_col} AS DOUBLE) AS proficiencia,
+                    d.tech_value,
+                    e.IN_PUBLICA AS rede
+                FROM '{pq_esc}' e
+                INNER JOIN dir d ON e.ID_ESCOLA = d.ID_ESCOLA
+                WHERE e.ID_UF = ?
+                  AND e.{media_col} IS NOT NULL
+                ORDER BY e.ID_ESCOLA
+                LIMIT 5000
+            """, [ID_UF_RJ, ID_UF_RJ]).fetchall()
+        finally:
+            con.close()
 
         return {
             "serie": serie, "disciplina": disciplina, "tech_var": tech_var,
@@ -335,7 +296,5 @@ async def school_scatter(
                 for r in rows
             ],
         }
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))

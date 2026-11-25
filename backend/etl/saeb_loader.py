@@ -3,6 +3,11 @@
 Lê os CSVs com delimitador `;`, corrige tipos das colunas de
 proficiência e peso amostral para DOUBLE, e exporta cada tabela
 como Parquet (snappy).
+
+A conversão usa um DuckDB em memória: os microdados brutos ficam apenas
+nos Parquet (lidos diretamente pelas análises). O banco
+``data/processed/saeb.duckdb`` guarda só as tabelas agregadas geradas por
+``backend.etl.precompute``.
 """
 
 from __future__ import annotations
@@ -12,7 +17,6 @@ from pathlib import Path
 import duckdb
 
 from backend.config import (
-    DUCKDB_PATH,
     PROFICIENCY_COLS,
     SAEB_CSV_DIR,
     SAEB_CSV_FILES,
@@ -27,7 +31,6 @@ _DOUBLE_COLUMNS: set[str] = {*PROFICIENCY_COLS.values(), *WEIGHT_COLS.values()}
 def _ensure_dirs() -> None:
     """Cria diretórios de saída caso não existam."""
     SAEB_PARQUET_DIR.mkdir(parents=True, exist_ok=True)
-    DUCKDB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def _convert_to_utf8(src: Path, dst: Path) -> None:
@@ -38,22 +41,24 @@ def _convert_to_utf8(src: Path, dst: Path) -> None:
             fout.write(line)
 
 
-def _cast_double_columns(con: duckdb.DuckDBPyConnection, rel: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    """Converte para DOUBLE as colunas de proficiência/peso presentes na relação."""
-    existing_cols = {c.upper() for c in rel.columns}
-    casts_needed = _DOUBLE_COLUMNS & existing_cols
+def _ensure_double_columns(con: duckdb.DuckDBPyConnection, table: str) -> list[str]:
+    """Garante que colunas de proficiência/peso presentes em *table* sejam DOUBLE.
 
-    if not casts_needed:
-        return rel
-
-    projections: list[str] = []
-    for col in rel.columns:
-        if col.upper() in casts_needed:
-            projections.append(f'CAST("{col}" AS DOUBLE) AS "{col}"')
-        else:
-            projections.append(f'"{col}"')
-
-    return con.sql(f"SELECT {', '.join(projections)} FROM rel")
+    O ``read_csv`` infere tipos por amostragem; uma coluna esparsa (ex.:
+    PROFICIENCIA_CN_SAEB, vazia na maior parte dos registros) pode ser
+    detectada como VARCHAR e quebrar a aritmética da pré-computação.
+    Aceita vírgula como separador decimal. Retorna as colunas convertidas.
+    """
+    converted: list[str] = []
+    described = con.execute(f'SELECT column_name, column_type FROM (DESCRIBE "{table}")').fetchall()
+    for col, col_type in described:
+        if col.upper() in _DOUBLE_COLUMNS and col_type != "DOUBLE":
+            con.execute(
+                f'ALTER TABLE "{table}" ALTER COLUMN "{col}" TYPE DOUBLE '
+                f'USING TRY_CAST(REPLACE(CAST("{col}" AS VARCHAR), \',\', \'.\') AS DOUBLE)'
+            )
+            converted.append(col)
+    return converted
 
 
 def _csv_path(name: str) -> Path:
@@ -105,7 +110,7 @@ def load_single_saeb(name: str) -> int:
     try:
         _convert_to_utf8(csv_file, utf8_file)
 
-        con = duckdb.connect(str(DUCKDB_PATH))
+        con = duckdb.connect()  # em memória (ver docstring do módulo)
         try:
             con.sql(f"""
                 CREATE OR REPLACE TABLE "_tmp_{name}" AS
@@ -116,6 +121,10 @@ def load_single_saeb(name: str) -> int:
                     null_padding = true
                 )
             """)
+
+            converted = _ensure_double_columns(con, f"_tmp_{name}")
+            if converted:
+                print(f"[saeb_loader] {name}: colunas convertidas para DOUBLE: {converted}")
 
             row_count = con.execute(
                 f'SELECT COUNT(*) FROM "_tmp_{name}"'
@@ -130,9 +139,6 @@ def load_single_saeb(name: str) -> int:
                 f"""COPY "_tmp_{name}" TO '{parquet_file}'
                     (FORMAT PARQUET, COMPRESSION SNAPPY)"""
             )
-
-            con.execute(f'DROP TABLE IF EXISTS "{name}"')
-            con.execute(f'ALTER TABLE "_tmp_{name}" RENAME TO "{name}"')
 
             print(f"[saeb_loader] {name} -> {parquet_file}")
         finally:

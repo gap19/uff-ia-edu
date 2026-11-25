@@ -1,10 +1,11 @@
-"""Rotas da API para dados da TIC Educacao 2023."""
+"""Rotas da API para dados da TIC Educacao 2023 (CETIC.br)."""
 
 from typing import Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
-from backend.api.app import get_db
+from backend.analysis.tic import TIC_GROUPS, get_tic_group
+from backend.db import db_query
 
 router = APIRouter()
 
@@ -14,9 +15,8 @@ TABLE = "tic_indicadores"
 def _table_exists() -> bool:
     """Verifica se a tabela tic_indicadores existe no DuckDB."""
     try:
-        db = get_db()
-        tables = db.execute("SHOW TABLES").fetchall()
-        return TABLE in [t[0] for t in tables]
+        tables = db_query("SHOW TABLES")
+        return TABLE in [t["name"] for t in tables]
     except Exception:
         return False
 
@@ -27,109 +27,105 @@ def _no_table_response():
         "data": [],
         "message": (
             "Tabela tic_indicadores ainda nao disponivel. "
-            "O processamento dos dados TIC pode estar em andamento."
+            "Execute o ETL (scripts/init_db.py) com as planilhas da TIC Educacao 2023."
         ),
     }
 
 
-def _query(sql: str, params: list | None = None) -> list[dict]:
-    """Executa query e retorna lista de dicts."""
-    db = get_db()
-    result = db.execute(sql, params or []).fetchall()
-    columns = [desc[0] for desc in db.description]
-    return [dict(zip(columns, row)) for row in result]
-
-
-def _get_indicator_group(codes: list[str], label: str):
-    """Busca grupo de indicadores por lista de codigos."""
+def _group(key: str):
     if not _table_exists():
         return _no_table_response()
-
-    placeholders = ", ".join(["?"] * len(codes))
-    sql = f"""
-        SELECT indicador, tipo, variavel_corte, valor_corte, regiao, valor
-        FROM {TABLE}
-        WHERE indicador IN ({placeholders})
-        ORDER BY indicador, tipo, variavel_corte, valor_corte, regiao
-    """
-    data = _query(sql, codes)
-    return {"group": label, "indicators": codes, "count": len(data), "data": data}
+    return get_tic_group(key)
 
 
 @router.get("/indicators")
-async def list_indicators():
-    """Lista todos os codigos de indicadores disponiveis e seus tipos."""
+def list_indicators():
+    """Lista os indicadores disponiveis com titulo e universo."""
     if not _table_exists():
         return _no_table_response()
-
-    sql = f"""
-        SELECT DISTINCT indicador, tipo
+    data = db_query(f"""
+        SELECT DISTINCT indicador, titulo, universo
         FROM {TABLE}
-        ORDER BY indicador, tipo
-    """
-    data = _query(sql)
+        ORDER BY indicador
+    """)
     return {"count": len(data), "data": data}
 
 
 @router.get("/indicator/{code}")
-async def get_indicator(
+def get_indicator(
     code: str,
-    tipo: str = Query(default="proporcao", description="Tipo do indicador"),
+    tipo: str = Query(default="proporcao", description="proporcao, total, margem_erro ou margem_erro_total"),
     variavel_corte: Optional[str] = Query(
-        default=None, description="Filtrar por variavel de corte"
+        default=None, description="Filtrar por variavel de corte (TOTAL, REGIÃO, ÁREA, ...)"
     ),
 ):
-    """Retorna dados de um indicador especifico."""
+    """Retorna todas as linhas de um indicador (formato longo)."""
     if not _table_exists():
         return _no_table_response()
 
     sql = f"""
-        SELECT indicador, tipo, variavel_corte, valor_corte, regiao, valor
+        SELECT indicador, titulo, universo, tipo, variavel_corte, valor_corte,
+               item, resposta, coluna, valor
         FROM {TABLE}
         WHERE indicador = ? AND tipo = ?
     """
     params: list = [code, tipo]
-
     if variavel_corte is not None:
         sql += " AND variavel_corte = ?"
         params.append(variavel_corte)
+    sql += " ORDER BY variavel_corte, valor_corte, coluna"
 
-    sql += " ORDER BY variavel_corte, valor_corte, regiao"
-
-    data = _query(sql, params)
+    data = db_query(sql, params)
     return {"indicator": code, "tipo": tipo, "count": len(data), "data": data}
 
 
+@router.get("/groups")
+def list_groups():
+    """Grupos temáticos e os indicadores curados de cada um."""
+    return {
+        key: {
+            "label": cfg["label"],
+            "indicators": [
+                {k: v for k, v in spec.items()} for spec in cfg["indicators"]
+            ],
+        }
+        for key, cfg in TIC_GROUPS.items()
+    }
+
+
 @router.get("/infrastructure")
-async def infrastructure():
-    """Indicadores agregados de infraestrutura (A1-A8)."""
-    codes = [f"A{i}" for i in range(1, 9)]
-    return _get_indicator_group(codes, "Infraestrutura")
+def infrastructure():
+    """Infraestrutura e conectividade (A1, A2, A4, A6–A8, B1, B1B)."""
+    return _group("infrastructure")
 
 
 @router.get("/ai")
-async def ai_indicators():
-    """Indicadores de IA e sistemas de dados (E4A, E4B, E5, E6, F6)."""
-    codes = ["E4A", "E4B", "E5", "E6", "F6"]
-    return _get_indicator_group(codes, "IA e Sistemas de Dados")
+def ai_indicators():
+    """Dados, vigilância e IA (E3, E4A, E4B, E6, F6)."""
+    return _group("ai")
 
 
 @router.get("/privacy")
-async def privacy():
-    """Indicadores de politica de privacidade (H1-H7)."""
-    codes = [f"H{i}" for i in range(1, 8)]
-    return _get_indicator_group(codes, "Politica de Privacidade")
+def privacy():
+    """Privacidade e proteção de dados (H1, H3, H5, H6)."""
+    return _group("privacy")
 
 
 @router.get("/teacher-training")
-async def teacher_training():
-    """Indicadores de formacao digital docente (J1-J4)."""
-    codes = [f"J{i}" for i in range(1, 5)]
-    return _get_indicator_group(codes, "Formacao Digital Docente")
+def teacher_training():
+    """Formação docente em tecnologias (J1, J2, J3)."""
+    return _group("teacher-training")
 
 
 @router.get("/digital-literacy")
-async def digital_literacy():
-    """Indicadores de letramento digital (I1-I3)."""
-    codes = [f"I{i}" for i in range(1, 4)]
-    return _get_indicator_group(codes, "Letramento Digital")
+def digital_literacy():
+    """Uso seguro, responsável e crítico da internet (I1, I3)."""
+    return _group("digital-literacy")
+
+
+@router.get("/group/{key}")
+def group(key: str):
+    """Qualquer grupo temático pelo identificador (ver /groups)."""
+    if key not in TIC_GROUPS:
+        raise HTTPException(status_code=404, detail=f"Grupo '{key}' inexistente: {list(TIC_GROUPS)}")
+    return _group(key)

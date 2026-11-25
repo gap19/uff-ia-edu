@@ -220,11 +220,11 @@
 
     <div class="kpi-row">
         <div class="kpi-card">
-            <div class="label">Total de Alunos Avaliados (RJ)</div>
+            <div class="label">Alunos Avaliados em LP (RJ)</div>
             <div class="value">{{ "{:,.0f}".format(total_alunos).replace(",", ".") }}</div>
         </div>
         <div class="kpi-card">
-            <div class="label">Escolas no RJ</div>
+            <div class="label">Escolas Públicas com Resultados (RJ)</div>
             <div class="value">{{ "{:,.0f}".format(total_escolas).replace(",", ".") }}</div>
         </div>
     </div>
@@ -234,7 +234,7 @@
         <thead>
             <tr>
                 <th>Série</th>
-                <th>Total de Alunos</th>
+                <th>Alunos Presentes (LP)</th>
                 <th>Média LP</th>
                 <th>Média MT</th>
             </tr>
@@ -243,7 +243,7 @@
             {% for r in kpis %}
             <tr>
                 <td>{{ r.serie }}</td>
-                <td>{{ "{:,.0f}".format(r.total_alunos or 0).replace(",", ".") }}</td>
+                <td>{{ "{:,.0f}".format(r.presentes_lp or 0).replace(",", ".") }}</td>
                 <td>{{ "%.1f" | format(r.media_lp or 0) }}</td>
                 <td>{{ "%.1f" | format(r.media_mt or 0) }}</td>
             </tr>
@@ -256,7 +256,8 @@
         Este relatório apresenta uma análise dos microdados do SAEB 2023 e da pesquisa TIC Educação 2023,
         com foco nas escolas do estado do Rio de Janeiro. Os dados do SAEB abrangem avaliações de
         proficiência em Língua Portuguesa e Matemática, enquanto os dados TIC Educação descrevem
-        a infraestrutura tecnológica e as práticas digitais nas escolas da região Sudeste.
+        a infraestrutura tecnológica e as práticas digitais nas escolas da região Sudeste (proxy para o
+        Rio de Janeiro), com o total do Brasil como referência.
     </p>
 </div>
 
@@ -267,18 +268,17 @@
     <h3>Fontes de Dados</h3>
     <ul>
         <li><strong>SAEB 2023</strong> (Sistema de Avaliação da Educação Básica): microdados de alunos, escolas, professores e diretores do estado do Rio de Janeiro (ID_UF = 33).</li>
-        <li><strong>TIC Educação 2023</strong> (CETIC.br): dados agregados para a região Sudeste (dados por UF não disponíveis publicamente).</li>
+        <li><strong>TIC Educação 2023</strong> (CETIC.br): tabelas oficiais de escolas, com recorte para a região Sudeste (proxy para o RJ) e o total do Brasil como referência — a pesquisa não divulga dados por UF.</li>
     </ul>
 
     <h3>Tratamento Estatístico</h3>
     <div class="methodology">
         <p><strong>Pesos amostrais:</strong> Todas as estimativas utilizam os pesos amostrais fornecidos pelo INEP (PESO_ALUNO_LP, PESO_ALUNO_MT, etc.) para garantir representatividade populacional.</p>
-        <p><strong>Intervalos de confiança:</strong> Calculados a 95% com correção para efeito de desenho amostral (design effect) quando aplicável.</p>
-        <p><strong>Testes estatísticos:</strong> Teste t ponderado para comparação de médias; d de Cohen ponderado para tamanho de efeito; correlação de Pearson ponderada para associações.</p>
+        <p><strong>Intervalos de confiança e testes:</strong> Erros-padrão calculados por linearização de Taylor considerando o desenho amostral do SAEB — estratos (ESTRATO) e conglomerados por escola (ID_ESCOLA) —, com graus de liberdade iguais ao número de escolas menos o de estratos. Teste t da diferença de médias, ANOVA (teste de Wald com F de Korn–Graubard) e correlação de Pearson ponderada; d de Cohen e η² como tamanhos de efeito. Nas análises em que a escola é a unidade (questionário do diretor), usam-se o t de Welch e a ANOVA clássicos.</p>
     </div>
 
     <div class="note">
-        <strong>Nota:</strong> Os dados TIC Educação referem-se à região Sudeste como um todo. Análises no nível UF não são possíveis com os dados públicos disponíveis.
+        <strong>Nota:</strong> Os indicadores TIC Educação são apresentados para a região Sudeste (proxy para o RJ) e para o Brasil. Análises no nível UF não são possíveis com os dados públicos disponíveis.
     </div>
 </div>
 
@@ -352,25 +352,29 @@
     <h2>5. Tecnologia nas Escolas (TIC Educação 2023)</h2>
 
     <div class="note">
-        <strong>Nota:</strong> Dados referentes à região Sudeste. A pesquisa TIC Educação pública
-        não disponibiliza microdados por unidade federativa.
+        <strong>Nota:</strong> Percentual de escolas de Ensino Fundamental e Médio na região Sudeste
+        (barras azuis; proxy para o RJ, pois a pesquisa não divulga dados por UF) e no Brasil (barras
+        cinza). Fonte: CGI.br/NIC.br, Cetic.br — TIC Educação 2023, tabelas de escolas. As margens de
+        erro no Sudeste ficam, em geral, entre ±1 e ±5 pontos percentuais.
     </div>
 
     {% if secoes.tecnologia.chart_infra %}
-    <h3>5.1 Infraestrutura</h3>
+    <h3>5.1 Infraestrutura e Conectividade</h3>
     <div class="chart-container">
         <img src="data:image/png;base64,{{ secoes.tecnologia.chart_infra }}" alt="Infraestrutura TIC">
     </div>
     {% endif %}
 
     {% if secoes.tecnologia.chart_ai %}
-    <h3>5.2 IA e Sistemas de Dados</h3>
+    <h3>5.2 Dados, Vigilância e Inteligência Artificial</h3>
     <div class="chart-container">
         <img src="data:image/png;base64,{{ secoes.tecnologia.chart_ai }}" alt="IA nas escolas">
     </div>
     <p>
-        Os indicadores E4A/B referem-se a tecnologias de vigilância (biometria e reconhecimento facial),
-        E5 a sistemas de analytics educacional, E6 a sistemas de inteligência artificial e F6 a chatbots.
+        E3: sistema interno de câmeras de vídeo; E4A/E4B: identificação dos alunos por digital/palma
+        e por reconhecimento facial; E6: uso de relatórios de Business Intelligence e de sistemas de
+        inteligência artificial (predição e análise baseadas em aprendizado de máquina) na gestão
+        escolar; F6: câmeras acessíveis e atendimento automatizado (chatbot) no aplicativo da escola.
     </p>
     {% endif %}
 
@@ -382,7 +386,7 @@
     {% endif %}
 
     {% if secoes.tecnologia.chart_training %}
-    <h3>5.4 Formação Digital Docente</h3>
+    <h3>5.4 Formação Docente em Tecnologias</h3>
     <div class="chart-container">
         <img src="data:image/png;base64,{{ secoes.tecnologia.chart_training }}" alt="Formação digital">
     </div>
@@ -399,7 +403,7 @@
         Esta seção analisa a relação entre indicadores de acesso e uso de tecnologia e o
         desempenho dos alunos no SAEB 2023. As análises são realizadas em três níveis:
         aluno (acesso domiciliar a tecnologia), escola (infraestrutura reportada pelo diretor)
-        e professor (formação e uso de TICs).
+        e professor (contribuição da formação e necessidade de formação em TICs).
     </p>
 
     <div class="note">
@@ -438,9 +442,10 @@
         <img src="data:image/png;base64,{{ secoes.cruzamentos.chart_director }}" alt="Infraestrutura Escolar">
     </div>
     <p>
-        Escolas com projetos de ciência e tecnologia e adoção de novas tecnologias educacionais
-        apresentam médias de proficiência diferentes. A análise compara escolas reportadas
-        pelos diretores como tendo (Sim) ou não tendo (Não) estes recursos.
+        Compara a proficiência média das escolas (uma observação por escola) conforme o relato
+        do diretor sobre a existência de projetos de ciência e tecnologia (Q194) e sobre a
+        formação da equipe escolar em novas tecnologias educacionais no ano (Q219).
+        Codificação oficial do SAEB 2023: A = Não, B = Sim.
     </p>
     {% endif %}
 
@@ -451,8 +456,9 @@
     </div>
     <p>
         O forest plot acima mostra os tamanhos de efeito (d de Cohen) para as variáveis
-        tecnológicas binárias. Valores positivos indicam associação positiva entre a presença
-        da tecnologia e o desempenho. Convenções: d &lt; 0.2 = pequeno, 0.2-0.5 = médio, &gt; 0.8 = grande.
+        tecnológicas binárias, sempre calculados como "Sim − Não". Valores positivos indicam
+        associação positiva entre a presença da tecnologia e o desempenho. Convenções de Cohen:
+        |d| &lt; 0,2 = desprezível; 0,2–0,5 = pequeno; 0,5–0,8 = médio; ≥ 0,8 = grande.
     </p>
     {% endif %}
 </div>
@@ -469,32 +475,34 @@
         autonomia docente e proteção de dados.
     </p>
 
-    <h3>6.1 Contexto Tecnológico</h3>
+    <h3>7.1 Contexto Tecnológico</h3>
     <p>
-        A adoção de sistemas de inteligência artificial nas escolas da região Sudeste está em
-        expansão, com destaque para plataformas de analytics educacional e chatbots. Paralelamente,
-        tecnologias de vigilância como biometria e reconhecimento facial estão presentes em parcela
-        significativa das escolas.
+        Na região Sudeste, cerca de uma em cada cinco escolas (19%) já usa sistemas de inteligência
+        artificial na gestão escolar e 43% usam relatórios de Business Intelligence. A vigilância por
+        câmeras internas está presente em 76% das escolas, enquanto a identificação biométrica
+        (2%) e o reconhecimento facial (3%) ainda são raros — mas envolvem dados sensíveis de crianças
+        e adolescentes, o que exige governança específica.
     </p>
 
-    <h3>6.2 Desigualdade Digital</h3>
+    <h3>7.2 Desigualdade Digital</h3>
     <p>
         A lacuna de desempenho entre redes pública e privada evidencia um cenário onde a desigualdade
         de acesso a recursos tecnológicos pode amplificar disparidades educacionais existentes.
         A introdução de ferramentas de IA sem equidade de acesso levanta questões éticas fundamentais.
     </p>
 
-    <h3>6.3 Preparação Docente</h3>
+    <h3>7.3 Preparação Docente</h3>
     <p>
         A formação docente em tecnologias digitais ainda é insuficiente. A adoção de ferramentas
         de IA sem adequada capacitação dos professores pode reduzir a autonomia docente e
         transferir decisões pedagógicas para algoritmos opacos.
     </p>
 
-    <h3>6.4 Privacidade e Proteção de Dados</h3>
+    <h3>7.4 Privacidade e Proteção de Dados</h3>
     <p>
-        Há uma lacuna significativa entre a adoção de tecnologias que coletam dados dos estudantes
-        e a implementação de políticas adequadas de privacidade e proteção de dados. Esta assimetria
+        Há uma lacuna entre a adoção de tecnologias que coletam dados dos estudantes e a governança
+        desses dados: no Sudeste, 76% das escolas usam câmeras, mas apenas 62% têm um documento que
+        defina sua política de proteção de dados, e apenas 34% promoveram debates sobre privacidade. Esta assimetria
         é particularmente preocupante no contexto escolar, onde os sujeitos são majoritariamente
         crianças e adolescentes.
     </p>
@@ -517,8 +525,8 @@
                 <th>Média Privada</th>
                 <th>Lacuna</th>
                 <th>d Cohen</th>
-                <th>IC 95% Inf.</th>
-                <th>IC 95% Sup.</th>
+                <th>IC 95% Lacuna (Inf.)</th>
+                <th>IC 95% Lacuna (Sup.)</th>
             </tr>
         </thead>
         <tbody>
@@ -526,12 +534,12 @@
             <tr>
                 <td>{{ r.serie }}</td>
                 <td>{{ r.disciplina }}</td>
-                <td>{{ "%.1f" | format(r.media_publica or 0) }}</td>
-                <td>{{ "%.1f" | format(r.media_privada or 0) }}</td>
-                <td>{{ "%.1f" | format(r.gap or 0) }}</td>
-                <td>{{ "%.2f" | format(r.cohens_d or 0) }}</td>
-                <td>{{ "%.1f" | format(r.ci_lower or 0) }}</td>
-                <td>{{ "%.1f" | format(r.ci_upper or 0) }}</td>
+                <td>{{ "%.1f" | format(r.media_publica) if r.media_publica is not none else "—" }}</td>
+                <td>{{ "%.1f" | format(r.media_privada) if r.media_privada is not none else "—" }}</td>
+                <td>{{ "%.1f" | format(r.gap) if r.gap is not none else "—" }}</td>
+                <td>{{ "%.2f" | format(r.cohens_d) if r.cohens_d is not none else "—" }}</td>
+                <td>{{ "%.1f" | format(r.ci_lower) if r.ci_lower is not none else "—" }}</td>
+                <td>{{ "%.1f" | format(r.ci_upper) if r.ci_upper is not none else "—" }}</td>
             </tr>
             {% endfor %}
         </tbody>

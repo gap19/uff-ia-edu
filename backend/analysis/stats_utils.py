@@ -3,6 +3,27 @@ Weighted statistical functions for analyzing SAEB 2023 survey data.
 
 Provides numerically stable implementations of common statistics
 that account for survey weights, stratification, and design effects.
+
+Design-based inference
+----------------------
+When ``clusters`` (primary sampling units — schools, ``ID_ESCOLA``) and
+optionally ``strata`` (``ESTRATO``) are given, standard errors are computed
+by Taylor linearization with the with-replacement ("ultimate cluster")
+variance estimator used by Stata ``svy`` and R ``survey``::
+
+    Var(θ) = Σ_h n_h/(n_h − 1) · Σ_{g∈h} (T_hg − T̄_h)²
+
+where T_hg is the cluster total of the influence values of θ. Degrees of
+freedom are (#clusters − #strata). Strata with a single cluster are centred
+on the grand mean (R ``survey.lonely.psu = "adjust"``, conservative).
+
+Subgroups (Wi-Fi yes/no, an INSE level, public/private...) are estimated as
+**domains**: the design arrays always cover the whole sample (e.g. every
+student of the UF and series) and observations outside the domain — or with
+missing values — enter with zero influence instead of being dropped. Cutting
+the sample down to the subgroup would drop clusters with no members and
+understate the variance. Without ``clusters`` the functions keep their
+simple-random-sampling formulas.
 """
 
 from typing import Dict, List, Optional, Tuple, Union
@@ -10,6 +31,21 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy import stats
+
+
+def to_float(column: ArrayLike) -> np.ndarray:
+    """Converte uma coluna (ex.: de ``DuckDB.fetchnumpy``) em float64 com NaN.
+
+    ``fetchnumpy`` devolve colunas com NULL como ``numpy.ma.MaskedArray``;
+    ``np.asarray`` descartaria a máscara e trocaria os NULL por 0.0.
+    """
+    return np.ma.filled(np.ma.asarray(column, dtype=np.float64), np.nan)
+
+
+def to_str(column: ArrayLike) -> np.ndarray:
+    """Converte uma coluna de texto (ex.: de ``fetchnumpy``) em ``str``; NULL vira ''."""
+    arr = np.ma.asarray(column, dtype=object)
+    return np.asarray(arr.filled(""), dtype=str)
 
 
 def _clean(
@@ -21,6 +57,174 @@ def _clean(
     for a in arrs:
         mask &= ~np.isnan(a)
     return tuple(a[mask] for a in arrs)
+
+
+# ---------- Design-based (Taylor linearization) variance ----------
+
+
+def _design_masks(*arrays: ArrayLike) -> np.ndarray:
+    """Boolean mask of rows where every float-convertible array is non-NaN."""
+    arrs = [np.asarray(a, dtype=np.float64) for a in arrays]
+    mask = np.ones(len(arrs[0]), dtype=bool)
+    for a in arrs:
+        mask &= ~np.isnan(a)
+    return mask
+
+
+def linearized_covariance(
+    influence: np.ndarray,
+    clusters: Optional[ArrayLike] = None,
+    strata: Optional[ArrayLike] = None,
+) -> Tuple[np.ndarray, int]:
+    """Covariance of estimators from their influence values.
+
+    Parameters
+    ----------
+    influence : (n, K) array
+        Linearized (influence) values of K estimators for n observations.
+    clusters, strata : optional arrays of length n
+        PSU and stratum identifiers. Clusters must be nested in strata.
+
+    Returns
+    -------
+    (cov, df) : (K, K) covariance matrix and design degrees of freedom.
+    """
+    Z = np.atleast_2d(np.asarray(influence, dtype=np.float64))
+    if Z.shape[0] == 1 and np.asarray(influence).ndim == 1:
+        Z = Z.T
+    n, k = Z.shape
+    if n < 2:
+        return np.full((k, k), np.nan), 0
+
+    cl = np.arange(n) if clusters is None else np.asarray(clusters)
+    cl_codes, cl_inv = np.unique(cl, return_inverse=True)
+    n_cl = len(cl_codes)
+    if n_cl < 2:
+        # Com um único conglomerado a variância não é estimável
+        return np.full((k, k), np.nan), 0
+    totals = np.zeros((n_cl, k))
+    np.add.at(totals, cl_inv, Z)
+    grand = totals.mean(axis=0)
+
+    if strata is None:
+        centred = totals - grand
+        cov = n_cl / (n_cl - 1) * centred.T @ centred
+        return cov, n_cl - 1
+
+    # Stratum of each cluster (clusters are nested in strata)
+    first_obs = np.unique(cl_inv, return_index=True)[1]
+    cl_stratum = np.asarray(strata)[first_obs]
+    _, st_inv = np.unique(cl_stratum, return_inverse=True)
+    n_st = st_inv.max() + 1
+    n_h = np.bincount(st_inv, minlength=n_st).astype(np.float64)
+    sums = np.zeros((n_st, k))
+    np.add.at(sums, st_inv, totals)
+    means = sums / n_h[:, None]
+
+    single = n_h[st_inv] < 2
+    centred = totals - means[st_inv]
+    centred[single] = totals[single] - grand  # "adjust" for lonely PSUs
+    scale = np.where(single, 1.0, n_h[st_inv] / np.maximum(n_h[st_inv] - 1, 1))
+    cov = (centred * scale[:, None]).T @ centred
+    return cov, max(n_cl - n_st, 1)
+
+
+def linearized_group_means(
+    values: ArrayLike,
+    weights: ArrayLike,
+    groups: ArrayLike,
+    clusters: Optional[ArrayLike] = None,
+    strata: Optional[ArrayLike] = None,
+    domain: Optional[ArrayLike] = None,
+) -> Dict[str, object]:
+    """Weighted means of each group with their design-based covariance.
+
+    ``domain`` (boolean) marks the observations that belong to the analysis;
+    with ``clusters``, the other observations (and those with missing value
+    or weight) stay in the design with zero influence — domain estimation.
+    Without ``clusters`` they are simply dropped (SRS).
+
+    Returns a dict with ``levels``, ``means`` (K,), ``cov`` (K, K), ``df``,
+    ``n`` (observations per group) and ``n_clusters`` (distinct clusters per
+    group — a group in a single cluster has no estimable variance). Groups
+    are estimated jointly, so the covariance between groups sharing
+    clusters (e.g. students with and without Wi-Fi in the same school) is
+    taken into account.
+    """
+    v = np.asarray(values, dtype=np.float64)
+    w = np.asarray(weights, dtype=np.float64)
+    g = np.asarray(groups)
+    in_dom = _design_masks(v, w)
+    if domain is not None:
+        in_dom &= np.asarray(domain, dtype=bool)
+
+    if clusters is None:
+        # SRS: each observation is its own cluster; out-of-domain rows dropped
+        v, w, g = v[in_dom], w[in_dom], g[in_dom]
+        st = None if strata is None else np.asarray(strata)[in_dom]
+        cl = None
+        in_dom = np.ones(len(v), dtype=bool)
+    else:
+        cl = np.asarray(clusters)
+        st = None if strata is None else np.asarray(strata)
+
+    levels = np.unique(g[in_dom])
+    k = len(levels)
+    means = np.full(k, np.nan)
+    n_obs = np.zeros(k, dtype=int)
+    n_clu = np.zeros(k, dtype=int)
+    Z = np.zeros((len(v), k))
+    for j, lev in enumerate(levels):
+        idx = in_dom & (g == lev)
+        w_sum = w[idx].sum()
+        n_obs[j] = int(idx.sum())
+        n_clu[j] = int(idx.sum()) if cl is None else len(np.unique(cl[idx]))
+        if w_sum <= 0:
+            continue
+        means[j] = np.sum(w[idx] * v[idx]) / w_sum
+        Z[idx, j] = w[idx] * (v[idx] - means[j]) / w_sum
+    cov, df = linearized_covariance(Z, cl, st)
+    return {"levels": levels, "means": means, "cov": cov, "df": df, "n": n_obs, "n_clusters": n_clu}
+
+
+def design_ttest(
+    values: ArrayLike,
+    weights: ArrayLike,
+    labels: ArrayLike,
+    level_1: object,
+    level_2: object,
+    clusters: ArrayLike,
+    strata: Optional[ArrayLike] = None,
+    domain: Optional[ArrayLike] = None,
+) -> Dict[str, float]:
+    """Design-based test of mean(level_1) − mean(level_2), as domains.
+
+    Both groups are estimated jointly over the full design (``clusters`` /
+    ``strata`` for all observations); observations outside ``domain`` or with
+    another label enter with zero influence.
+
+    Returns a dict with ``diff``, ``se``, ``t``, ``p`` and ``df``. ``se``,
+    ``t`` and ``p`` are NaN when a group lies in a single cluster.
+    """
+    lab = np.asarray(labels, dtype=object)
+    dom = np.ones(len(lab), dtype=bool) if domain is None else np.asarray(domain, dtype=bool)
+    in_pair = dom & ((lab == level_1) | (lab == level_2))
+    codes = np.where(lab == level_1, 0, 1)
+    res = linearized_group_means(values, weights, codes, clusters, strata, domain=in_pair)
+    out = {"diff": np.nan, "se": np.nan, "t": np.nan, "p": np.nan, "df": float(res["df"])}
+    if list(res["levels"]) != [0, 1]:
+        return out
+    out["diff"] = float(res["means"][0] - res["means"][1])
+    if res["n_clusters"].min() < 2 or res["df"] < 1:
+        return out  # grupo concentrado numa única escola: variância não estimável
+    cov = res["cov"]
+    var = cov[0, 0] + cov[1, 1] - 2 * cov[0, 1]
+    if not var > 0:
+        return out
+    se = float(np.sqrt(var))
+    t_stat = out["diff"] / se
+    out.update(se=se, t=float(t_stat), p=float(2 * stats.t.sf(abs(t_stat), res["df"])))
+    return out
 
 
 # ---------- Descriptive statistics ----------
@@ -97,16 +301,43 @@ def confidence_interval_mean(
     weights: ArrayLike,
     strata: Optional[ArrayLike] = None,
     alpha: float = 0.05,
+    clusters: Optional[ArrayLike] = None,
+    domain: Optional[ArrayLike] = None,
 ) -> Tuple[float, float, float]:
     """Confidence interval for a weighted mean.
 
-    If *strata* is provided the design effect (DEFF) is estimated and
-    used to inflate the standard error.
+    With *clusters* (and optional *strata*) the standard error is the
+    design-based Taylor-linearization SE with (#clusters − #strata) degrees
+    of freedom; *domain* (boolean) restricts the estimate to a subgroup
+    while keeping the full design (domain estimation). Otherwise, if
+    *strata* alone is provided, a stratified SRS variance (bounded design
+    effect) is used; with neither, plain SRS.
 
     Returns
     -------
     (mean, lower, upper)
     """
+    if clusters is not None:
+        valid = _design_masks(values, weights)
+        if domain is not None:
+            valid &= np.asarray(domain, dtype=bool)
+        if not valid.any():
+            return (np.nan, np.nan, np.nan)
+        res = linearized_group_means(
+            values, weights, np.zeros(len(np.asarray(values))), clusters, strata, domain=valid
+        )
+        mu, var, df = res["means"][0], res["cov"][0, 0], res["df"]
+        if df < 1 or np.isnan(var) or res["n_clusters"][0] < 2:
+            return (float(mu), np.nan, np.nan)
+        half = stats.t.ppf(1 - alpha / 2, df) * np.sqrt(max(var, 0.0))
+        return (float(mu), float(mu - half), float(mu + half))
+
+    if domain is not None:
+        dom = np.asarray(domain, dtype=bool)
+        values = np.asarray(values, dtype=np.float64)[dom]
+        weights = np.asarray(weights, dtype=np.float64)[dom]
+        if strata is not None:
+            strata = np.asarray(strata)[dom]
     v, w = _clean(values, weights)
     if len(v) == 0:
         return (np.nan, np.nan, np.nan)
@@ -149,7 +380,7 @@ def confidence_interval_mean(
             if se2 > 0:
                 deff = var_strat / se2
                 deff = max(deff, 0.1)  # floor to avoid nonsensical shrinkage
-                se2 = var_strat
+                se2 = deff * se2
 
     se = np.sqrt(se2)
     df = max(n - 1, 1)
@@ -165,7 +396,9 @@ def weighted_ttest(
     vals2: ArrayLike,
     w2: ArrayLike,
 ) -> Tuple[float, float, float]:
-    """Two-sample t-test for weighted data (Welch-like).
+    """Two-sample t-test for weighted data (Welch-like, SRS).
+
+    For design-based inference with clusters/strata use :func:`design_ttest`.
 
     Returns
     -------
@@ -229,8 +462,12 @@ def cohens_d_weighted(
 
     sw1 = wt1.sum()
     sw2 = wt2.sum()
-    # Pooled variance weighted by effective sample sizes
-    pooled_var = ((sw1 - 1) * var1 + (sw2 - 1) * var2) / (sw1 + sw2 - 2)
+    # Pooled variance weighted by the (population) sum of weights of each
+    # group — with unit weights this reduces to the classical pooled SD.
+    denom = sw1 + sw2 - 2
+    if denom <= 0 or np.isnan(var1) or np.isnan(var2):
+        return np.nan
+    pooled_var = ((sw1 - 1) * var1 + (sw2 - 1) * var2) / denom
     if pooled_var <= 0:
         return np.nan
     return float((mu1 - mu2) / np.sqrt(pooled_var))
@@ -243,16 +480,57 @@ def weighted_anova_oneway(
     values: ArrayLike,
     weights: ArrayLike,
     groups: ArrayLike,
+    clusters: Optional[ArrayLike] = None,
+    strata: Optional[ArrayLike] = None,
+    domain: Optional[ArrayLike] = None,
 ) -> Tuple[float, float, int]:
     """Weighted one-way ANOVA F-test.
 
-    Computes between-group and within-group weighted sums of squares
-    to test whether group means differ significantly.
+    Without *clusters*: classical weighted sums of squares (SRS) on the
+    observations in *domain*.
+
+    With *clusters* (and optional *strata*): design-based Wald test of the
+    equality of all group means (estimated as domains, see module notes),
+    using the linearized covariance of the means and the Korn–Graubard
+    adjusted F,
+    ``F = (d − q + 1) / (d·q) · W`` with ``q = k − 1`` and ``d`` the design
+    degrees of freedom, referred to F(q, d − q + 1) — as in Stata ``svy``.
 
     Returns
     -------
     (F_statistic, p_value, degrees_of_freedom_between)
     """
+    if clusters is not None:
+        res = linearized_group_means(values, weights, groups, clusters, strata, domain=domain)
+        # Grupos concentrados numa única escola não têm variância estimável:
+        # ficam fora do teste (continuam nas estatísticas descritivas).
+        keep = (res["n_clusters"] >= 2) & ~np.isnan(res["means"])
+        means = res["means"][keep]
+        cov = res["cov"][np.ix_(keep, keep)]
+        d = res["df"]
+        k = len(means)
+        if k < 2 or d < 1:
+            return (np.nan, np.nan, max(k - 1, 0))
+        q = k - 1
+        C = np.hstack([np.ones((q, 1)), -np.eye(q)])  # mean_1 − mean_j
+        diff = C @ means
+        V = C @ cov @ C.T
+        try:
+            wald = float(diff @ np.linalg.solve(V, diff))
+        except np.linalg.LinAlgError:
+            wald = float(diff @ np.linalg.pinv(V) @ diff)
+        df2 = d - q + 1
+        if df2 < 1:
+            return (np.nan, np.nan, q)
+        f_stat = (d - q + 1) / (d * q) * wald
+        p_value = float(stats.f.sf(f_stat, q, df2))
+        return (float(f_stat), p_value, q)
+
+    if domain is not None:
+        dom = np.asarray(domain, dtype=bool)
+        values = np.asarray(values, dtype=np.float64)[dom]
+        weights = np.asarray(weights, dtype=np.float64)[dom]
+        groups = np.asarray(groups)[dom]
     v, w = _clean(values, weights)
     g = np.asarray(groups)
     # Apply same NaN mask
@@ -270,7 +548,6 @@ def weighted_anova_oneway(
         return (np.nan, np.nan, 0)
 
     grand_mean = np.average(v, weights=w)
-    total_w = w.sum()
 
     ss_between = 0.0
     ss_within = 0.0
@@ -300,6 +577,35 @@ def weighted_anova_oneway(
     return (float(f_stat), p_value, df_between)
 
 
+def weighted_eta_squared(
+    values: ArrayLike,
+    weights: ArrayLike,
+    groups: ArrayLike,
+) -> float:
+    """Weighted eta-squared (SS_between / SS_total) for a one-way design.
+
+    Effect-size companion of :func:`weighted_anova_oneway`: the share of
+    the (weighted) variance of *values* explained by group membership.
+    """
+    v, w = _clean(values, weights)
+    mask = ~np.isnan(np.asarray(values, dtype=np.float64)) & ~np.isnan(
+        np.asarray(weights, dtype=np.float64)
+    )
+    g = np.asarray(groups)[mask]
+    if len(v) == 0 or len(np.unique(g)) < 2:
+        return np.nan
+
+    grand_mean = np.average(v, weights=w)
+    ss_total = float(np.sum(w * (v - grand_mean) ** 2))
+    if ss_total <= 0:
+        return np.nan
+    ss_between = 0.0
+    for grp in np.unique(g):
+        idx = g == grp
+        ss_between += w[idx].sum() * (np.average(v[idx], weights=w[idx]) - grand_mean) ** 2
+    return float(ss_between / ss_total)
+
+
 def chi_squared_test(
     observed: Union[ArrayLike, List[List[float]]],
 ) -> Tuple[float, float, int]:
@@ -317,15 +623,55 @@ def chi_squared_test(
 
 
 def pearson_weighted(
-    x: ArrayLike, y: ArrayLike, weights: ArrayLike
+    x: ArrayLike,
+    y: ArrayLike,
+    weights: ArrayLike,
+    clusters: Optional[ArrayLike] = None,
+    strata: Optional[ArrayLike] = None,
+    domain: Optional[ArrayLike] = None,
 ) -> Tuple[float, float]:
-    """Weighted Pearson correlation coefficient.
+    """Weighted Pearson correlation coefficient (within *domain*, if given).
 
     Returns
     -------
     (r, p_value)
-        p-value is computed using the t-distribution with n-2 df.
+        Without *clusters*, the p-value uses the t-distribution with n−2 df.
+        With *clusters* (and optional *strata*), it is the design-based test
+        of the weighted regression slope of y on x (equivalent null
+        hypothesis r = 0), with linearized SE and design df.
     """
+    mask = _design_masks(x, y, weights)
+    if domain is not None:
+        mask &= np.asarray(domain, dtype=bool)
+    if clusters is not None:
+        xa = np.asarray(x, dtype=np.float64)
+        ya = np.asarray(y, dtype=np.float64)
+        wa = np.asarray(weights, dtype=np.float64)
+        xc, yc, wc = xa[mask], ya[mask], wa[mask]
+        r, _ = pearson_weighted(xc, yc, wc)
+        if np.isnan(r):
+            return (r, np.nan)
+        dx = xc - np.average(xc, weights=wc)
+        dy = yc - np.average(yc, weights=wc)
+        sxx = np.sum(wc * dx ** 2)
+        slope = np.sum(wc * dx * dy) / sxx
+        # Influência da inclinação: zero fora do domínio (desenho completo)
+        influence = np.zeros(len(xa))
+        influence[mask] = wc * dx * (dy - slope * dx) / sxx
+        cov, df = linearized_covariance(
+            influence, np.asarray(clusters), None if strata is None else np.asarray(strata)
+        )
+        se = np.sqrt(cov[0, 0]) if cov[0, 0] > 0 else np.nan
+        if np.isnan(se) or df < 1:
+            return (r, np.nan)
+        p_value = 2 * stats.t.sf(abs(slope / se), df)
+        return (r, float(p_value))
+
+    if domain is not None:
+        x = np.asarray(x, dtype=np.float64)[mask]
+        y = np.asarray(y, dtype=np.float64)[mask]
+        weights = np.asarray(weights, dtype=np.float64)[mask]
+
     xc, yc, wc = _clean(x, y, weights)
     n = len(xc)
     if n < 3:

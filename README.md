@@ -23,7 +23,7 @@ Analisa microdados do **SAEB 2023** (7,6M+ registros) e da **TIC Educação 2023
 - Python 3.10+
 - Dependências de sistema para WeasyPrint (libpango, libcairo, libgdk-pixbuf)
 
-> **Dados processados incluídos:** Este repositório já inclui os dados processados em `data/processed/` (~2 GB), prontos para uso. Não é necessário baixar nada para rodar o dashboard.
+> **Dados processados incluídos:** Este repositório já inclui os dados processados em `data/processed/` (~850 MB, via Git LFS — instale o [git-lfs](https://git-lfs.com) antes de clonar), prontos para uso. Não é necessário baixar nada para rodar o dashboard.
 
 ## Setup Rápido
 
@@ -82,15 +82,16 @@ uff-ia-edu/
 │   ├── api/                  # FastAPI: app + rotas
 │   │   ├── app.py            # Aplicação principal
 │   │   ├── routes_saeb.py    # 9 endpoints SAEB
-│   │   ├── routes_tic.py     # 7 endpoints TIC
+│   │   ├── routes_tic.py     # 9 endpoints TIC
 │   │   ├── routes_cross.py   # 6 endpoints cruzamentos
 │   │   └── routes_reports.py # Geração de PDF
 │   ├── analysis/             # Módulos de análise estatística
-│   │   ├── stats_utils.py    # Estatística ponderada
+│   │   ├── stats_utils.py    # Estatística ponderada e de desenho amostral
 │   │   ├── proficiency.py    # Distribuições de proficiência
 │   │   ├── equity.py         # Lacunas pública/privada, INSE
 │   │   ├── teacher.py        # Formação e práticas docentes
-│   │   └── cross_analysis.py # Cruzamentos tech x desempenho
+│   │   ├── cross_analysis.py # Cruzamentos tech x desempenho
+│   │   └── tic.py            # Catálogo de indicadores TIC (Sudeste e Brasil)
 │   ├── etl/                  # Pipeline de dados
 │   │   ├── saeb_loader.py    # CSV → Parquet
 │   │   ├── tic_loader.py     # Excel → Parquet
@@ -98,6 +99,7 @@ uff-ia-edu/
 │   │   └── precompute.py     # Tabelas de agregação
 │   ├── reports/              # Geração de relatórios PDF
 │   ├── config.py             # Configuração central
+│   ├── db.py                 # Conexão DuckDB compartilhada (somente leitura)
 │   └── requirements.txt
 ├── frontend/
 │   ├── templates/dashboard.html  # SPA do dashboard (Jinja2)
@@ -115,12 +117,12 @@ uff-ia-edu/
 │   ├── run.py                # Servidor de desenvolvimento
 │   ├── export_static.py      # Exportação estática para o Firebase Hosting
 │   └── validate_stats.py     # Validação cruzada de estatísticas
-├── tests/                    # Testes pytest (41 testes)
+├── tests/                    # Testes pytest (66 testes)
 ├── data/
 │   └── processed/            # Dados processados (incluídos no repo)
-│       ├── saeb.duckdb       # Tabelas pré-computadas (~1.1 GB)
-│       ├── saeb/*.parquet    # Microdados filtrados (~849 MB)
-│       └── tic/*.parquet     # Indicadores TIC (~356 KB)
+│       ├── saeb.duckdb       # 14 tabelas agregadas (~5 MB)
+│       ├── saeb/*.parquet    # Microdados SAEB 2023 (~849 MB)
+│       └── tic/*.parquet     # Tabelas TIC Educação 2023 (~340 KB)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── firebase.json             # Configuração do Firebase Hosting
@@ -133,7 +135,7 @@ uff-ia-edu/
 1. **Visão Geral** — KPIs, médias por série/disciplina, ranking nacional de UFs
 2. **Proficiência** — Distribuição, níveis de proficiência, comparação RJ/Sudeste/Brasil
 3. **Equidade** — Gap pública/privada, correlação INSE x desempenho
-4. **Tecnologia nas Escolas** — Indicadores TIC: infraestrutura, IA, formação, privacidade
+4. **Tecnologia nas Escolas** — Indicadores TIC Educação (Sudeste como proxy do RJ, Brasil como referência): infraestrutura, dados/IA, formação docente, privacidade
 5. **Professores** — Perfil, formação, práticas, correlação formação x desempenho
 6. **Questionários** — Explorador interativo de respostas dos questionários contextuais
 7. **Ética e IA** — Síntese: desigualdade digital, preparação docente, dimensões éticas
@@ -150,7 +152,7 @@ A documentação interativa da API (Swagger) está disponível em `/docs` ao rod
 | Prefixo | Endpoints | Descrição |
 |---------|----------|-----------|
 | `/api/saeb/` | 9 | Proficiência, equidade, questionários, ranking |
-| `/api/tic/` | 7 | Indicadores de tecnologia nas escolas |
+| `/api/tic/` | 9 | Indicadores TIC Educação (Sudeste e Brasil, com margens de erro) |
 | `/api/cross/` | 6 | Cruzamentos tecnologia x desempenho |
 | `/api/reports/` | 2 | Geração de relatório PDF customizável |
 | `/api/health` | 1 | Health check |
@@ -158,7 +160,7 @@ A documentação interativa da API (Swagger) está disponível em `/docs` ao rod
 ## Testes
 
 ```bash
-# Todos os testes (41 testes: unitários + integração + PDF)
+# Todos os testes (66 testes: unitários + integração + PDF)
 python -m pytest tests/ -v
 
 # Apenas testes unitários de estatística
@@ -179,7 +181,7 @@ O dashboard permite gerar relatórios PDF acadêmicos com seções customizávei
 2. Selecionar seções, séries e disciplinas desejadas
 3. O PDF é gerado com gráficos vetoriais (matplotlib/seaborn) e tabelas formatadas
 
-> **Nota:** a customização de seções requer o servidor local. No site publicado, o botão baixa o relatório completo pré-gerado (todas as seções, séries e disciplinas, com apêndice).
+> **Nota:** a customização de seções requer o servidor local. No site publicado, o botão baixa o relatório completo pré-gerado (todas as seções, incluindo cruzamentos, com apêndice para todas as séries e disciplinas; gráficos de série única — ranking, INSE e cruzamentos — referem-se ao 9º EF / LP).
 
 Também disponível via API:
 ```bash
@@ -204,9 +206,9 @@ Clique no ícone de download na toolbox do gráfico para exportar como PNG em al
 ## Rigor Estatístico
 
 - Todas as estimativas utilizam **pesos amostrais** do SAEB
-- Intervalos de confiança com **design effect**
-- Testes de significância: t-test ponderado, ANOVA, qui-quadrado
-- Tamanho de efeito: **d de Cohen** ponderado
+- Erros-padrão, intervalos de confiança e testes com o **desenho amostral** do SAEB (linearização de Taylor com estratos e conglomerados por escola, como `svy`/`survey`)
+- Testes de significância: teste t, ANOVA (Wald, F de Korn–Graubard) e correlação de Pearson ponderada
+- Tamanho de efeito: **d de Cohen** ponderado e **η²**
 - Correção para comparações múltiplas: **Bonferroni**
 - Controle por nível socioeconômico (**INSE**) para separar efeito tecnologia de confundimento SES
 
@@ -240,9 +242,9 @@ Os dados processados já estão incluídos no repositório. Esta seção é para
 
 ### 2. TIC Educação 2023 — Tabelas (CETIC.br/NIC.br)
 
-1. Acesse: https://cetic.br/pt/pesquisa/educacao/indicadores/
-2. Baixe as **tabelas de escolas** (formato Excel, edição 2023)
-3. Coloque os 4 arquivos `.xlsx` em `data/tic_educacao_2023_escolas_tabelas_xlsx_v1.0/`
+1. Baixe as **tabelas de escolas** (Excel, v1.0) em <https://cetic.br/media/microdados/786/tic_educacao_2023_escolas_tabelas_xlsx_v1.0.zip> (página: <https://cetic.br/pt/arquivos/educacao/2023/escolas/>)
+2. Extraia os 4 arquivos `.xlsx` em `data/tic_educacao_2023_escolas_tabelas_xlsx_v1.0/`
+3. Os indicadores exibidos no dashboard estão catalogados em `backend/analysis/tic.py` (rota `/api/tic/groups`)
 
 ### 3. Executar o Pipeline ETL
 

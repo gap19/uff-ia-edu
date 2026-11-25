@@ -12,10 +12,10 @@ import numpy as np
 
 from backend.analysis.stats_utils import (
     confidence_interval_mean,
-    weighted_mean,
+    to_float,
+    to_str,
 )
 from backend.config import (
-    DUCKDB_PATH,
     ID_UF_RJ,
     PROFICIENCY_COLS,
     SAEB_PARQUET_DIR,
@@ -24,8 +24,14 @@ from backend.config import (
 
 _PROFESSOR_PARQUET = str(SAEB_PARQUET_DIR / "TS_PROFESSOR.parquet")
 
-# Professor questionnaire mappings (SAEB 2023).
-# TX_Q001 = Gender, TX_Q004 = Education level, TX_Q005 = Experience years
+# Professor questionnaire mappings (SAEB 2023), following the official
+# dictionary (data/processed/saeb_questionnaire_dict.json, sheet TS_PROFESSOR):
+#   TX_Q001 = sexo, TX_Q020 = maior nível de escolaridade concluído.
+# (TX_Q004–TX_Q007 ask about disability/ASD/giftedness — not formation —
+# and the 2023 questionnaire has no "years of experience" item.)
+_GENDER_COL = "TX_Q001"
+_EDUCATION_COL = "TX_Q020"
+
 _GENDER_MAP: Dict[str, str] = {
     "A": "Masculino",
     "B": "Feminino",
@@ -33,23 +39,11 @@ _GENDER_MAP: Dict[str, str] = {
 }
 
 _EDUCATION_MAP: Dict[str, str] = {
-    "A": "Ensino Médio - Magistério/Normal",
-    "B": "Ensino Médio - Outros",
-    "C": "Ensino Superior - Pedagogia",
-    "D": "Ensino Superior - Licenciatura LP",
-    "E": "Ensino Superior - Licenciatura MT",
-    "F": "Ensino Superior - Licenciatura Outros",
-    "G": "Ensino Superior - Outros",
-}
-
-_EXPERIENCE_MAP: Dict[str, str] = {
-    "A": "Menos de 1 ano",
-    "B": "1 a 2 anos",
-    "C": "3 a 5 anos",
-    "D": "6 a 9 anos",
-    "E": "10 a 15 anos",
-    "F": "16 a 20 anos",
-    "G": "Mais de 20 anos",
+    "A": "Ensino Médio - Magistério",
+    "B": "Graduação",
+    "C": "Especialização",
+    "D": "Mestrado",
+    "E": "Doutorado",
 }
 
 
@@ -85,11 +79,11 @@ def _count_by_category(
 def get_teacher_profile_rj(
     uf: int = ID_UF_RJ,
 ) -> Dict[str, Any]:
-    """Return teacher demographics for RJ: gender, education, experience.
+    """Return teacher demographics for RJ: gender and education level.
 
     Returns
     -------
-    dict with keys: total_teachers, gender, education, experience.
+    dict with keys: total_teachers, gender, education.
     Each sub-key contains a list of {code, label, count, proportion}.
     """
     con = duckdb.connect()
@@ -101,9 +95,8 @@ def get_teacher_profile_rj(
     """
     total = con.execute(total_query, [uf]).fetchone()[0]
 
-    gender = _count_by_category(con, "TX_Q001", _GENDER_MAP, uf)
-    education = _count_by_category(con, "TX_Q004", _EDUCATION_MAP, uf)
-    experience = _count_by_category(con, "TX_Q005", _EXPERIENCE_MAP, uf)
+    gender = _count_by_category(con, _GENDER_COL, _GENDER_MAP, uf)
+    education = _count_by_category(con, _EDUCATION_COL, _EDUCATION_MAP, uf)
 
     con.close()
 
@@ -111,7 +104,6 @@ def get_teacher_profile_rj(
         "total_teachers": int(total),
         "gender": gender,
         "education": education,
-        "experience": experience,
     }
 
 
@@ -120,13 +112,14 @@ def get_teacher_tech_training_rj(
 ) -> Dict[str, Any]:
     """Return technology training data from teacher questionnaire.
 
-    Analyzes TX_Q029 (participation in continuing education / tech training)
-    and TX_Q037 (use of technology in pedagogical practice).
+    Analyzes TX_Q029 (how much this year's training contributed to using new
+    technologies) and TX_Q037 (how much the teacher *needs* training on the
+    use of new ICTs).
 
     Returns
     -------
     dict with keys: tech_training (TX_Q029 distribution),
-    tech_usage (TX_Q037 distribution), total_respondents.
+    tech_training_need (TX_Q037 distribution), total_respondents.
     """
     con = duckdb.connect()
 
@@ -136,7 +129,7 @@ def get_teacher_tech_training_rj(
     """
     total = con.execute(total_query, [uf]).fetchone()[0]
 
-    # TX_Q029 - tech training participation
+    # TX_Q029 - contribution of training to the use of new technologies
     q029_query = f"""
         SELECT TX_Q029 AS cat, COUNT(*) AS cnt
         FROM '{_PROFESSOR_PARQUET}'
@@ -156,7 +149,7 @@ def get_teacher_tech_training_rj(
             "proportion": round(cnt / q029_total, 4) if q029_total > 0 else 0.0,
         })
 
-    # TX_Q037 - technology usage in practice
+    # TX_Q037 - need for training on the use of new ICTs
     q037_query = f"""
         SELECT TX_Q037 AS cat, COUNT(*) AS cnt
         FROM '{_PROFESSOR_PARQUET}'
@@ -168,9 +161,9 @@ def get_teacher_tech_training_rj(
     """
     q037_rows = con.execute(q037_query, [uf]).fetchall()
     q037_total = sum(r[1] for r in q037_rows)
-    tech_usage: List[Dict[str, Any]] = []
+    tech_training_need: List[Dict[str, Any]] = []
     for cat_val, cnt in q037_rows:
-        tech_usage.append({
+        tech_training_need.append({
             "code": str(cat_val),
             "count": int(cnt),
             "proportion": round(cnt / q037_total, 4) if q037_total > 0 else 0.0,
@@ -181,7 +174,7 @@ def get_teacher_tech_training_rj(
     return {
         "total_respondents": int(total),
         "tech_training": tech_training,
-        "tech_usage": tech_usage,
+        "tech_training_need": tech_training_need,
     }
 
 
@@ -192,8 +185,11 @@ def get_formation_vs_proficiency_rj(
 ) -> Dict[str, Any]:
     """Return relationship between teacher formation and student performance.
 
-    Joins professor data with student proficiency data via school/class
-    to compute mean proficiency by teacher education level (TX_Q004).
+    Joins professor data with student proficiency data via class (ID_TURMA)
+    to compute mean proficiency by teacher education level (TX_Q020).
+    Classes may have more than one responding teacher (no discipline
+    indicator exists), so each student–teacher pair is weighted by
+    1 / (number of responding teachers of the class).
 
     Parameters
     ----------
@@ -207,7 +203,7 @@ def get_formation_vs_proficiency_rj(
     Returns
     -------
     dict with keys: by_formation (list of dicts with formation level,
-    mean proficiency, CI, n_teachers, n_students).
+    mean proficiency, CI and n_pairs = number of student–teacher pairs).
     """
     disc = disciplina.upper()
     prof_col = PROFICIENCY_COLS.get(disc)
@@ -239,64 +235,69 @@ def get_formation_vs_proficiency_rj(
         WITH teacher_formation AS (
             SELECT
                 ID_TURMA,
-                TX_Q004 AS formation,
+                {_EDUCATION_COL} AS formation,
                 ID_PROFESSOR
             FROM '{_PROFESSOR_PARQUET}'
             WHERE ID_UF = ?
-              AND TX_Q004 IS NOT NULL
+              AND {_EDUCATION_COL} IS NOT NULL
+              AND {_EDUCATION_COL} NOT IN ('*', '.', '')
               AND IN_PREENCHIMENTO_QUESTIONARIO = 1
+        ),
+        teachers_per_class AS (
+            SELECT ID_TURMA, COUNT(*) AS n_prof
+            FROM teacher_formation
+            GROUP BY ID_TURMA
         ),
         student_prof AS (
             SELECT
                 ID_TURMA,
+                ID_ESCOLA,
+                ESTRATO,
                 {prof_col} AS prof,
                 {weight_col} AS peso
             FROM '{aluno_parquet}'
             WHERE ID_UF = ?
-              AND {prof_col} IS NOT NULL
-              AND {weight_col} IS NOT NULL
         )
+        -- LEFT JOIN: alunos sem professor respondente ficam no desenho
+        -- (estimação por domínio), com formação NULL
         SELECT
             tf.formation,
             sp.prof,
-            sp.peso
+            sp.peso / COALESCE(k.n_prof, 1) AS peso,
+            sp.ID_ESCOLA AS escola,
+            sp.ESTRATO AS estrato
         FROM student_prof sp
-        INNER JOIN teacher_formation tf ON sp.ID_TURMA = tf.ID_TURMA
+        LEFT JOIN teacher_formation tf ON sp.ID_TURMA = tf.ID_TURMA
+        LEFT JOIN teachers_per_class k ON sp.ID_TURMA = k.ID_TURMA
     """
     df = con.execute(query, [uf, uf]).fetchnumpy()
     con.close()
 
-    if len(df.get("formation", [])) == 0:
-        return {"by_formation": []}
+    formation = to_str(df["formation"])
+    prof_vals = to_float(df["prof"])
+    peso_vals = to_float(df["peso"])
+    escola = np.asarray(df["escola"])
+    estrato = np.asarray(df["estrato"])
+    valid = ~np.isnan(prof_vals) & ~np.isnan(peso_vals) & np.isin(formation, list(_EDUCATION_MAP))
 
-    formation = np.asarray(df["formation"])
-    prof_vals = np.asarray(df["prof"], dtype=np.float64)
-    peso_vals = np.asarray(df["peso"], dtype=np.float64)
+    def _sf(x: float) -> Optional[float]:
+        return None if x is None or np.isnan(x) else float(x)
 
-    # Group by formation level
-    unique_formations = sorted(set(str(f) for f in formation if f is not None))
     by_formation: List[Dict[str, Any]] = []
-
-    for form_code in unique_formations:
-        mask = np.array([str(f) == form_code for f in formation])
-        if not mask.any():
-            continue
-
-        v = prof_vals[mask]
-        w = peso_vals[mask]
-        valid = ~np.isnan(v) & ~np.isnan(w)
-        if not valid.any():
-            continue
-
-        mean_val, ci_lo, ci_hi = confidence_interval_mean(v[valid], w[valid])
-
+    for form_code in sorted(set(formation[valid])):
+        mask = valid & (formation == form_code)
+        # IC de desenho (domínio): estratos + escolas; os pares do mesmo aluno
+        # ficam no mesmo conglomerado
+        mean_val, ci_lo, ci_hi = confidence_interval_mean(
+            prof_vals, peso_vals, strata=estrato, clusters=escola, domain=mask
+        )
         by_formation.append({
             "formation_code": form_code,
             "formation_label": _EDUCATION_MAP.get(form_code, form_code),
-            "mean_proficiency": float(mean_val),
-            "ci_lower": float(ci_lo),
-            "ci_upper": float(ci_hi),
-            "n_students": int(valid.sum()),
+            "mean_proficiency": _sf(mean_val),
+            "ci_lower": _sf(ci_lo),
+            "ci_upper": _sf(ci_hi),
+            "n_pairs": int(mask.sum()),
         })
 
     return {"by_formation": by_formation}

@@ -29,8 +29,18 @@ const state = {
     page: 'overview',
     serie: '9EF',
     disciplina: 'LP',
-    rede: '',
 };
+
+// Cada carga de página (navegação ou troca de filtro) cancela as requisições
+// da carga anterior, para que respostas atrasadas de um filtro antigo não
+// sobrescrevam os gráficos do filtro atual.
+let _pageLoadController = null;
+
+function startPageLoad(page) {
+    if (_pageLoadController) _pageLoadController.abort();
+    _pageLoadController = new AbortController();
+    return loadPage(page);
+}
 
 // =========================================================
 // Navegação
@@ -73,7 +83,7 @@ function navigateTo(page) {
         filtersEl.style.display = withFilters.includes(page) ? 'flex' : 'none';
     }
 
-    loadPage(page);
+    startPageLoad(page);
 }
 
 // =========================================================
@@ -83,11 +93,11 @@ function navigateTo(page) {
 function initFilters() {
     document.getElementById('filter-serie').addEventListener('change', (e) => {
         state.serie = e.target.value;
-        loadPage(state.page);
+        startPageLoad(state.page);
     });
     document.getElementById('filter-disciplina').addEventListener('change', (e) => {
         state.disciplina = e.target.value;
-        loadPage(state.page);
+        startPageLoad(state.page);
     });
 }
 
@@ -95,7 +105,8 @@ function initFilters() {
 // API Helper
 // =========================================================
 
-async function fetchAPI(path, params = {}) {
+async function fetchAPI(path, params = {}, opts = {}) {
+    const signal = opts.signal || (_pageLoadController ? _pageLoadController.signal : undefined);
     let url;
     if (STATIC_MODE) {
         url = staticDataURL(path, params);
@@ -108,10 +119,14 @@ async function fetchAPI(path, params = {}) {
         });
     }
     try {
-        const resp = await fetch(url);
+        const resp = await fetch(url, { signal });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         return await resp.json();
     } catch (err) {
+        if (err && err.name === 'AbortError') {
+            // Carga obsoleta: nunca resolve, para o loader antigo não renderizar
+            return new Promise(() => {});
+        }
         console.error(`API error: ${path}`, err);
         return null;
     }
@@ -183,13 +198,21 @@ function initThemeToggle() {
 // Questionários init
 // =========================================================
 
+let _questionController = null;
+
 function initQuestionnaires() {
-    document.getElementById('quest-dataset').addEventListener('change', loadQuestionnaires);
+    document.getElementById('quest-dataset').addEventListener('change', () => {
+        if (_questionController) _questionController.abort();  // descarta a questão do dataset anterior
+        startPageLoad('questionnaires');
+    });
     document.getElementById('quest-question').addEventListener('change', async () => {
         const dataset = document.getElementById('quest-dataset').value;
         const questao = document.getElementById('quest-question').value;
         if (!questao) return;
-        const handler = renderQuestionnaireChart(dataset, questao);
+        // Troca rápida de questão: descarta a resposta da questão anterior
+        if (_questionController) _questionController.abort();
+        _questionController = new AbortController();
+        const handler = renderQuestionnaireChart(dataset, questao, _questionController.signal);
         await handler();
     });
 }
@@ -204,13 +227,13 @@ function initReport() {
 
     if (STATIC_MODE) {
         // Hospedagem estática: sem geração sob demanda — baixa o relatório
-        // completo pré-gerado (todas as seções, séries e disciplinas).
+        // completo pré-gerado (todas as seções; ver scripts/export_static.py).
         document.querySelectorAll('[id^="rep-"]').forEach(el => { el.disabled = true; });
         const modalBody = document.querySelector('#reportModal .modal-body');
         if (modalBody) {
             const note = document.createElement('div');
             note.className = 'alert alert-info small mb-3';
-            note.innerHTML = '<i class="bi bi-info-circle"></i> Nesta versão do site, o relatório completo (todas as seções, séries e disciplinas, com apêndice) é pré-gerado. Os filtros acima não se aplicam.';
+            note.innerHTML = '<i class="bi bi-info-circle"></i> Nesta versão do site, o relatório completo (todas as seções, com apêndice) é pré-gerado. Os gráficos de série única (ranking, INSE e cruzamentos) referem-se ao 9º EF / Língua Portuguesa. Os filtros acima não se aplicam.';
             modalBody.appendChild(note);
         }
         btn.addEventListener('click', () => {
@@ -261,8 +284,12 @@ function initReport() {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = 'relatorio_ia_educacao_uff.pdf';
+            document.body.appendChild(link);
             link.click();
-            URL.revokeObjectURL(link.href);
+            link.remove();
+            // Revogar só depois que o download começou (revogar de imediato
+            // cancela o download em alguns navegadores)
+            setTimeout(() => URL.revokeObjectURL(link.href), 60000);
 
             const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
             if (modal) modal.hide();
@@ -286,6 +313,11 @@ function initTabResize() {
         if (!targetPane) return;
         // Resize all ECharts instances inside the newly visible tab pane
         targetPane.querySelectorAll('.echarts-container').forEach(el => {
+            if (_staleThemeCharts.has(el.id) && _chartOptions[el.id]) {
+                // Tema trocado enquanto a aba estava oculta: re-renderizar
+                renderChart(el.id, _chartOptions[el.id]);
+                return;
+            }
             const chart = _chartInstances[el.id];
             if (chart && !chart.isDisposed()) {
                 chart.resize();

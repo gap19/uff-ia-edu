@@ -26,8 +26,12 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from fastapi.testclient import TestClient  # noqa: E402
 
 from backend.api.app import app  # noqa: E402
+from backend.reports.pdf_generator import ALL_SECTIONS  # noqa: E402
 
 SERIES = ["5EF", "9EF", "34EM"]
+# Ordem usada no PDF pré-gerado: gráficos de série única (ranking, INSE,
+# cruzamentos) usam a primeira série/disciplina — 9º EF / LP, o padrão do site.
+PDF_SERIES = ["9EF", "5EF", "34EM"]
 DISCIPLINAS = ["LP", "MT"]
 QUESTIONNAIRE_DATASETS = ["aluno_5ef", "aluno_9ef", "aluno_34em", "professor", "diretor"]
 STUDENT_TECH_VARS = ["TX_RESP_Q12b", "TX_RESP_Q12g", "TX_RESP_Q13a", "TX_RESP_Q13b"]
@@ -54,6 +58,7 @@ def enumerate_calls() -> list[tuple[str, dict]]:
         ("/saeb/proficiency/levels", {"scope": "rj"}),
         ("/saeb/equity/inse", {}),
         ("/saeb/equity/location", {}),
+        ("/saeb/equity/gap", {}),  # todas as séries/disciplinas (página Ética)
         ("/saeb/teachers/formation", {}),
         ("/tic/infrastructure", {}),
         ("/tic/ai", {}),
@@ -90,10 +95,16 @@ def enumerate_calls() -> list[tuple[str, dict]]:
 
 
 def export(out_dir: Path, skip_pdf: bool) -> int:
-    client = TestClient(app)
+    # Erros do servidor viram respostas 500 (registradas em `failures`)
+    # em vez de abortar a exportação inteira.
+    client = TestClient(app, raise_server_exceptions=False)
     api_dir = out_dir / "api"
     failures: list[str] = []
     n_ok = 0
+
+    # Remove JSONs de exportações anteriores, para não publicar dados obsoletos
+    if api_dir.exists():
+        shutil.rmtree(api_dir)
 
     def save(path: str, params: dict) -> dict | None:
         nonlocal n_ok
@@ -149,8 +160,8 @@ def export(out_dir: Path, skip_pdf: bool) -> int:
         resp = client.get(
             "/api/reports/generate",
             params=[
-                *[("secoes", s) for s in ["proficiencia", "equidade", "tecnologia", "etica"]],
-                *[("series", s) for s in SERIES],
+                *[("secoes", s) for s in ALL_SECTIONS],
+                *[("series", s) for s in PDF_SERIES],
                 *[("disciplinas", d) for d in DISCIPLINAS],
                 ("incluir_apendice", "true"),
             ],

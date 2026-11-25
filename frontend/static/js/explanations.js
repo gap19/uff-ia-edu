@@ -21,7 +21,7 @@ const CHART_EXPLANATIONS = {
     },
     'chart-prof-levels': {
         title: 'Níveis de proficiência',
-        text: 'Os alunos são classificados em níveis conforme suas notas. <strong>Níveis baixos (1-2)</strong> indicam domínio insuficiente das habilidades básicas. <strong>Níveis médios (3-5)</strong> representam domínio parcial. <strong>Níveis altos (6+)</strong> indicam domínio adequado ou avançado. A proporção em cada nível revela o quanto o sistema educacional está cumprindo seus objetivos.',
+        text: 'Percentual de alunos em cada nível da escala SAEB, calculado como a média entre as <strong>escolas públicas</strong> do RJ (a base de escolas do INEP não inclui as privadas). Os alunos são classificados em níveis conforme suas notas. <strong>Níveis baixos (1-2)</strong> indicam domínio insuficiente das habilidades básicas. <strong>Níveis médios (3-5)</strong> representam domínio parcial. <strong>Níveis altos (6+)</strong> indicam domínio adequado ou avançado. A proporção em cada nível revela o quanto o sistema educacional está cumprindo seus objetivos.',
     },
     'chart-prof-compare': {
         title: 'RJ vs região e país',
@@ -46,19 +46,19 @@ const CHART_EXPLANATIONS = {
     // ── Tecnologia ──
     'chart-tech-infra': {
         title: 'Infraestrutura digital',
-        text: 'Dados da pesquisa TIC Educação 2023 (CETIC.br) sobre infraestrutura tecnológica nas escolas da região Sudeste. Cada barra representa a proporção de escolas que possuem determinado recurso. Estes dados são de nível regional — não estão disponíveis por estado individualmente.',
+        text: 'Dados da pesquisa TIC Educação 2023 (CETIC.br): percentual de escolas com cada recurso na <strong>região Sudeste</strong> (barras coloridas, proxy para o RJ) e no <strong>Brasil</strong> (barras cinza). A pesquisa não divulga dados por estado. Itens marcados com ¹ referem-se apenas às escolas que têm acesso à internet.',
     },
     'chart-tech-ai': {
         title: 'IA nas escolas',
-        text: 'Mostra a adoção de tecnologias baseadas em inteligência artificial e dados nas escolas. Inclui biometria, reconhecimento facial, sistemas analíticos e chatbots. A baixa adoção de IA contrasta com o rápido crescimento destas tecnologias no setor privado.',
+        text: 'Uso de tecnologias de dados e vigilância nas escolas: câmeras internas, identificação biométrica e facial, relatórios de Business Intelligence e sistemas de inteligência artificial (predição e aprendizado de máquina) na gestão escolar, além de câmeras e chatbots nos aplicativos das escolas. No Sudeste, cerca de 1 em cada 5 escolas já usa IA na gestão.',
     },
     'chart-tech-training': {
         title: 'Formação digital docente',
-        text: 'Proporção de escolas que oferecem formação aos professores em tecnologias educacionais. A <strong>preparação docente</strong> é um fator crítico para o uso efetivo de tecnologia em sala de aula — sem formação adequada, equipamentos e softwares tendem a ser subutilizados.',
+        text: 'Percentual de escolas que ofertaram formação aos professores sobre o uso de tecnologias digitais no ensino (e seus temas) ou que participam de programas de formação. A <strong>preparação docente</strong> é um fator crítico para o uso efetivo de tecnologia em sala de aula — sem formação adequada, equipamentos e softwares tendem a ser subutilizados.',
     },
     'chart-tech-privacy': {
         title: 'Políticas de privacidade',
-        text: 'Indicadores de governança de dados e privacidade nas escolas. Com a LGPD (Lei Geral de Proteção de Dados) e o crescimento da IA educacional, estas políticas são fundamentais para proteger dados sensíveis de crianças e adolescentes.',
+        text: 'Indicadores de governança de dados e privacidade nas escolas: existência de política de proteção de dados, debates sobre o tema, dúvidas recebidas de famílias e casos em que a escola deixou de adotar um recurso digital por preocupação com a privacidade. Com a LGPD e o crescimento da IA educacional, estas práticas são fundamentais para proteger dados de crianças e adolescentes.',
     },
 
     // ── Professores ──
@@ -76,13 +76,13 @@ const CHART_EXPLANATIONS = {
     },
     'chart-teach-corr': {
         title: 'Formação e desempenho',
-        text: 'Cada ponto representa uma escola. O eixo horizontal mostra o percentual de professores com formação inicial adequada, e o eixo vertical mostra a proficiência média dos alunos. Se os pontos sobem da esquerda para a direita, há uma <strong>correlação positiva</strong> — escolas com mais professores qualificados tendem a ter alunos com melhor desempenho.',
+        text: 'Cada ponto representa uma escola pública do RJ. O eixo horizontal mostra o percentual de professores com a formação adequada para a etapa selecionada (indicador do INEP), e o eixo vertical mostra a proficiência média dos alunos. Se os pontos sobem da esquerda para a direita, há uma <strong>correlação positiva</strong> — escolas com mais professores qualificados tendem a ter alunos com melhor desempenho.',
     },
 
     // ── Cruzamentos ──
     'chart-cross-computers': {
         title: 'Computadores e desempenho',
-        text: 'Compara a proficiência média dos alunos conforme o número de computadores em casa. A diferença entre as barras (o "gap") é testada estatisticamente. O <strong>Cohen\'s d</strong> indica se esta diferença é pequena, média ou grande na prática.',
+        text: 'Compara a proficiência média dos alunos conforme o número de computadores em casa. As diferenças entre os grupos são testadas por <strong>ANOVA</strong> ponderada, e o <strong>η²</strong> (na aba "Visão Geral") indica quanto da variação das notas é explicada pelo número de computadores.',
     },
     'chart-cross-wifi': {
         title: 'Wi-Fi e desempenho',
@@ -98,15 +98,15 @@ const CHART_EXPLANATIONS = {
     },
     'chart-cross-q194': {
         title: 'Projetos de ciência e tecnologia',
-        text: 'Compara a proficiência média de alunos em escolas cujos diretores reportam ter projetos de ciência e tecnologia (Q194) versus aquelas que não possuem. A ausência de diferença significativa pode indicar que a mera existência de projetos não é suficiente — a <strong>qualidade e integração curricular</strong> importam mais.',
+        text: 'Compara a proficiência média das escolas (cada escola conta uma vez) cujos diretores reportam ter projetos de ciência e tecnologia (Q194) com a daquelas que não os possuem. A ausência de diferença significativa pode indicar que a mera existência de projetos não é suficiente — a <strong>qualidade e integração curricular</strong> importam mais.',
     },
     'chart-cross-q219': {
         title: 'Novas tecnologias educacionais',
-        text: 'Avalia se escolas que adotam novas tecnologias educacionais (Q219, conforme relato do diretor) apresentam desempenho diferente. Resultados devem ser interpretados com cautela: escolas que adotam novas tecnologias podem diferir sistematicamente em outros aspectos (recursos, gestão, perfil socioeconômico).',
+        text: 'Avalia se escolas cuja equipe recebeu, no ano, atividades de formação em novas tecnologias educacionais (Q219, conforme relato do diretor) apresentam desempenho diferente. Resultados devem ser interpretados com cautela: essas escolas podem diferir sistematicamente em outros aspectos (recursos, gestão, perfil socioeconômico).',
     },
     'chart-cross-q035': {
         title: 'Softwares educacionais',
-        text: 'Analisa a relação entre a disponibilidade de softwares educacionais na escola (Q035, escala de adequação reportada pelo diretor) e a proficiência dos alunos. A escala vai de "Inexistente" a "Bom", permitindo observar se há um gradiente de desempenho associado.',
+        text: 'Analisa a relação entre a disponibilidade de softwares educacionais na escola (Q035, escala de adequação reportada pelo diretor) e a proficiência dos alunos. A escala vai de "Não tem" a "Muito adequado", permitindo observar se há um gradiente de desempenho associado.',
     },
     'chart-cross-q036': {
         title: 'Internet banda larga',
@@ -114,29 +114,29 @@ const CHART_EXPLANATIONS = {
     },
     'chart-cross-q029': {
         title: 'Formação docente em tecnologia',
-        text: 'Avalia se a percepção do professor sobre a contribuição da sua formação em tecnologia (Q029) está associada à proficiência dos alunos. Professores que se sentem mais preparados para usar tecnologia podem integrar recursos digitais de forma mais efetiva em suas práticas pedagógicas.',
+        text: 'Avalia se a percepção do professor sobre a contribuição da sua formação em tecnologia (Q029) está associada à proficiência dos alunos. Como o SAEB não identifica a disciplina do professor, cada aluno é associado a todos os professores respondentes da turma, com peso dividido entre eles.',
     },
     'chart-cross-q037': {
-        title: 'Uso de TICs na prática pedagógica',
-        text: 'Examina a relação entre a frequência de uso de TICs pelo professor em sala de aula (Q037) e a proficiência. Um padrão <strong>curvilíneo</strong> (uso moderado associado ao melhor desempenho) pode indicar que o uso excessivo de tecnologia sem propósito pedagógico claro não beneficia a aprendizagem.',
+        title: 'Necessidade de formação em TICs',
+        text: 'Examina a relação entre o grau de <strong>necessidade de formação</strong> que o professor declara sobre o uso de novas tecnologias de informação e comunicação (Q037: de "Nenhuma" a "Muita necessidade") e a proficiência dos alunos. Não mede a frequência de uso de tecnologia em sala de aula.',
     },
     'chart-cross-forest': {
         title: 'Comparação de efeitos',
-        text: 'O <strong>Forest Plot</strong> mostra o tamanho de efeito (Cohen\'s d) de cada variável tecnológica. Barras verdes indicam efeito positivo (tecnologia associada a melhor desempenho) e vermelhas indicam efeito negativo. A linha tracejada no zero indica "sem efeito". Efeitos são classificados como: <strong>pequeno</strong> (d ≈ 0,2), <strong>médio</strong> (d ≈ 0,5) ou <strong>grande</strong> (d ≈ 0,8).',
+        text: 'O <strong>Forest Plot</strong> mostra o tamanho de efeito (Cohen\'s d, calculado como "Sim − Não") de cada variável tecnológica binária. Barras verdes indicam efeito positivo (tecnologia associada a melhor desempenho) e vermelhas indicam efeito negativo. A linha tracejada no zero indica "sem efeito". Efeitos são classificados como: <strong>pequeno</strong> (d ≈ 0,2), <strong>médio</strong> (d ≈ 0,5) ou <strong>grande</strong> (d ≈ 0,8).',
     },
     'chart-cross-wifi-inse': {
         title: 'Controle por renda',
-        text: 'Se a diferença de proficiência entre alunos com e sem Wi-Fi <strong>desaparece</strong> ao comparar dentro do mesmo nível socioeconômico (INSE), isso indica que o efeito observado é <strong>proxy da renda</strong>, não da tecnologia em si. Se a diferença <strong>persiste</strong>, há evidência de efeito independente da tecnologia.',
+        text: 'Se a diferença de proficiência entre alunos com e sem Wi-Fi <strong>desaparece</strong> ao comparar dentro do mesmo nível socioeconômico (INSE), isso indica que o efeito observado é <strong>proxy da renda</strong>, não da tecnologia em si. Se a diferença <strong>persiste</strong>, há evidência de efeito independente da tecnologia. Médias de grupos com menos de 30 alunos não são exibidas.',
     },
     'chart-cross-index-inse': {
         title: 'Índice digital por INSE',
-        text: 'Mostra a relação entre acesso digital e desempenho dentro de cada faixa de INSE. Permite verificar se alunos com mais acesso digital se saem melhor mesmo comparados com colegas de mesma condição socioeconômica.',
+        text: 'Mostra a relação entre acesso digital e desempenho dentro de cada faixa de INSE. Permite verificar se alunos com mais acesso digital se saem melhor mesmo comparados com colegas de mesma condição socioeconômica. Médias de faixas com menos de 30 alunos não são exibidas.',
     },
 
     // ── Ética e IA ──
     'chart-ethics-tech': {
         title: 'Adoção de IA',
-        text: 'Proporção de escolas que utilizam tecnologias baseadas em IA. Estes números são relevantes porque decisões automatizadas na educação (como sistemas de correção ou recomendação) podem perpetuar vieses existentes se não forem auditadas adequadamente.',
+        text: 'Percentual de escolas (Sudeste e Brasil) que usam tecnologias de dados, vigilância e IA. Estes números são relevantes porque decisões automatizadas na educação (como sistemas de predição ou recomendação) podem perpetuar vieses existentes se não forem auditadas adequadamente, e porque biometria e reconhecimento facial envolvem dados sensíveis.',
     },
     'chart-ethics-digital': {
         title: 'Desigualdade digital',

@@ -1,12 +1,23 @@
 """Conversão de tabelas TIC Educação 2023 (Excel) para Parquet.
 
-Lê os 4 arquivos XLSX da pesquisa TIC Educação 2023 (proporção, total,
-margem de erro e margem de erro total), normaliza as planilhas em
-formato longo e exporta um único Parquet consolidado.
+Lê os 4 arquivos XLSX da pesquisa TIC Educação 2023 — escolas (proporção,
+total, margem de erro e margem de erro do total), publicados pelo CETIC.br em
+https://cetic.br/media/microdados/786/tic_educacao_2023_escolas_tabelas_xlsx_v1.0.zip
+— e normaliza as planilhas em formato longo num único Parquet.
 
-Cada planilha representa um indicador (ex.: A1, B3) e possui cabeçalhos
-multi-nível com células mescladas.  O parser tenta extrair a estrutura
-de forma robusta, pulando planilhas que não possam ser interpretadas.
+Layout de cada planilha (um indicador por aba, ex.: A1, E6):
+
+* linha 1: título ("A1 - ESCOLAS COM ACESSO À INTERNET");
+* linha 2: universo ("Total de escolas de Ensino Fundamental e Médio");
+* linhas 3–4: cabeçalho. Indicadores simples têm as opções de resposta na
+  linha 3 (células mescladas com a linha 4). Indicadores com subitens têm o
+  subitem na linha 3 (mesclado na horizontal) e a resposta na linha 4;
+* a partir da linha 5: coluna A = variável de corte (TOTAL, REGIÃO, ...,
+  mesclada na vertical), coluna B = categoria (Norte, Sudeste, ...), e os
+  valores a partir da coluna C; termina na linha "Fonte: ...".
+
+Colunas do Parquet: indicador, titulo, universo, tipo, variavel_corte,
+valor_corte, item, resposta, coluna, valor.
 """
 
 from __future__ import annotations
@@ -18,27 +29,14 @@ from pathlib import Path
 from typing import Any
 
 import openpyxl
-from openpyxl.cell.cell import Cell, MergedCell
 from openpyxl.worksheet.worksheet import Worksheet
 
 from backend.config import TIC_PARQUET_DIR, TIC_XLSX_FILES
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Constantes
-# ---------------------------------------------------------------------------
-
-# Número máximo de linhas de cabeçalho a inspecionar
-_MAX_HEADER_ROWS = 8
-
-# Padrão para detectar linhas de "variável de corte" (ex.: "TOTAL", "REGIÃO")
-_VARIAVEL_CORTE_RE = re.compile(
-    r"^(TOTAL|REGIÃO|DEPENDÊNCIA|ÁREA|PORTE|SÉRIE|RENDA|SEXO|FAIXA|IDADE|"
-    r"ESCOLARIDADE|CLASSE|TIPO|LOCALIZAÇÃO|NÍVEL|GRAU|MODALIDADE|TURNO|"
-    r"ESFERA|CONDIÇÃO|ESTADO|UF|GRANDE REGIÃO)",
-    re.IGNORECASE,
-)
+# Primeira linha de dados (linhas 1–4 são título, universo e cabeçalhos)
+_FIRST_DATA_ROW = 5
 
 
 # ---------------------------------------------------------------------------
@@ -46,21 +44,12 @@ _VARIAVEL_CORTE_RE = re.compile(
 # ---------------------------------------------------------------------------
 
 
-def _cell_value(cell: Cell | MergedCell | None) -> Any:
-    """Retorna o valor de uma célula, tratando MergedCell como None."""
-    if cell is None:
-        return None
-    return cell.value
-
-
 def _clean_text(value: Any) -> str | None:
-    """Converte valor de célula em texto limpo ou None."""
+    """Converte valor de célula em texto limpo (espaços normalizados) ou None."""
     if value is None:
         return None
-    text = str(value).strip()
-    if not text:
-        return None
-    return text
+    text = re.sub(r"\s+", " ", str(value)).strip()
+    return text or None
 
 
 def _parse_numeric(value: Any) -> float | None:
@@ -84,62 +73,22 @@ def _parse_numeric(value: Any) -> float | None:
         return None
 
 
-def _resolve_merged_value(ws: Worksheet, row: int, col: int) -> Any:
-    """Resolve o valor real de uma célula, mesmo se estiver em região mesclada."""
-    cell = ws.cell(row=row, column=col)
-    val = cell.value
-    if val is not None:
-        return val
-    # Procura em merged_cells se esta célula pertence a algum range
-    # (read_only worksheets não possuem merged_cells)
-    merged = getattr(ws, "merged_cells", None)
-    if merged is not None:
-        for merged_range in merged.ranges:
-            if cell.coordinate in merged_range:
-                return ws.cell(
-                    row=merged_range.min_row, column=merged_range.min_col
-                ).value
-    return None
+def _merged_lookup(ws: Worksheet) -> dict[tuple[int, int], Any]:
+    """Mapeia (linha, coluna) de cada célula mesclada ao valor do canto superior esquerdo."""
+    lookup: dict[tuple[int, int], Any] = {}
+    for rng in ws.merged_cells.ranges:
+        top_left = ws.cell(row=rng.min_row, column=rng.min_col).value
+        for r in range(rng.min_row, rng.max_row + 1):
+            for c in range(rng.min_col, rng.max_col + 1):
+                lookup[(r, c)] = top_left
+    return lookup
 
 
-def _find_header_boundary(ws: Worksheet) -> int:
-    """Detecta onde terminam os cabeçalhos e começam os dados.
-
-    Retorna o número da primeira linha de dados (1-indexed).
-    Heurística: a primeira linha cujo conteúdo na coluna A case com um
-    padrão de variável de corte, ou a primeira linha após as _MAX_HEADER_ROWS
-    iniciais que tenha conteúdo na coluna A.
-    """
-    for row_idx in range(1, min(ws.max_row or 1, _MAX_HEADER_ROWS + 1) + 1):
-        text = _clean_text(_resolve_merged_value(ws, row_idx, 1))
-        if text and _VARIAVEL_CORTE_RE.match(text):
-            return row_idx
-    # Fallback: assume que os dados começam na linha 5
-    return 5
-
-
-def _build_column_headers(
-    ws: Worksheet, data_start_row: int
-) -> list[str]:
-    """Constrói rótulos de coluna a partir das linhas de cabeçalho multi-nível.
-
-    Combina as linhas 1..(data_start_row - 1) concatenando textos
-    não-None com ' | '.
-    """
-    header_rows = range(1, data_start_row)
-    max_col = ws.max_column or 1
-    headers: list[str] = []
-
-    for col_idx in range(1, max_col + 1):
-        parts: list[str] = []
-        for row_idx in header_rows:
-            val = _clean_text(_resolve_merged_value(ws, row_idx, col_idx))
-            if val and val not in parts:
-                parts.append(val)
-        header = " | ".join(parts) if parts else f"col_{col_idx}"
-        headers.append(header)
-
-    return headers
+def _strip_indicator_prefix(title: str | None, code: str) -> str | None:
+    """'A1 - ESCOLAS COM ...' -> 'ESCOLAS COM ...'."""
+    if not title:
+        return title
+    return re.sub(rf"^{re.escape(code)}\s*-\s*", "", title).strip()
 
 
 # ---------------------------------------------------------------------------
@@ -157,7 +106,8 @@ def parse_tic_sheet(
     Parameters
     ----------
     ws:
-        Planilha openpyxl já carregada.
+        Planilha openpyxl já carregada (``read_only=False``, para ler as
+        células mescladas).
     sheet_name:
         Nome da planilha (código do indicador, ex.: "A1").
     tipo:
@@ -167,70 +117,67 @@ def parse_tic_sheet(
     Returns
     -------
     list[dict]
-        Lista de dicts com chaves: indicador, tipo, variavel_corte,
-        valor_corte, regiao, valor.
+        Dicts com as chaves: indicador, titulo, universo, tipo,
+        variavel_corte, valor_corte, item, resposta, coluna, valor.
     """
     rows: list[dict[str, Any]] = []
-
-    if (ws.max_row or 0) < 3 or (ws.max_column or 0) < 2:
-        logger.warning(
-            "[tic_loader] Planilha '%s' vazia ou muito pequena, pulando.",
-            sheet_name,
-        )
+    max_row, max_col = ws.max_row or 0, ws.max_column or 0
+    if max_row < _FIRST_DATA_ROW or max_col < 3:
+        logger.warning("[tic_loader] Planilha '%s' vazia ou muito pequena, pulando.", sheet_name)
         return rows
 
-    # Detecta limite cabeçalho / dados
-    data_start = _find_header_boundary(ws)
-    col_headers = _build_column_headers(ws, data_start)
-    max_col = len(col_headers)
+    merged = _merged_lookup(ws)
 
-    # Variável de corte corrente (grupo de linhas)
-    current_variavel_corte: str | None = None
+    def value(r: int, c: int) -> Any:
+        v = ws.cell(row=r, column=c).value
+        return merged.get((r, c)) if v is None else v
 
-    for row_idx in range(data_start, (ws.max_row or data_start) + 1):
-        first_cell = _clean_text(_resolve_merged_value(ws, row_idx, 1))
+    titulo = _strip_indicator_prefix(_clean_text(ws.cell(row=1, column=1).value), sheet_name)
+    universo = _clean_text(ws.cell(row=2, column=1).value)
 
-        if first_cell is None:
+    # Indicador com subitens: a linha 4 tem respostas próprias (não mescladas
+    # com a linha 3). Nos simples, a linha 4 só existe como parte da mesclagem.
+    has_items = any(
+        _clean_text(ws.cell(row=4, column=c).value) for c in range(3, max_col + 1)
+    )
+
+    columns: list[tuple[int, str | None, str]] = []  # (col, item, resposta)
+    for c in range(3, max_col + 1):
+        h3 = _clean_text(value(3, c))
+        if has_items:
+            resposta = _clean_text(ws.cell(row=4, column=c).value)
+            item = h3
+        else:
+            resposta, item = h3, None
+        if resposta:
+            columns.append((c, item, resposta))
+
+    variavel_corte: str | None = None
+    for r in range(_FIRST_DATA_ROW, max_row + 1):
+        first = _clean_text(value(r, 1))
+        if first and first.lower().startswith("fonte"):
+            break
+        if first:
+            variavel_corte = first
+        categoria = _clean_text(value(r, 2)) or variavel_corte
+        if not variavel_corte or not categoria:
             continue
-
-        # Detecta se é uma linha de cabeçalho de variável de corte
-        if _VARIAVEL_CORTE_RE.match(first_cell):
-            current_variavel_corte = first_cell
-            # Verifica se a mesma linha também contém dados (a partir da col 2)
-            has_data = False
-            for col_idx in range(2, max_col + 1):
-                val = _parse_numeric(
-                    _resolve_merged_value(ws, row_idx, col_idx)
-                )
-                if val is not None:
-                    has_data = True
-                    break
-
-            if not has_data:
+        for idx, (c, item, resposta) in enumerate(columns, start=1):
+            num = _parse_numeric(ws.cell(row=r, column=c).value)
+            if num is None:
                 continue
-            # Se tem dados, trata como linha de dados também (ex.: "TOTAL")
-
-        valor_corte = first_cell
-
-        # Itera pelas colunas de dados
-        for col_idx in range(2, max_col + 1):
-            raw_val = _resolve_merged_value(ws, row_idx, col_idx)
-            numeric_val = _parse_numeric(raw_val)
-            if numeric_val is None:
-                continue
-
-            col_header = col_headers[col_idx - 1] if col_idx - 1 < len(col_headers) else f"col_{col_idx}"
-
-            rows.append(
-                {
-                    "indicador": sheet_name,
-                    "tipo": tipo,
-                    "variavel_corte": current_variavel_corte or "TOTAL",
-                    "valor_corte": valor_corte,
-                    "regiao": col_header,
-                    "valor": numeric_val,
-                }
-            )
+            rows.append({
+                "indicador": sheet_name,
+                "titulo": titulo,
+                "universo": universo,
+                "tipo": tipo,
+                "variavel_corte": variavel_corte,
+                "valor_corte": categoria,
+                "item": item,
+                "resposta": resposta,
+                "coluna": idx,
+                "valor": num,
+            })
 
     return rows
 
@@ -319,9 +266,8 @@ def load_all_tic() -> int:
 
         print(f"[tic_loader] Abrindo {xlsx_path.name} (tipo={tipo})...")
 
-        # read_only=False para resolver merged cells; mas alguns XLSX
-        # têm referências a drawings corrompidos (bug conhecido openpyxl).
-        # Patch temporário: intercepta KeyError em leitura de drawings.
+        # read_only=False para ler as células mescladas; alguns XLSX
+        # referenciam drawings ausentes (contornado em _open_workbook_safe).
         try:
             wb = _open_workbook_safe(xlsx_path)
         except Exception as exc:
@@ -367,72 +313,32 @@ def load_all_tic() -> int:
     return len(all_rows)
 
 
+_COLUMNS: list[tuple[str, str]] = [
+    ("indicador", "VARCHAR"), ("titulo", "VARCHAR"), ("universo", "VARCHAR"),
+    ("tipo", "VARCHAR"), ("variavel_corte", "VARCHAR"), ("valor_corte", "VARCHAR"),
+    ("item", "VARCHAR"), ("resposta", "VARCHAR"), ("coluna", "INTEGER"),
+    ("valor", "DOUBLE"),
+]
+
+
 def _save_parquet(rows: list[dict[str, Any]], path: Path) -> None:
-    """Salva lista de dicts como Parquet usando pyarrow."""
+    """Salva lista de dicts como Parquet (via DuckDB, já dependência do projeto)."""
+    import duckdb
+
+    con = duckdb.connect()
     try:
-        import pyarrow as pa
-        import pyarrow.parquet as pq
-
-        # Organiza por colunas
-        columns = {
-            "indicador": [r["indicador"] for r in rows],
-            "tipo": [r["tipo"] for r in rows],
-            "variavel_corte": [r["variavel_corte"] for r in rows],
-            "valor_corte": [r["valor_corte"] for r in rows],
-            "regiao": [r["regiao"] for r in rows],
-            "valor": [r["valor"] for r in rows],
-        }
-
-        table = pa.table(
-            {
-                "indicador": pa.array(columns["indicador"], type=pa.string()),
-                "tipo": pa.array(columns["tipo"], type=pa.string()),
-                "variavel_corte": pa.array(columns["variavel_corte"], type=pa.string()),
-                "valor_corte": pa.array(columns["valor_corte"], type=pa.string()),
-                "regiao": pa.array(columns["regiao"], type=pa.string()),
-                "valor": pa.array(columns["valor"], type=pa.float64()),
-            }
+        cols_sql = ", ".join(f"{name} {typ}" for name, typ in _COLUMNS)
+        con.execute(f"CREATE TABLE tic_data ({cols_sql})")
+        con.executemany(
+            f"INSERT INTO tic_data VALUES ({', '.join('?' for _ in _COLUMNS)})",
+            [tuple(r[name] for name, _ in _COLUMNS) for r in rows],
         )
-
-        pq.write_table(table, str(path), compression="snappy")
-
-    except ImportError:
-        # Fallback: usa duckdb para escrever Parquet
-        import duckdb
-
-        con = duckdb.connect()
-        try:
-            con.execute("""
-                CREATE TABLE tic_data (
-                    indicador VARCHAR,
-                    tipo VARCHAR,
-                    variavel_corte VARCHAR,
-                    valor_corte VARCHAR,
-                    regiao VARCHAR,
-                    valor DOUBLE
-                )
-            """)
-
-            con.executemany(
-                "INSERT INTO tic_data VALUES (?, ?, ?, ?, ?, ?)",
-                [
-                    (
-                        r["indicador"],
-                        r["tipo"],
-                        r["variavel_corte"],
-                        r["valor_corte"],
-                        r["regiao"],
-                        r["valor"],
-                    )
-                    for r in rows
-                ],
-            )
-
-            con.execute(
-                f"COPY tic_data TO '{path}' (FORMAT PARQUET, COMPRESSION SNAPPY)"
-            )
-        finally:
-            con.close()
+        con.execute(
+            f"COPY (SELECT * FROM tic_data ORDER BY indicador, tipo, coluna) "
+            f"TO '{path}' (FORMAT PARQUET, COMPRESSION ZSTD)"
+        )
+    finally:
+        con.close()
 
 
 # ---------------------------------------------------------------------------

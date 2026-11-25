@@ -2,6 +2,7 @@
 
 import base64
 import io
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -9,17 +10,23 @@ from typing import Any
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import numpy as np
 import seaborn as sns
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 
-from backend.api.app import get_db
+from backend.db import db_query
 from backend.config import ID_UF_RJ, UF_MAP
 
 # Diretório de templates
 TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+# pyplot mantém estado global e não é thread-safe; as rotas de relatório
+# rodam no threadpool do FastAPI, então a geração é serializada.
+_PDF_LOCK = threading.Lock()
+
+ALL_SECTIONS = ["proficiencia", "equidade", "tecnologia", "cruzamentos", "etica"]
+_SERIE_ORDER_SQL = "CASE serie WHEN '5EF' THEN 1 WHEN '9EF' THEN 2 ELSE 3 END"
 
 # Estilo matplotlib para publicação
 sns.set_theme(style="whitegrid", font_scale=1.1)
@@ -51,12 +58,7 @@ def _fig_to_base64(fig: plt.Figure) -> str:
     return base64.b64encode(buf.read()).decode("utf-8")
 
 
-def _query(sql: str, params: list | None = None) -> list[dict]:
-    """Executa query DuckDB e retorna lista de dicts."""
-    db = get_db()
-    rel = db.execute(sql, params or [])
-    columns = [desc[0] for desc in rel.description]
-    return [dict(zip(columns, row)) for row in rel.fetchall()]
+_query = db_query
 
 
 # ---------------------------------------------------------------------------
@@ -66,7 +68,7 @@ def _query(sql: str, params: list | None = None) -> list[dict]:
 
 def chart_proficiency_bars(series: list[str], disciplinas: list[str]) -> str:
     """Gráfico de barras: proficiência média RJ por série e disciplina."""
-    rows = _query("SELECT * FROM kpi_rj ORDER BY serie")
+    rows = _query(f"SELECT * FROM kpi_rj ORDER BY {_SERIE_ORDER_SQL}")
     if not rows:
         return ""
 
@@ -78,38 +80,41 @@ def chart_proficiency_bars(series: list[str], disciplinas: list[str]) -> str:
         "LP": "media_lp",
         "MT": "media_mt",
     }
+    discs = [d for d in disciplinas if d in disc_cols] or ["LP", "MT"]
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
     x = np.arange(len(filtered))
-    width = 0.35
-    offset = 0
+    width = 0.8 / len(discs)
 
-    for disc in disciplinas:
-        col = disc_cols.get(disc)
-        if not col:
-            continue
+    for i_disc, disc in enumerate(discs):
+        col = disc_cols[disc]
         values = [r.get(col, 0) or 0 for r in filtered]
         label = "Língua Portuguesa" if disc == "LP" else "Matemática"
-        ax.bar(x + offset, values, width, label=label, color=PALETTE[offset])
-        for i, v in enumerate(values):
-            ax.text(x[i] + offset, v + 2, f"{v:.1f}", ha="center", fontsize=9)
-        offset += 1
+        pos = x + i_disc * width
+        ax.bar(pos, values, width, label=label, color=PALETTE[i_disc % len(PALETTE)])
+        for xi, v in zip(pos, values):
+            ax.text(xi, v + 2, f"{v:.1f}", ha="center", fontsize=9)
 
-    ax.set_xticks(x + width / 2)
+    ax.set_xticks(x + width * (len(discs) - 1) / 2)
     ax.set_xticklabels([r["serie"] for r in filtered])
     ax.set_ylabel("Proficiência (escala SAEB)")
     ax.set_title("Proficiência Média - Rio de Janeiro (SAEB 2023)")
-    ax.legend()
-    ax.set_ylim(bottom=0)
+    top = max((r.get(disc_cols[d]) or 0) for r in filtered for d in discs)
+    ax.set_ylim(0, top * 1.22)
+    ax.legend(loc="upper left", ncol=len(discs))
 
     return _fig_to_base64(fig)
 
 
 def _compute_gap(series: list[str], disciplinas: list[str]) -> list[dict]:
-    """Computa lacuna pública vs privada a partir de prof_by_uf_serie_disc."""
+    """Computa lacuna pública vs privada a partir de prof_by_uf_serie_disc.
+
+    Retorna todas as combinações série/disciplina (o filtro é feito por quem
+    chama).
+    """
     rows = _query(
         "SELECT serie, disciplina, rede, media_proficiencia "
-        "FROM prof_by_uf_serie_disc WHERE ID_UF = ? ORDER BY serie, disciplina, rede",
+        f"FROM prof_by_uf_serie_disc WHERE ID_UF = ? ORDER BY {_SERIE_ORDER_SQL}, disciplina, rede",
         [ID_UF_RJ],
     )
     grouped: dict[tuple, dict] = {}
@@ -130,9 +135,48 @@ def _compute_gap(series: list[str], disciplinas: list[str]) -> list[dict]:
     return gaps
 
 
+def _compute_gap_with_stats(series: list[str], disciplinas: list[str]) -> list[dict]:
+    """Lacunas das séries/disciplinas pedidas, com d de Cohen e IC 95% da lacuna.
+
+    Tudo (médias, lacuna, d e IC) vem da mesma análise dos microdados
+    ponderados (backend.analysis.equity), de modo que o IC é centrado na
+    lacuna exibida; o IC usa a distribuição t com os graus de liberdade do
+    desenho amostral (escolas − estratos). As médias coincidem com as da
+    tabela pré-computada ``prof_by_uf_serie_disc``.
+    """
+    from backend.analysis.equity import get_public_private_gap
+
+    rows = []
+    for r in _compute_gap(series, disciplinas):
+        if r["serie"] not in series or r["disciplina"] not in disciplinas:
+            continue
+        row = dict(r, cohens_d=None, ci_lower=None, ci_upper=None)
+        if r["gap"] is not None:
+            try:
+                res = get_public_private_gap(r["serie"], r["disciplina"], ID_UF_RJ)
+            except Exception:
+                res = None
+            if res and res.get("gap") is not None:
+                row.update(
+                    media_publica=res["publica"]["mean"],
+                    media_privada=res["privada"]["mean"],
+                    gap=res["gap"],
+                    cohens_d=res.get("cohens_d"),
+                    ci_lower=res.get("ci_gap_lower"),
+                    ci_upper=res.get("ci_gap_upper"),
+                )
+        rows.append(row)
+    return rows
+
+
 def chart_equity_gap(series: list[str], disciplinas: list[str]) -> str:
     """Gráfico de barras: lacuna pública vs privada."""
     all_gaps = _compute_gap(series, disciplinas)
+    # Só faz sentido comparar onde existem as duas redes
+    all_gaps = [
+        r for r in all_gaps
+        if r["media_publica"] is not None and r["media_privada"] is not None
+    ]
     if not all_gaps:
         return ""
 
@@ -144,8 +188,8 @@ def chart_equity_gap(series: list[str], disciplinas: list[str]) -> str:
         filtered = all_gaps[:4]
 
     labels = [f"{r['serie']} {r['disciplina']}" for r in filtered]
-    pub = [r.get("media_publica", 0) or 0 for r in filtered]
-    priv = [r.get("media_privada", 0) or 0 for r in filtered]
+    pub = [r["media_publica"] for r in filtered]
+    priv = [r["media_privada"] for r in filtered]
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
     x = np.arange(len(labels))
@@ -166,8 +210,8 @@ def chart_equity_gap(series: list[str], disciplinas: list[str]) -> str:
     ax.set_xticklabels(labels)
     ax.set_ylabel("Proficiência média")
     ax.set_title("Lacuna Pública vs Privada - RJ (SAEB 2023)")
-    ax.legend()
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(0, max(priv + pub) * 1.3)
+    ax.legend(loc="upper left", ncol=2)
 
     return _fig_to_base64(fig)
 
@@ -186,7 +230,7 @@ def chart_inse(series: list[str], disciplinas: list[str]) -> str:
         if r.get("serie") == target_serie and r.get("disciplina") == target_disc
     ]
     if not filtered:
-        filtered = rows
+        return ""
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
     niveis = [f"Nível {r['nivel_inse']}" for r in filtered]
@@ -243,39 +287,40 @@ def chart_ranking(serie: str, disciplina: str) -> str:
 
 
 def chart_tic_group(group: str, title: str) -> str:
-    """Gráfico de barras: indicadores TIC por grupo."""
-    group_map = {
-        "infrastructure": ("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"),
-        "ai": ("E4A", "E4B", "E5", "E6", "F6"),
-        "privacy": ("H1", "H3", "H4", "H5", "H6", "H7"),
-        "training": ("J1", "J2", "J3", "J4"),
-    }
-    indicators = group_map.get(group, ())
-    if not indicators:
+    """Barras agrupadas: indicadores TIC (% de escolas) no Sudeste e no Brasil."""
+    import textwrap
+
+    from backend.analysis.tic import REGION_PRIMARY, REGION_REFERENCE, get_tic_group
+
+    try:
+        items = get_tic_group(group)["data"]
+    except Exception:
+        return ""
+    if not items:
         return ""
 
-    placeholders = ", ".join(["?"] * len(indicators))
-    rows = _query(
-        f"""SELECT indicador, valor FROM tic_indicadores
-            WHERE tipo = 'proporcao' AND valor_corte = 'TOTAL'
-              AND indicador IN ({placeholders})
-            ORDER BY indicador""",
-        list(indicators),
-    )
-    if not rows:
-        return ""
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    x = np.arange(len(items))
+    width = 0.38
+    se = [d["sudeste"] or 0 for d in items]
+    br = [d["brasil"] or 0 for d in items]
+    ax.bar(x - width / 2, se, width, label=REGION_PRIMARY, color=COLORS["primary"])
+    ax.bar(x + width / 2, br, width, label=REGION_REFERENCE, color="#b8c2cc")
+    for xi, v in zip(x - width / 2, se):
+        ax.text(xi, v + 1.5, f"{v:.0f}%", ha="center", fontsize=8)
+    for xi, v in zip(x + width / 2, br):
+        ax.text(xi, v + 1.5, f"{v:.0f}%", ha="center", fontsize=8, color="#555")
+    ax.set_xticks(x)
+    ax.set_xticklabels([textwrap.fill(d["label"], 16) for d in items], fontsize=8)
 
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    inds = [r["indicador"] for r in rows]
-    vals = [r.get("valor", 0) or 0 for r in rows]
-
-    ax.bar(inds, vals, color=COLORS["primary"])
-    for i, v in enumerate(vals):
-        ax.text(i, v + 1.5, f"{v:.1f}%", ha="center", fontsize=9)
-
-    ax.set_ylabel("Proporção (%)")
-    ax.set_ylim(0, 100)
-    ax.set_title(f"TIC Educação 2023 (Sudeste) - {title}")
+    ax.set_ylabel("% de escolas")
+    ax.set_ylim(0, 112)
+    ax.set_yticks(range(0, 101, 20))
+    ax.legend(loc="upper right", ncol=2, fontsize=9)
+    ax.set_title(f"TIC Educação 2023 — {title}")
+    if any(d.get("universo_especifico") for d in items):
+        fig.text(0.01, -0.02, "¹ Universo: escolas com acesso à internet.", fontsize=8, color="#555")
+    fig.tight_layout()
 
     return _fig_to_base64(fig)
 
@@ -317,13 +362,13 @@ def chart_cross_student_wifi(series: list[str], disciplinas: list[str]) -> str:
         gap = values[1] - values[0]
         ax.annotate(
             f"Gap: {gap:.1f} pts",
-            xy=(0.5, 0.95), xycoords="axes fraction",
+            xy=(0.5, 0.94), xycoords="axes fraction",
             ha="center", fontsize=12, color=COLORS["accent"], fontweight="bold",
         )
 
     ax.set_ylabel("Proficiência média")
     ax.set_title(f"Wi-Fi em Casa vs Proficiência - {serie} {disc} (RJ)")
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(0, max(values) * 1.35)
     return _fig_to_base64(fig)
 
 
@@ -364,29 +409,30 @@ def chart_cross_director_tech(series: list[str], disciplinas: list[str]) -> str:
 
     vars_to_plot = [
         ("TX_Q194", "Projetos C&T"),
-        ("TX_Q219", "Novas Tech Educ."),
+        ("TX_Q219", "Formação em novas tecnologias"),
     ]
+
+    from backend.analysis.cross_analysis import get_director_tech_gap
 
     fig, axes = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
 
     for idx, (var, title) in enumerate(vars_to_plot):
         ax = axes[idx]
-        rows = _query(
-            """SELECT tech_response, media_proficiencia, n_escolas
-               FROM cross_diretor_tech_rj
-               WHERE tech_variable = ? AND serie = ? AND disciplina = ?
-               ORDER BY tech_response""",
-            [var, serie, disc],
-        )
-        if not rows:
+        try:
+            result = get_director_tech_gap(var, serie, disc)
+        except Exception:
+            result = {}
+        groups = [g for g in result.get("groups", []) if g.get("mean") is not None]
+        if not groups:
             ax.set_title(title)
             ax.text(0.5, 0.5, "Sem dados", ha="center", va="center", transform=ax.transAxes)
             continue
 
-        labels_map = {"A": "Sim", "B": "Não"}
-        labels = [labels_map.get(r["tech_response"], r["tech_response"]) for r in rows]
-        values = [r.get("media_proficiencia", 0) or 0 for r in rows]
-        bar_colors = [COLORS["green"], COLORS["accent"]][:len(labels)]
+        # Rótulos oficiais do dicionário SAEB (A = Não, B = Sim)
+        labels = [f"{g['label']}\n(n={g['n']:,} escolas)".replace(",", ".") for g in groups]
+        values = [g["mean"] for g in groups]
+        color_by_label = {"Sim": COLORS["green"], "Não": COLORS["accent"]}
+        bar_colors = [color_by_label.get(g["label"], COLORS["primary"]) for g in groups]
         bars = ax.bar(labels, values, color=bar_colors)
         for bar, v in zip(bars, values):
             ax.text(bar.get_x() + bar.get_width() / 2, v + 1, f"{v:.1f}",
@@ -427,10 +473,11 @@ def chart_cross_forest_plot(series: list[str], disciplinas: list[str]) -> str:
     ax.set_xlabel("Cohen's d (tamanho de efeito)")
     ax.set_title("Tamanhos de Efeito — Variáveis Tecnológicas")
 
+    span = max(abs(e) for e in effects) or 1.0
     for i, e in enumerate(effects):
-        ax.text(e + 0.01 if e >= 0 else e - 0.01, i,
-                f"{e:.3f}", va="center",
-                ha="left" if e >= 0 else "right", fontsize=9)
+        ax.text(max(e, 0) + 0.02 * span, i, f"{e:.3f}", va="center", ha="left", fontsize=9)
+    lo = min(min(effects), 0)
+    ax.set_xlim(lo - 0.05 * span, max(max(effects), 0) + 0.25 * span)
 
     fig.tight_layout()
     return _fig_to_base64(fig)
@@ -461,11 +508,13 @@ def _build_report_data(
 
     # KPIs gerais
     try:
-        kpis = _query("SELECT * FROM kpi_rj ORDER BY serie")
+        kpis = _query(f"SELECT * FROM kpi_rj ORDER BY {_SERIE_ORDER_SQL}")
         escolas = _query("SELECT * FROM kpi_escolas_rj")
         data["kpis"] = kpis
         data["total_escolas"] = escolas[0].get("total_escolas", 0) if escolas else 0
-        data["total_alunos"] = sum(r.get("total_alunos", 0) or 0 for r in kpis)
+        # Alunos efetivamente avaliados (presentes na prova de LP), não o
+        # total de registros (que inclui ausentes)
+        data["total_alunos"] = sum(r.get("presentes_lp", 0) or 0 for r in kpis)
     except Exception:
         data["kpis"] = []
         data["total_escolas"] = 0
@@ -491,10 +540,10 @@ def _build_report_data(
     # Seção: Tecnologia
     if "tecnologia" in secoes:
         data["secoes"]["tecnologia"] = {
-            "chart_infra": chart_tic_group("infrastructure", "Infraestrutura"),
-            "chart_ai": chart_tic_group("ai", "IA e Sistemas de Dados"),
-            "chart_privacy": chart_tic_group("privacy", "Privacidade"),
-            "chart_training": chart_tic_group("training", "Formação Digital"),
+            "chart_infra": chart_tic_group("infrastructure", "Infraestrutura e conectividade"),
+            "chart_ai": chart_tic_group("ai", "Dados, vigilância e IA"),
+            "chart_privacy": chart_tic_group("privacy", "Privacidade e proteção de dados"),
+            "chart_training": chart_tic_group("teacher-training", "Formação docente em tecnologias"),
         }
 
     # Seção: Cruzamentos Tech x Desempenho
@@ -513,8 +562,13 @@ def _build_report_data(
     # Apêndice estatístico
     if incluir_apendice:
         try:
-            gap_rows = _compute_gap(series, disciplinas)
-            inse_rows = _query("SELECT * FROM prof_by_inse ORDER BY nivel_inse")
+            gap_rows = _compute_gap_with_stats(series, disciplinas)
+            inse_rows = [
+                r for r in _query(
+                    f"SELECT * FROM prof_by_inse ORDER BY {_SERIE_ORDER_SQL}, disciplina, nivel_inse"
+                )
+                if r["serie"] in series and r["disciplina"] in disciplinas
+            ]
             data["apendice"] = {
                 "gap": gap_rows,
                 "inse": inse_rows,
@@ -539,7 +593,8 @@ def generate_pdf(
     """Gera o relatório PDF completo e retorna os bytes do arquivo.
 
     Args:
-        secoes: Seções a incluir (proficiencia, equidade, tecnologia, etica).
+        secoes: Seções a incluir (proficiencia, equidade, tecnologia,
+            cruzamentos, etica). Padrão: todas.
         series: Séries do SAEB (5EF, 9EF, 34EM).
         disciplinas: Disciplinas (LP, MT).
         incluir_apendice: Se deve incluir apêndice estatístico.
@@ -548,20 +603,23 @@ def generate_pdf(
         Bytes do PDF gerado.
     """
     if secoes is None:
-        secoes = ["proficiencia", "equidade", "tecnologia", "etica"]
+        secoes = list(ALL_SECTIONS)
     if series is None:
         series = ["5EF", "9EF"]
     if disciplinas is None:
         disciplinas = ["LP", "MT"]
 
-    # Coletar dados
-    report_data = _build_report_data(secoes, series, disciplinas, incluir_apendice)
+    with _PDF_LOCK:
+        # Coletar dados
+        report_data = _build_report_data(secoes, series, disciplinas, incluir_apendice)
 
-    # Renderizar HTML via Jinja2
-    env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
-    template = env.get_template("report.html")
-    html_content = template.render(**report_data)
+        # Renderizar HTML via Jinja2 (autoescape: os textos vêm de dados)
+        env = Environment(
+            loader=FileSystemLoader(str(TEMPLATES_DIR)),
+            autoescape=True,
+        )
+        template = env.get_template("report.html")
+        html_content = template.render(**report_data)
 
-    # Converter para PDF via WeasyPrint
-    pdf_bytes = HTML(string=html_content).write_pdf()
-    return pdf_bytes
+        # Converter para PDF via WeasyPrint
+        return HTML(string=html_content).write_pdf()

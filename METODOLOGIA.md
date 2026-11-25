@@ -31,7 +31,7 @@ A aplicação utiliza **duas grandes fontes públicas** de dados educacionais br
 | Fonte | Órgão responsável | Ano | O que mede | Abrangência |
 |-------|-------------------|-----|------------|-------------|
 | **SAEB** (Sistema de Avaliação da Educação Básica) | INEP/MEC | 2023 | Desempenho dos alunos em provas padronizadas, perfil de professores, diretores e escolas | Nacional (todos os estados) |
-| **TIC Educação** | CETIC.br / NIC.br | 2023 | Uso de tecnologia, IA e infraestrutura digital nas escolas | Por região (não por estado) |
+| **TIC Educação** | CETIC.br / NIC.br | 2023 | Uso de tecnologia, IA e infraestrutura digital nas escolas | Brasil e regiões (não por estado) — usamos o Sudeste como proxy do RJ |
 
 ### Por que essas fontes?
 
@@ -53,7 +53,7 @@ Os microdados do SAEB são registros individuais (um por aluno, professor, diret
 | `TS_ALUNO_5EF` | Alunos do 5º ano do Ensino Fundamental | ~2,4 milhões de registros |
 | `TS_ALUNO_9EF` | Alunos do 9º ano do Ensino Fundamental | ~2,5 milhões de registros |
 | `TS_ALUNO_34EM` | Alunos do Ensino Médio (3ª/4ª séries) | ~2,1 milhões de registros |
-| `TS_ESCOLA` | Dados agregados por escola | ~70 mil escolas |
+| `TS_ESCOLA` | Resultados agregados por escola (apenas escolas **públicas**) | ~70 mil escolas |
 | `TS_PROFESSOR` | Respostas dos professores | ~411 mil registros |
 | `TS_DIRETOR` | Respostas dos diretores | ~107 mil registros |
 
@@ -66,21 +66,27 @@ Cada aluno possui uma **nota na escala SAEB** para cada disciplina avaliada:
 
 Essas notas **não são como notas de prova** (0 a 10). São valores em uma escala contínua (tipicamente entre 100 e 400 pontos) que permite comparar desempenho entre séries, anos e regiões. Quanto maior o valor, maior a proficiência do aluno.
 
-### 2.3 Pesos amostrais
+### 2.3 Pesos amostrais e desenho amostral
 
-O SAEB utiliza **amostragem estratificada**, o que significa que nem todos os alunos têm a mesma probabilidade de serem incluídos na amostra. Para compensar isso, cada aluno recebe um **peso** que indica quantos alunos da população ele "representa":
+O SAEB 2023 é **censitário** para as escolas públicas (todas as turmas das séries avaliadas) e **amostral** para as escolas privadas (amostra estratificada de escolas). Em ambos os casos, cada aluno recebe um **peso** que indica quantos alunos da população ele "representa" — corrigindo a seleção amostral e a não resposta:
 
 - **`PESO_ALUNO_LP`** — Peso para análises de Língua Portuguesa
 - **`PESO_ALUNO_MT`** — Peso para análises de Matemática
 
-> **Exemplo:** Se um aluno tem peso 3,5, isso significa que ele "vale por" 3,5 alunos na estimativa populacional. Sem usar os pesos, os resultados seriam enviesados — superestimando regiões com maior cobertura amostral.
+> **Exemplo:** Se um aluno tem peso 3,5, isso significa que ele "vale por" 3,5 alunos na estimativa populacional. Como os alunos de escolas privadas foram sorteados, seus pesos são muito maiores que os das públicas; sem os pesos, a rede privada ficaria sub-representada e as médias, enviesadas para baixo (no 9º ano do RJ, em LP, a média ignorando os pesos seria ~252 em vez de 261,3).
 
-**Toda média calculada nesta aplicação é uma média ponderada** que utiliza esses pesos. Isso é fundamental para que os resultados reflitam a realidade da população escolar, e não apenas da amostra.
+**Toda média calculada nesta aplicação é uma média ponderada** que utiliza esses pesos.
+
+Além dos pesos, os microdados trazem as variáveis do **desenho amostral**, usadas para calcular erros-padrão, intervalos e testes (ver [seção 8.1](#81-intervalo-de-confiança)):
+
+- **`ID_ESCOLA`** — a escola é o **conglomerado** (unidade primária de amostragem): alunos de uma mesma escola tendem a ter resultados parecidos;
+- **`ESTRATO`** — o **estrato** de seleção (no RJ, 216 estratos; cada escola pertence a um único estrato).
 
 ### 2.4 Variáveis socioeconômicas
 
 - **`INSE_ALUNO`** — Índice de Nível Socioeconômico (escala contínua de 0 a ~200)
 - **`NU_TIPO_NIVEL_INSE`** — Nível INSE categorizado em faixas de 1 (mais baixo) a 8 (mais alto)
+- **`IN_INSE`** — 1 quando o INSE do aluno foi calculado. **Atenção:** alunos sem INSE (`IN_INSE = 0`, em geral por não responderem ao questionário) vêm com `NU_TIPO_NIVEL_INSE = 1`; a aplicação só usa o nível INSE quando `IN_INSE = 1` (no 9º ano do RJ, isso evita colocar ~5,4 mil alunos sem INSE no nível 1, que tem ~0,9 mil alunos de fato)
 - **`IN_PUBLICA`** — Se a escola é pública (1) ou privada (0)
 - **`ID_LOCALIZACAO`** — 1 = Urbana, 2 = Rural
 - **`ID_UF`** — Código do estado (33 = Rio de Janeiro)
@@ -102,26 +108,36 @@ O questionário contextual do SAEB pergunta aos alunos sobre tecnologia em casa:
 |--------|----------|-----------|
 | `TX_Q001` | Sexo | A = Masculino, B = Feminino, C = Não declarado |
 | `TX_Q029` | Contribuição da formação em tecnologia | A = Não contribuiu, B = Pouco, C = Razoavelmente, D = Muito |
-| `TX_Q037` | Frequência de uso de tecnologia no ensino | A = Nunca ... E = Sempre |
+| `TX_Q037` | Necessidade de formação sobre o uso de novas TICs | A = Nenhuma necessidade, B = Pouca, C = Moderada, D = Muita necessidade |
+| `TX_Q020` | Maior nível de escolaridade concluído | A = Ensino Médio - Magistério, B = Graduação, C = Especialização, D = Mestrado, E = Doutorado |
+
+> Os rótulos seguem o dicionário oficial do SAEB 2023 (`data/processed/saeb_questionnaire_dict.json`). Atenção: `TX_Q004`–`TX_Q007` tratam de deficiência/TEA/altas habilidades, não de formação; o questionário de 2023 não tem item de tempo de experiência. O SAEB também não identifica a disciplina do professor: em turmas com mais de um professor respondente, cada aluno é associado a todos eles, com o peso amostral dividido pelo número de professores da turma (unidade de análise: par aluno–professor).
 
 ### 2.7 Variáveis do questionário do diretor
 
 | Código | Pergunta | Respostas |
 |--------|----------|-----------|
-| `TX_Q034` | Qualidade dos computadores da escola | A = Não tem ... E = Excelente |
-| `TX_Q035` | Software educacional | A = Não tem ... E = Excelente |
-| `TX_Q036` | Internet banda larga | A = Não tem ... E = Excelente |
-| `TX_Q194` | Escola promove projetos de ciência/tecnologia? | A = Sim, B = Não |
-| `TX_Q219` | Escola adotou novas tecnologias educacionais? | A = Sim, B = Não |
+| `TX_Q034` | Condição dos computadores da escola | A = Não tem, B = Muito inadequado, C = Inadequado, D = Adequado, E = Muito adequado |
+| `TX_Q035` | Softwares educacionais | A = Não tem ... E = Muito adequado |
+| `TX_Q036` | Internet banda larga | A = Não tem ... E = Muito adequado |
+| `TX_Q194` | Há projetos de ciência e tecnologia na escola? | A = Não, B = Sim |
+| `TX_Q219` | A equipe escolar recebeu formação em novas tecnologias educacionais neste ano? | A = Não, B = Sim |
+
+> `TS_DIRETOR` tem uma linha por escola **e por série avaliada** (com as mesmas respostas). Nos cruzamentos, o questionário é reduzido a uma linha por escola antes do cruzamento com `TS_ESCOLA`, para que cada escola conte uma única vez. Diferenças e d de Cohen das variáveis binárias são sempre calculados como "Sim − Não".
 
 ### 2.8 Variáveis da escola
+
+`TS_ESCOLA` contém apenas escolas **públicas** com resultados no SAEB (4.215 no RJ). As médias e percentuais são calculados pelo INEP.
 
 | Coluna | Descrição |
 |--------|-----------|
 | `MEDIA_5EF_LP`, `MEDIA_5EF_MT` | Proficiência média dos alunos do 5º ano |
 | `MEDIA_9EF_LP`, `MEDIA_9EF_MT` | Proficiência média dos alunos do 9º ano |
-| `PC_FORMACAO_DOCENTE_INICIAL` | % de professores com formação adequada na escola |
-| `NIVEL_0_LP5` a `NIVEL_9_LP5` | % de alunos em cada nível de proficiência (LP, 5º ano) |
+| `MEDIA_EM_LP`, `MEDIA_EM_MT` | Proficiência média dos alunos do Ensino Médio |
+| `PC_FORMACAO_DOCENTE_INICIAL` | % de docentes com formação adequada — anos iniciais do EF |
+| `PC_FORMACAO_DOCENTE_FINAL` | % de docentes com formação adequada — anos finais do EF |
+| `PC_FORMACAO_DOCENTE_MEDIO` | % de docentes com formação adequada — Ensino Médio |
+| `NIVEL_0_LP5` a `NIVEL_9_LP5` (e análogos) | % de alunos da escola em cada nível de proficiência |
 
 ---
 
@@ -129,70 +145,78 @@ O questionário contextual do SAEB pergunta aos alunos sobre tecnologia em casa:
 
 ### 3.1 O que é a pesquisa TIC Educação?
 
-A pesquisa TIC Educação, conduzida pelo CETIC.br (Centro Regional de Estudos para o Desenvolvimento da Sociedade da Informação), investiga o uso de tecnologias da informação e comunicação nas escolas brasileiras.
+A pesquisa TIC Educação, conduzida pelo Cetic.br (Centro Regional de Estudos para o Desenvolvimento da Sociedade da Informação, do NIC.br/CGI.br), investiga o uso de tecnologias da informação e comunicação nas escolas brasileiras de Ensino Fundamental e Médio (universo de 130.918 escolas em 2023), por amostra probabilística.
 
-> **Importante:** Os dados da TIC Educação são disponibilizados **por região** (Norte, Nordeste, Sudeste, Sul, Centro-Oeste), e não por estado. Na aplicação, utilizamos os dados da **região Sudeste** como proxy para o Rio de Janeiro. Isso é informado ao usuário no dashboard.
+> **Importante:** A TIC Educação **não divulga dados por estado**. As tabelas trazem o total do Brasil e recortes por região, área, localização, dependência administrativa, nível de ensino e porte. Na aplicação, os indicadores são apresentados para a **região Sudeste** (proxy para o Rio de Janeiro) e para o **Brasil** (referência), sempre com as margens de erro publicadas pelo Cetic.br. Isso é informado ao usuário no dashboard.
 
 ### 3.2 Arquivos utilizados
 
+Tabelas oficiais de escolas, versão 1.0, baixadas de <https://cetic.br/media/microdados/786/tic_educacao_2023_escolas_tabelas_xlsx_v1.0.zip> e colocadas em `data/tic_educacao_2023_escolas_tabelas_xlsx_v1.0/`:
+
 | Arquivo | Conteúdo |
 |---------|----------|
-| `tic_educacao_2023_escolas_tabela_proporcao_v1.0.xlsx` | Proporções (%) de escolas com cada característica |
-| `tic_educacao_2023_escolas_tabela_total_v1.0.xlsx` | Contagens absolutas |
-| `tic_educacao_2023_escolas_tabela_margem_de_erro_v1.0.xlsx` | Margens de erro das estimativas |
+| `tic_educacao_2023_escolas_tabela_proporcao_v1.0.xlsx` | Proporções (%) de escolas |
+| `tic_educacao_2023_escolas_tabela_total_v1.0.xlsx` | Estimativas do número de escolas |
+| `tic_educacao_2023_escolas_tabela_margem_de_erro_v1.0.xlsx` | Margens de erro das proporções (p.p.) |
+| `tic_educacao_2023_escolas_tabela_margem_de_erro_total_v1.0.xlsx` | Margens de erro dos totais |
+
+Cada arquivo tem 69 abas (uma por indicador). O ETL (`backend/etl/tic_loader.py`) lê, em cada aba, o título (linha 1), o universo (linha 2), os cabeçalhos de subitem e de resposta (linhas 3–4) e as linhas de dados, preservando a variável de corte (ex.: `REGIÃO`) e a categoria (ex.: `Sudeste`). Resultado: `data/processed/tic/tic_educacao_2023.parquet` (colunas `indicador, titulo, universo, tipo, variavel_corte, valor_corte, item, resposta, coluna, valor`).
 
 ### 3.3 Indicadores utilizados
 
-Os indicadores são organizados em categorias temáticas:
+Os gráficos usam conjuntos curados de indicadores, definidos em `backend/analysis/tic.py` (e disponíveis em `/api/tic/groups`). Em todos, o valor é o **percentual de escolas com resposta "Sim"** (exceto quando indicado).
 
-#### Infraestrutura (A1–A8)
+#### Infraestrutura e conectividade
 
-| Indicador | O que mede |
-|-----------|------------|
-| A1 | % de escolas com computador |
-| A2 | % com portátil disponível para alunos |
-| A3 | % com tablet disponível para alunos |
-| A4 | % com acesso à internet |
-| A5 | % com banda larga |
-| A6 | % com Wi-Fi |
-| A7 | % com projetor |
-| A8 | % com lousa digital |
+| Indicador | Pergunta oficial | Rótulo no dashboard |
+|-----------|------------------|---------------------|
+| B1 | Escolas que possuem computador | Possui computador |
+| A1 | Escolas com acesso à internet | Acesso à internet |
+| A6 | Escolas que possuem computador e acesso à internet | Computador e internet |
+| B1B | Escolas que possuem computador disponível para uso dos alunos em atividades educacionais | Computador para uso dos alunos |
+| A7 | Escolas com acesso à internet para uso dos alunos | Internet para uso dos alunos |
+| A8 | Escolas que possuem computador e acesso à internet para uso dos alunos | Computador e internet para os alunos |
+| A4 | Escolas com acesso à internet, por presença de rede sem fio¹ | Rede sem fio¹ |
+| A2 | … por tipo da principal conexão — resposta "Conexão via fibra ótica"¹ | Conexão por fibra ótica¹ |
 
-#### IA e Sistemas de Dados (E4A, E4B, E5, E6, F6)
+#### Dados, vigilância e inteligência artificial
 
-| Indicador | O que mede |
-|-----------|------------|
-| E4A | % de escolas usando biometria |
-| E4B | % usando reconhecimento facial |
-| E5 | % usando analytics/learning analytics |
-| E6 | % usando sistemas de inteligência artificial |
-| F6 | % usando chatbot |
+| Indicador | Pergunta oficial | Rótulo no dashboard |
+|-----------|------------------|---------------------|
+| E3 | Uso de sistema interno de câmeras de vídeo | Câmeras de vídeo internas |
+| E4A | Uso de sistema de identificação dos alunos pela digital ou palma da mão | Biometria (digital/palma) |
+| E4B | Uso de sistema de identificação dos alunos por reconhecimento facial | Reconhecimento facial |
+| E6 | Uso de bases de dados e analítica de aprendizagem na gestão — subitem "Relatórios… de *Business Intelligence* (BI)" | Business Intelligence na gestão |
+| E6 | Idem — subitem "Sistemas de Inteligência Artificial, como ferramentas de predição e análise de dados baseadas em aprendizagem de máquina" | Sistemas de IA na gestão |
+| F6 | Recursos do aplicativo da escola — subitem "Monitoramento das atividades dos alunos por meio de acesso às câmeras de vídeo" | Câmeras acessíveis pelo app |
+| F6 | Idem — subitem "Atendimento automatizado, por meio de assistente virtual ou chatbots" | Chatbot no app da escola |
 
-#### Formação Digital Docente (J1–J4)
+#### Formação docente em tecnologias
 
-| Indicador | O que mede |
-|-----------|------------|
-| J1 | % de escolas que oferecem formação em programação |
-| J2 | % que oferecem formação em robótica |
-| J3 | % que oferecem formação em uso pedagógico de TIC |
-| J4 | % que oferecem formação em segurança online |
+| Indicador | Pergunta oficial | Rótulo no dashboard |
+|-----------|------------------|---------------------|
+| J1 | Oferta de formação para os professores sobre o uso de tecnologias digitais no ensino (últimos 12 meses) | Ofertou formação em tecnologias |
+| J3 | Participação em programas de formação de professores sobre tecnologias digitais | Participa de programa de formação |
+| J2 | Temas das formações: "Linguagem de programação e robótica", "Criação de conteúdos educacionais digitais", "Fake news…", "Uso de tecnologias na avaliação dos alunos" | Tema: … |
 
-#### Privacidade e Ética (H1–H7)
+#### Privacidade e proteção de dados
 
-| Indicador | O que mede |
-|-----------|------------|
-| H1 | % de escolas com política de privacidade |
-| H3 | % que promovem debate sobre privacidade |
-| H4 | % que obtêm consentimento para uso de dados |
-| H5 | % com proteção de dados implementada |
-| H6 | % que não adotaram medidas de privacidade |
-| H7 | % com preocupação com privacidade |
+| Indicador | Pergunta oficial | Rótulo no dashboard |
+|-----------|------------------|---------------------|
+| H1 | Possui documento que define a política de proteção de dados e de segurança da informação | Política de proteção de dados |
+| H3 | Realizou debates ou palestras sobre privacidade e proteção de dados (12 meses) | Debates sobre privacidade |
+| H5 | Recebeu dúvidas de pais ou responsáveis sobre privacidade dos dados dos alunos (12 meses) | Dúvidas de pais sobre privacidade |
+| H6 | Deixou de adotar dispositivos, plataformas ou recursos digitais por preocupação com a privacidade dos alunos | Deixou de adotar recurso por privacidade |
+
+#### Uso seguro da internet (rota `/api/tic/digital-literacy`)
+
+I1 (promoveu formação sobre uso seguro, responsável e crítico da internet) e I3 (público-alvo: alunos, professores, pais).
+
+¹ Universo: escolas com acesso à internet. Nos demais, o universo é o total de escolas de Ensino Fundamental e Médio.
 
 ### 3.4 Filtros aplicados
 
-Ao exibir esses dados, a aplicação filtra apenas registros onde:
-- `tipo = 'proporcao'` (proporção, não contagem absoluta)
-- `valor_corte = 'TOTAL'` (total geral, sem subdivisão por porte ou rede)
+Para cada indicador do catálogo: `tipo = 'proporcao'` (valor) e `tipo = 'margem_erro'` (margem de erro), na resposta indicada (em geral "Sim") e, quando houver, no subitem indicado; recortes `variavel_corte = 'REGIÃO' AND valor_corte = 'Sudeste'` e `valor_corte = 'TOTAL'` (Brasil).
 
 ---
 
@@ -202,33 +226,30 @@ ETL significa **Extract, Transform, Load** (Extrair, Transformar, Carregar). É 
 
 ### 4.1 Etapa 1: Conversão para formato eficiente
 
-Os dados brutos (CSV e XLSX) são convertidos para o formato **Parquet**, um formato colunar otimizado para consultas analíticas. Isso reduz o tempo de leitura de minutos para segundos.
+Os dados brutos (CSV do SAEB e XLSX da TIC) são convertidos para o formato **Parquet**, um formato colunar otimizado para consultas analíticas. Os microdados ficam apenas nos Parquet (`data/processed/saeb/*.parquet`), lidos diretamente pelas análises estatísticas.
 
 ### 4.2 Etapa 2: Pré-computação de tabelas agregadas
 
-O script `precompute.py` lê os arquivos Parquet e cria **15 tabelas pré-computadas** no banco de dados DuckDB. Essas tabelas armazenam resultados já agregados (médias, contagens, etc.) para que o dashboard responda em milissegundos, sem precisar reprocessar milhões de registros a cada consulta.
-
-**Tabelas criadas:**
+O script `backend/etl/precompute.py` lê os Parquet e gera, do zero, o banco DuckDB `data/processed/saeb.duckdb` (~5 MB) com **14 tabelas agregadas**, para que as consultas descritivas do dashboard respondam em milissegundos:
 
 | Tabela | O que contém | Tipo de dado |
 |--------|--------------|--------------|
-| `kpi_rj` | Totais de alunos e médias gerais do RJ | Descritivo direto |
-| `kpi_escolas_rj` | Contagem de escolas (total, públicas, privadas) | Descritivo direto |
-| `prof_by_uf_serie_disc` | Proficiência média por UF, série e disciplina | Descritivo (agregado com pesos) |
-| `prof_niveis_rj` | Distribuição dos alunos por nível de proficiência (RJ) | Descritivo direto |
-| `prof_niveis_nacional` | Distribuição nacional por nível de proficiência | Descritivo direto |
-| `prof_by_inse` | Proficiência por nível socioeconômico (RJ) | Cruzamento |
+| `kpi_rj` | Alunos (registros e presentes) e médias gerais do RJ por série | Descritivo direto |
+| `kpi_escolas_rj` | Contagem de escolas (públicas) com resultados no RJ | Descritivo direto |
+| `prof_by_uf_serie_disc` | Proficiência média e soma dos pesos por UF, série, disciplina e rede | Descritivo (agregado com pesos) |
+| `prof_niveis_rj` | Média, entre escolas públicas do RJ, do % de alunos por nível | Descritivo direto |
+| `prof_niveis_nacional` | Idem, nacional | Descritivo direto |
+| `prof_by_inse` | Proficiência por nível socioeconômico (RJ, `IN_INSE = 1`) | Cruzamento |
 | `prof_by_location_rj` | Proficiência urbana vs. rural (RJ) | Cruzamento |
-| `escola_formacao_rj` | Formação docente vs. proficiência por escola | Cruzamento |
-| `escola_inse_rj` | INSE da escola vs. proficiência | Cruzamento |
+| `escola_inse_rj` | Proficiências médias por INSE da escola | Cruzamento |
 | `quest_aluno_rj` | Distribuição de respostas dos alunos | Descritivo direto |
 | `quest_professor_rj` | Distribuição de respostas dos professores | Descritivo direto |
 | `quest_diretor_rj` | Distribuição de respostas dos diretores | Descritivo direto |
-| `cross_aluno_tech_rj` | Acesso à tecnologia do aluno vs. proficiência | Cruzamento com estatística |
-| `cross_diretor_tech_rj` | Infraestrutura tecnológica (diretor) vs. proficiência | Cruzamento com estatística |
-| `cross_professor_tech_rj` | Formação tecnológica do professor vs. proficiência | Cruzamento com estatística |
-| `cross_digital_index_rj` | Índice digital composto vs. proficiência | Criado por manipulação estatística |
-| `tic_indicadores` | Indicadores TIC Educação | Descritivo direto |
+| `cross_aluno_tech_rj` | Médias de proficiência por resposta tecnológica do aluno (e por INSE) | Cruzamento |
+| `cross_digital_index_rj` | Médias por valor do índice digital composto (e por INSE) | Criado por manipulação estatística |
+| `tic_indicadores` | Tabelas da TIC Educação em formato longo | Descritivo direto |
+
+Os testes estatísticos (t, ANOVA, correlação, intervalos de confiança) **não** são pré-computados: são calculados sob demanda a partir dos Parquet (em geral em menos de 0,1 s), assim como os cruzamentos em nível de escola/diretor/professor e a dispersão formação docente × proficiência.
 
 ### 4.3 Como a média ponderada é calculada
 
@@ -263,8 +284,8 @@ Esses são dados que vêm das fontes originais e são exibidos **sem transforma�
 
 ### 5.1 Visão Geral (KPIs)
 
-- **Total de alunos avaliados** no RJ, por série
-- **Total de escolas** (públicas e privadas)
+- **Alunos avaliados** no RJ: presentes na prova de Língua Portuguesa (`IN_PRESENCA_LP = 1`), por série
+- **Escolas públicas com resultados** (`TS_ESCOLA` não inclui as privadas)
 - **Médias de proficiência** em LP e MT por série
 
 > Esses números são médias ponderadas calculadas diretamente dos microdados, sem cruzamento.
@@ -283,9 +304,9 @@ Média do estado = ────────────────────�
 
 ### 5.3 Distribuição por nível de proficiência
 
-O SAEB classifica os alunos em **níveis de proficiência** (0 a 9 para LP, 0 a 10 para MT), onde cada nível corresponde a um conjunto de habilidades que o aluno demonstra dominar. A aplicação mostra o percentual de alunos do RJ em cada nível.
+O SAEB classifica os alunos em **níveis de proficiência** (0 a 9 para LP, 0 a 10 para MT), onde cada nível corresponde a um conjunto de habilidades que o aluno demonstra dominar.
 
-Esses percentuais vêm diretamente da tabela `TS_ESCOLA` do SAEB, que já traz os valores pré-calculados pelo INEP.
+Os percentuais vêm da tabela `TS_ESCOLA`, que traz, para cada escola **pública**, o percentual de alunos em cada nível (pré-calculado pelo INEP). A aplicação mostra a **média simples desses percentuais entre as escolas públicas do RJ** — uma aproximação da distribuição dos alunos da rede pública (não pondera pelo tamanho da escola nem inclui a rede privada). Disponível para 5º e 9º anos.
 
 ### 5.4 Perfil dos professores
 
@@ -298,7 +319,7 @@ Esses dados são contagens diretas das respostas, sem manipulação estatística
 
 ### 5.5 Indicadores TIC Educação
 
-As proporções de escolas com cada tipo de tecnologia são exibidas diretamente como informadas pela pesquisa TIC Educação — por exemplo, "92,4% das escolas da região Sudeste possuem computador."
+As proporções de escolas são exibidas diretamente como publicadas pela TIC Educação, para o Sudeste e o Brasil — por exemplo, "98,0% das escolas do Sudeste têm acesso à internet (margem de erro ±1,2 p.p.); no Brasil, 92,4%".
 
 ---
 
@@ -315,16 +336,15 @@ Esses dados **combinam duas variáveis** para responder a perguntas do tipo: "Al
 2. Calcula-se a média ponderada de proficiência para cada grupo
 3. A **lacuna** é a subtração: `média_privada − média_pública`
 
-**Teste estatístico aplicado:** Teste t de Welch + Cohen's d (ver [seção 8](#8-métodos-estatísticos-explicados))
+**Teste estatístico aplicado:** teste t com erro-padrão de desenho + d de Cohen (ver [seção 8](#8-métodos-estatísticos-explicados)). No dashboard, a lacuna é exibida a partir das médias pré-computadas; o d de Cohen e o intervalo de confiança da lacuna aparecem no apêndice do relatório PDF.
 
 ### 6.2 Proficiência por nível socioeconômico (INSE)
 
 **Pergunta:** O nível socioeconômico do aluno está relacionado ao seu desempenho?
 
 **Como é calculada:**
-1. Os alunos são agrupados por nível INSE (1 a 8)
+1. Os alunos **com INSE calculado** (`IN_INSE = 1`) são agrupados por nível INSE (1 a 8)
 2. Calcula-se a média ponderada de proficiência para cada nível
-3. Calcula-se a **correlação de Pearson** entre o INSE contínuo e a proficiência
 
 ### 6.3 Proficiência urbana vs. rural
 
@@ -340,31 +360,31 @@ Esses dados **combinam duas variáveis** para responder a perguntas do tipo: "Al
 **Pergunta:** Escolas com maior percentual de professores com formação adequada têm melhores resultados?
 
 **Como é calculada:**
-1. A tabela `escola_formacao_rj` contém, para cada escola do RJ, o percentual de formação docente (`PC_FORMACAO_DOCENTE_INICIAL`) e a proficiência média dos alunos
-2. O gráfico de dispersão (scatter plot) mostra essa relação
-3. Uma **linha de tendência** (regressão linear) é traçada
-4. O **coeficiente de correlação de Pearson (r)** é exibido
+1. Para cada escola pública do RJ (uma linha por escola, lida de `TS_ESCOLA`), usa-se o indicador de formação docente do INEP **específico da etapa**: `PC_FORMACAO_DOCENTE_INICIAL` (5º ano), `PC_FORMACAO_DOCENTE_FINAL` (9º ano) ou `PC_FORMACAO_DOCENTE_MEDIO` (Ensino Médio), e a proficiência média da escola na mesma etapa
+2. O gráfico de dispersão (scatter plot) mostra essa relação — cada ponto é uma escola
+3. Uma **linha de tendência** (regressão linear simples, sem pesos) é traçada
+4. O **coeficiente de correlação de Pearson (r)** entre escolas é exibido
 
 ### 6.5 Tecnologia do aluno vs. proficiência
 
 Para cada variável de tecnologia do aluno (computador, Wi-Fi, celular com internet, streaming), a análise compara a proficiência média entre os grupos de resposta.
 
-**Exemplo — Wi-Fi em casa:**
+**Exemplo real — Wi-Fi em casa (9º ano, LP, RJ):**
 
-| Grupo | Resposta | Proficiência média |
-|-------|----------|--------------------|
-| Sem Wi-Fi | A | 195,3 |
-| Com Wi-Fi | B | 218,7 |
+| Grupo | Resposta | Proficiência média (IC 95%) | n |
+|-------|----------|-----------------------------|---|
+| Sem Wi-Fi | A | 244,2 (242,5 – 245,9) | 9.422 |
+| Com Wi-Fi | B | 263,6 (259,5 – 267,6) | 101.587 |
 
-A diferença de 23,4 pontos é testada estatisticamente para verificar se é significativa.
+A diferença de 19,3 pontos (d = 0,38) é testada com erro-padrão de desenho: t = 8,5, p < 0,001.
 
 ### 6.6 Infraestrutura escolar (diretor) vs. proficiência
 
-As respostas dos diretores sobre tecnologia na escola são cruzadas com a proficiência média dos alunos daquela escola. Isso usa um **join** (ligação) entre a tabela de diretores e a tabela de escolas pelo identificador `ID_ESCOLA`.
+As respostas dos diretores sobre tecnologia na escola são cruzadas com a proficiência média da escola (`MEDIA_*` de `TS_ESCOLA`) pelo identificador `ID_ESCOLA`. Como `TS_DIRETOR` tem uma linha por escola **e por série avaliada** (com as mesmas respostas), o questionário é antes reduzido a **uma linha por escola**. A unidade de análise é a escola (médias do INEP, sem pesos); os testes tratam cada escola como uma observação.
 
 ### 6.7 Formação tecnológica do professor vs. proficiência
 
-As respostas dos professores sobre formação tecnológica são cruzadas com a proficiência dos seus alunos. A ligação é feita pelo identificador de turma (`ID_TURMA`): cada professor é vinculado aos alunos que ensina.
+As respostas dos professores são cruzadas com a proficiência dos alunos pelo identificador de turma (`ID_TURMA`). O SAEB **não identifica a disciplina do professor**: em turmas com mais de um professor respondente (em geral LP e MT, no 9º ano e no Ensino Médio), cada aluno é associado a todos eles. A unidade de análise é o **par aluno–professor**; o peso de cada par é o peso do aluno dividido pelo número de professores respondentes da turma (cada aluno soma, no total, o seu peso), e os testes usam a escola como conglomerado — o que também trata a dependência entre os pares de um mesmo aluno.
 
 ---
 
@@ -397,7 +417,7 @@ Todos os valores de p-valor, estatísticas t e F são calculados pela aplicaçã
 
 ### 7.6 Coeficientes de correlação
 
-Os valores de correlação de Pearson (r) mostrados no dashboard são calculados pela aplicação, tanto para relações simples (INSE vs. proficiência) quanto ponderados pelos pesos amostrais.
+Os valores de correlação de Pearson (r) mostrados no dashboard são calculados pela aplicação: ponderados pelos pesos amostrais no nível do aluno (índice digital × proficiência) e simples (sem pesos) no nível da escola (formação docente × proficiência, calculado no navegador).
 
 ### 7.7 Linha de tendência (regressão linear)
 
@@ -415,7 +435,7 @@ Essa linha mostra a "direção geral" da relação: se sobe (inclinação positi
 
 ### 7.8 Resumo dos cruzamentos tecnológicos
 
-A tabela-resumo na seção "Cruzamentos Tech" é construída executando **11 análises distintas** (4 do aluno, 5 do diretor, 2 do professor), coletando os resultados e ordenando por tamanho de efeito. Inclui a correção de Bonferroni para múltiplas comparações.
+A tabela-resumo na seção "Cruzamentos Tech" é construída executando **11 análises distintas** (4 do aluno, 5 do diretor, 2 do professor), coletando os resultados e ordenando por **tamanho de efeito numa escala comum**: |d| para as variáveis binárias e, para as ANOVAs, o equivalente-d do η² (d ≈ 2·√(η²/(1−η²))). A estatística F não é usada na ordenação, porque cresce com o tamanho da amostra. Inclui a correção de Bonferroni para múltiplas comparações.
 
 ---
 
@@ -429,25 +449,33 @@ Esta seção explica, de forma acessível, cada método estatístico utilizado n
 
 Quando calculamos a proficiência média a partir de uma amostra, estamos **estimando** a média real da população. O intervalo de confiança nos diz: "temos 95% de confiança de que a verdadeira média está entre X e Y."
 
-#### Como é calculado?
+#### Como é calculado? (erro-padrão de desenho)
+
+Alunos de uma mesma escola não são independentes: compartilham professores, recursos e contexto. Tratá-los como uma amostra aleatória simples produziria intervalos estreitos demais e p-valores pequenos demais. Por isso, nas análises com microdados de alunos, a aplicação calcula o erro-padrão por **linearização de Taylor**, considerando o desenho do SAEB — **estratos** (`ESTRATO`) e **conglomerados** (escolas, `ID_ESCOLA`) —, o mesmo estimador "com reposição" do `svy` do Stata e do pacote `survey` do R:
 
 ```
-IC = média ± t_crítico × EP
+Média ponderada:  ȳ = Σ wᵢ yᵢ / Σ wᵢ
+Valores linearizados de cada aluno:  zᵢ = wᵢ (yᵢ − ȳ) / Σ wᵢ
+Total por escola g do estrato h:  T_hg = Σ_{i ∈ g} zᵢ
 
-onde:
-    EP (erro padrão) = √(variância_ponderada × Σ(w²) / (Σw)²)
-    t_crítico = valor da distribuição t de Student com (n − 1) graus de liberdade
+Var(ȳ) = Σ_h  n_h / (n_h − 1) · Σ_g (T_hg − T̄_h)²
+EP = √Var(ȳ)
+IC = ȳ ± t_crítico × EP,   com gl = nº de escolas − nº de estratos
 ```
 
-#### Exemplo
+Estratos com uma única escola são centrados na média geral (opção conservadora "adjust" do pacote `survey`). **Subgrupos** (ex.: alunos sem Wi-Fi, um nível de INSE, a rede pública) são estimados como **domínios**: o desenho completo — todos os alunos da UF e série — é mantido, e quem está fora do subgrupo entra com valor linearizado zero. Recortar a amostra ao subgrupo descartaria as escolas sem membros e subestimaria a variância. Grupos concentrados numa única escola não têm variância estimável: seu intervalo e seus testes não são calculados. A implementação está em `backend/analysis/stats_utils.py` e foi validada contra o estimador de conglomerados do `statsmodels` (mesmos erros-padrão).
 
-Se a proficiência média de LP no 9º ano do RJ é 245,3 com IC [243,1 ; 247,5], isso significa: "estimamos que a verdadeira média da população está entre 243,1 e 247,5 pontos, com 95% de confiança."
+Nas análises em que a **escola é a unidade** (infraestrutura do diretor × média da escola; formação docente × média da escola), cada escola é uma observação e usa-se a fórmula de amostragem aleatória simples.
+
+#### Exemplo real
+
+A proficiência média de LP no 9º ano do RJ é 261,3, com IC 95% de [257,5 ; 265,1]: "estimamos que a verdadeira média da população está entre 257,5 e 265,1 pontos, com 95% de confiança". O intervalo é relativamente largo porque a rede privada — com média bem mais alta — é representada por uma amostra de escolas.
 
 #### Efeito do desenho amostral (DEFF)
 
-O SAEB usa amostragem estratificada, não amostragem aleatória simples. Isso afeta a precisão das estimativas. A aplicação calcula o **DEFF** (Design Effect), que mede quanto a variância é inflada pelo desenho amostral. Quando o DEFF é maior que 1, os intervalos de confiança ficam mais largos para refletir a incerteza adicional.
+O **DEFF** (Design Effect) é a razão entre a variância de desenho e a variância que se teria com uma amostra aleatória simples do mesmo tamanho. Com a conglomeração por escola, o DEFF costuma ser bem maior que 1 — por isso os intervalos e testes de desenho são mais largos e mais conservadores que os ingênuos.
 
-### 8.2 Teste t de Welch
+### 8.2 Teste t (diferença de duas médias)
 
 #### O que é?
 
@@ -459,31 +487,18 @@ Sempre que comparamos **dois grupos** — por exemplo, escolas públicas vs. pri
 
 #### Como funciona?
 
-1. Calcula-se a média e a variância ponderada de cada grupo
-2. Calcula-se a diferença das médias
-3. Calcula-se o erro padrão dessa diferença:
+1. Calculam-se as médias ponderadas dos dois grupos
+2. Calcula-se a diferença das médias (sempre "Sim − Não" nas variáveis de tecnologia)
+3. Calcula-se o erro-padrão da diferença **pelo desenho amostral**: as duas médias são linearizadas conjuntamente, de modo que escolas com alunos nos dois grupos contribuem também com a covariância entre as médias:
 
 ```
-EP = √(EP₁² + EP₂²)
-
-onde EP_g = √(variância_g × Σ(w_g²) / (Σw_g)²)
+Var(ȳ₁ − ȳ₂) = Var(ȳ₁) + Var(ȳ₂) − 2·Cov(ȳ₁, ȳ₂)
+t = (ȳ₁ − ȳ₂) / √Var(ȳ₁ − ȳ₂),   gl = nº de escolas − nº de estratos
 ```
 
-4. Calcula-se a **estatística t**:
+4. Calcula-se o **p-valor** (bicaudal): a probabilidade de observar uma diferença tão grande ou maior se não houvesse diferença real entre os grupos.
 
-```
-t = (média₁ − média₂) / EP
-```
-
-5. Calculam-se os **graus de liberdade** pela fórmula de Welch-Satterthwaite:
-
-```
-         (EP₁² + EP₂²)²
-gl = ─────────────────────────
-     EP₁⁴/(n₁−1) + EP₂⁴/(n₂−1)
-```
-
-6. Calcula-se o **p-valor** (bicaudal): a probabilidade de observar uma diferença tão grande ou maior se não houvesse diferença real entre os grupos.
+Nas comparações em que a escola é a unidade (variáveis do diretor), usa-se o teste t de Welch clássico (ponderado), com graus de liberdade de Welch–Satterthwaite.
 
 #### Interpretação do p-valor
 
@@ -491,18 +506,11 @@ gl = ─────────────────────────
 - **p < 0,001**: Diferença altamente significativa
 - **p ≥ 0,05**: Não podemos afirmar que há diferença real
 
-> **Cuidado:** Um p-valor pequeno não diz nada sobre a **magnitude** da diferença. Uma diferença de 0,5 pontos pode ser significativa com amostras enormes, mas ser irrelevante na prática. Por isso, a aplicação também calcula o d de Cohen.
+> **Cuidado:** Um p-valor pequeno não diz nada sobre a **magnitude** da diferença. Por isso, a aplicação também calcula o d de Cohen.
 
-#### Exemplo
+#### Exemplo real
 
-Comparando proficiência em LP de alunos com e sem Wi-Fi:
-
-| | Com Wi-Fi | Sem Wi-Fi |
-|---|---|---|
-| Média ponderada | 218,7 | 195,3 |
-| n | 180.000 | 22.000 |
-
-Se o teste retorna t = 15,2 e p < 0,001, concluímos que a diferença de 23,4 pontos é estatisticamente significativa — muito improvável de ter ocorrido ao acaso.
+Wi-Fi em casa, 9º ano, LP, RJ: com Wi-Fi 263,6, sem Wi-Fi 244,2 — diferença de 19,3 pontos, t = 8,5 com erro-padrão de desenho, p < 0,001. (Tratando os alunos como independentes, o t seria muito maior; a conglomeração por escola reduz a "quantidade efetiva de informação".)
 
 ### 8.3 Tamanho de efeito (d de Cohen)
 
@@ -536,7 +544,7 @@ A variância *pooled* (combinada) é uma média ponderada das variâncias dos do
 
 #### Exemplo
 
-Se d = 0,45 na comparação com/sem Wi-Fi, isso significa que a diferença entre os grupos equivale a quase metade de um desvio padrão. É um efeito **pequeno a médio** — perceptível, mas não dramático.
+Na comparação com/sem Wi-Fi (9º ano, LP, RJ), d = 0,38: a diferença entre os grupos equivale a pouco mais de um terço de desvio padrão. É um efeito **pequeno** — perceptível, mas não dramático.
 
 ### 8.4 ANOVA (Análise de Variância)
 
@@ -546,40 +554,41 @@ Enquanto o teste t compara **dois** grupos, a ANOVA compara **três ou mais** gr
 
 #### Quando é usada?
 
-Quando a variável de tecnologia tem mais de duas categorias — por exemplo, "computadores na escola" com respostas de A (não tem) a E (excelente).
+Quando a variável de tecnologia tem mais de duas categorias — por exemplo, "computadores na escola" com respostas de A (não tem) a E (muito adequado). Além do F, a aplicação reporta o **η²** (proporção da variância explicada pelos grupos) como tamanho de efeito; para ordenar o resumo dos cruzamentos em uma escala comum ao d de Cohen, o η² é convertido em f de Cohen (f = √(η²/(1−η²))) e em d ≈ 2f.
 
 #### Como funciona?
 
-A ANOVA decompõe a variação total dos dados em duas partes:
+A ANOVA clássica decompõe a variação total dos dados em duas partes:
 
-1. **Variação entre grupos** (SS_between): quanto as médias dos grupos diferem da média geral
+1. **Variação entre grupos** (SS_entre): quanto as médias dos grupos diferem da média geral
 
 ```
 SS_entre = Σ [Σw_g × (média_g − média_geral)²]
 ```
 
-2. **Variação dentro dos grupos** (SS_within): quanto os indivíduos variam dentro de cada grupo
+2. **Variação dentro dos grupos** (SS_dentro): quanto os indivíduos variam dentro de cada grupo
 
 ```
 SS_dentro = Σ_g [Σ w_i × (x_i − média_g)²]
 ```
 
-3. A **estatística F** é a razão entre as variações:
+3. O **η²** = SS_entre / (SS_entre + SS_dentro) é a proporção da variação explicada pelos grupos (tamanho de efeito).
+
+**Teste de significância com o desenho amostral.** Nas análises com microdados de alunos (e pares aluno–professor), a igualdade das k médias é testada por um **teste de Wald** com a matriz de covariância das médias obtida por linearização (seção 8.1), com a correção F de Korn–Graubard usada pelo Stata `svy`:
 
 ```
-         SS_entre / (k − 1)        MS_entre
-F = ──────────────────────── = ────────────
-     SS_dentro / (N − k)          MS_dentro
-
-onde k = número de grupos, N = tamanho total
+W = (C ȳ)ᵀ (C V Cᵀ)⁻¹ (C ȳ)        (C = contrastes "grupo 1 − grupo j")
+F = (d − q + 1) / (d · q) × W,     q = k − 1,  d = nº de escolas − nº de estratos
+p-valor: distribuição F(q, d − q + 1)
 ```
 
-Se F é grande, a variação entre os grupos é muito maior do que a variação dentro deles, sugerindo que os grupos são genuinamente diferentes.
+Grupos concentrados numa única escola ficam fora do teste (continuam nas médias descritivas). Nas análises em que a escola é a unidade (diretor), usa-se o F clássico, MS_entre / MS_dentro, com (k − 1, N − k) graus de liberdade.
 
 #### Interpretação
 
 - **F grande + p pequeno**: Pelo menos um grupo é significativamente diferente
-- **F ≈ 1**: As diferenças entre grupos são comparáveis à variação natural dentro dos grupos (sem efeito)
+- **F ≈ 1**: As diferenças entre grupos são comparáveis à variação esperada pelo acaso (sem efeito)
+- O **η²** indica a magnitude: ~0,01 pequeno, ~0,06 médio, ~0,14 grande (convenção de Cohen)
 
 ### 8.5 Correlação de Pearson (ponderada)
 
@@ -599,14 +608,10 @@ onde x̄ e ȳ são médias ponderadas
 
 #### P-valor da correlação
 
-Para testar se r é significativamente diferente de zero:
+Para testar se r é diferente de zero, a aplicação testa a inclinação da regressão ponderada de y em x (a hipótese nula é a mesma: ausência de relação linear), com erro-padrão de desenho (estratos e escolas) e gl = nº de escolas − nº de estratos. Sem informação de desenho, usa-se o teste clássico:
 
 ```
-              r × √(n − 2)
-t_stat = ─────────────────
-            √(1 − r²)
-
-p-valor = teste bicaudal com (n − 2) graus de liberdade
+t = r × √(n − 2) / √(1 − r²),   com (n − 2) graus de liberdade
 ```
 
 #### Interpretação
@@ -621,7 +626,7 @@ p-valor = teste bicaudal com (n − 2) graus de liberdade
 
 #### Exemplo na aplicação
 
-Na relação entre o Índice Digital (0–8) e a proficiência, um r = 0,35 indicaria uma correlação moderada e positiva: alunos com maior acesso digital tendem a ter proficiência mais alta, embora a relação não seja perfeita (muitos fatores influenciam o desempenho).
+Na relação entre o Índice Digital (0–8) e a proficiência (9º ano, LP, RJ), r = 0,25 (p < 0,001 com erro-padrão de desenho): uma correlação fraca e positiva — alunos com maior acesso digital tendem a ter proficiência mais alta, mas muitos outros fatores influenciam o desempenho.
 
 > **Atenção:** Correlação não implica causalidade! O fato de alunos com mais tecnologia terem melhores notas não significa que a tecnologia *causou* as melhores notas. O nível socioeconômico é um **fator confundidor**: famílias mais ricas tendem a ter mais tecnologia E melhores condições de estudo. Por isso a aplicação oferece a estratificação por INSE.
 
@@ -685,7 +690,7 @@ Com o índice construído, a aplicação:
 1. Calcula a **média de proficiência** para cada valor do índice (0, 1, 2, ..., 8)
 2. Calcula a **correlação de Pearson** entre o índice e a proficiência
 3. Calcula médias por **faixa** (Baixo, Médio, Alto)
-4. Opcionalmente, repete a análise **estratificada por INSE** para controlar o efeito socioeconômico
+4. Opcionalmente, repete a análise **estratificada por INSE** (apenas alunos com `IN_INSE = 1`) para controlar o efeito socioeconômico
 
 ---
 
@@ -730,9 +735,9 @@ A tabela-resumo de cruzamentos tecnológicos mostra:
 │                                                                  │
 │   SAEB 2023 (INEP/MEC)              TIC Educação 2023           │
 │   • Microdados CSV                   (CETIC.br/NIC.br)          │
-│   • ~9 milhões de alunos             • Planilhas XLSX           │
+│   • ~7,1 milhões de alunos           • Planilhas XLSX           │
 │   • ~411 mil professores             • 69 indicadores           │
-│   • ~107 mil diretores               • Região Sudeste           │
+│   • ~107 mil diretores               • Sudeste (proxy) e Brasil │
 │   • ~70 mil escolas                                             │
 └──────────────────────┬──────────────────────────┬───────────────┘
                        │                          │
@@ -741,23 +746,26 @@ A tabela-resumo de cruzamentos tecnológicos mostra:
 │                    CONVERSÃO (ETL)                                │
 │                                                                  │
 │   CSV / XLSX  ──►  Parquet (formato colunar eficiente)           │
-│   Redução de tempo de leitura: minutos → segundos                │
+│   Microdados ficam só nos Parquet (lidos pelas análises)         │
 └──────────────────────┬──────────────────────────────────────────-┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                PRÉ-COMPUTAÇÃO (DuckDB)                           │
 │                                                                  │
-│   17 tabelas agregadas:                                          │
+│   14 tabelas agregadas (~5 MB):                                  │
 │                                                                  │
 │   DESCRITIVOS DIRETOS          CRUZAMENTOS             CRIADOS   │
 │   • KPIs do RJ                 • Profic. × INSE        • Índice  │
 │   • Contagem de escolas        • Profic. × Localiz.      Digital │
 │   • Ranking por UF             • Profic. × Rede         (0–8)   │
 │   • Níveis de proficiência     • Tech aluno × Profic.   • Faixas │
-│   • Respostas questionários    • Tech escola × Profic.  • Cohen  │
-│   • Indicadores TIC            • Tech prof. × Profic.     d     │
-│                                • Formação × Profic.     • p-val  │
+│   • Respostas questionários    • Profic. × INSE (aluno)          │
+│   • Indicadores TIC                                              │
+│                                                                  │
+│   Calculados sob demanda (Parquet): testes t/ANOVA/correlação    │
+│   com erro-padrão de desenho, d de Cohen, η², tech escola e      │
+│   professor × proficiência, formação docente por escola          │
 └──────────────────────┬──────────────────────────────────────────-┘
                        │
                        ▼
@@ -771,7 +779,7 @@ A tabela-resumo de cruzamentos tecnológicos mostra:
 │   /saeb/equity/location    → Urbana × Rural                      │
 │   /saeb/teachers/formation → Formação docente × proficiência     │
 │   /saeb/questionnaire/*    → Respostas de questionários          │
-│   /tic/*                   → Indicadores TIC Educação            │
+│   /tic/*                   → Indicadores TIC (Sudeste e Brasil)  │
 │   /cross/student-tech      → Tecnologia aluno × desempenho       │
 │   /cross/director-tech     → Infraestrutura escola × desempenho  │
 │   /cross/teacher-tech      → Formação tech prof. × desempenho    │
@@ -809,7 +817,7 @@ Para mitigar isso, a aplicação permite **estratificar por INSE**: ao comparar 
 
 ### 12.2 TIC Educação por região, não por estado
 
-Os dados de tecnologia da TIC Educação são para a **região Sudeste** inteira, não apenas para o RJ. Isso significa que os indicadores incluem também SP, MG e ES. Os valores específicos do RJ podem diferir.
+Os indicadores de tecnologia da TIC Educação são da **região Sudeste** (SP, MG, ES e RJ), usada como proxy do RJ, e do Brasil. Os valores específicos do RJ podem diferir. As margens de erro do Sudeste ficam, em geral, entre ±1 e ±5 pontos percentuais.
 
 ### 12.3 Dados de escola vs. dados individuais
 
@@ -821,11 +829,23 @@ Os dados dos questionários do SAEB são baseados em respostas autodeclaradas po
 
 ### 12.5 Significância estatística vs. significância prática
 
-Com amostras de milhões de alunos, até diferenças muito pequenas podem ser estatisticamente significativas (p < 0,001). Por isso a aplicação reporta o **d de Cohen** (tamanho de efeito) para que o leitor avalie se a diferença é relevante na prática.
+Com amostras de centenas de milhares de alunos, mesmo diferenças pequenas podem ser estatisticamente significativas. Por isso a aplicação reporta o **d de Cohen** e o **η²** (tamanhos de efeito) para que o leitor avalie se a diferença é relevante na prática.
 
 ### 12.6 Comparações múltiplas
 
 A aplicação realiza 11 testes simultâneos na análise de cruzamentos tecnológicos. A correção de Bonferroni é aplicada para evitar falsos positivos, mas é uma correção conservadora — pode deixar de detectar efeitos reais (falsos negativos).
+
+### 12.7 Desenho amostral e inferência
+
+Erros-padrão, intervalos e testes com microdados de alunos consideram estratos e conglomerados (escolas), mas não os ajustes finos de calibração dos pesos nem a correção para população finita (relevante na rede pública, censitária). Assim, devem ser lidos como inferência sobre a relação entre as variáveis (modelo de superpopulação), não como margens de erro oficiais do INEP. As análises com a escola como unidade não usam pesos de escola.
+
+### 12.8 Vínculo professor–aluno
+
+O SAEB não identifica a disciplina do professor. Em turmas com professores de LP e de MT, os dois são associados a todos os alunos da turma; a unidade de análise é o par aluno–professor (com o peso do aluno dividido entre os professores da turma).
+
+### 12.9 Cobertura das tabelas de escola
+
+`TS_ESCOLA` (níveis de proficiência, formação docente, médias por escola) contém apenas escolas públicas. Os gráficos de níveis de proficiência e de formação docente referem-se, portanto, à rede pública.
 
 ---
 
@@ -837,7 +857,11 @@ A aplicação realiza 11 testes simultâneos na análise de cruzamentos tecnoló
 | **Bonferroni** | Correção que ajusta o nível de significância quando múltiplos testes são realizados |
 | **Cohen's d** | Medida do tamanho de efeito que expressa a diferença entre dois grupos em unidades de desvio padrão |
 | **Correlação de Pearson (r)** | Medida da força e direção da relação linear entre duas variáveis (-1 a +1) |
-| **DEFF** | Design Effect — fator que ajusta os intervalos de confiança para desenhos amostrais complexos |
+| **Conglomerado** | Grupo de observações selecionado em conjunto (no SAEB, a escola); observações do mesmo conglomerado tendem a ser parecidas |
+| **DEFF** | Design Effect — razão entre a variância com o desenho amostral real e a variância de uma amostra aleatória simples |
+| **Estrato** | Subdivisão da população em que a seleção da amostra é feita separadamente (`ESTRATO` no SAEB) |
+| **η² (eta ao quadrado)** | Proporção da variação explicada pelos grupos numa ANOVA (tamanho de efeito) |
+| **Linearização de Taylor** | Técnica para calcular erros-padrão de estimadores (médias, diferenças, inclinações) considerando o desenho amostral |
 | **Desvio padrão** | Medida de dispersão que indica o quanto os valores se afastam da média |
 | **ETL** | Extract, Transform, Load — processo de preparação dos dados |
 | **Estatística F** | Razão entre variação entre grupos e variação dentro dos grupos (usada na ANOVA) |
@@ -855,6 +879,6 @@ A aplicação realiza 11 testes simultâneos na análise de cruzamentos tecnoló
 | **Regressão linear** | Modelo que encontra a reta que melhor descreve a relação entre duas variáveis |
 | **SAEB** | Sistema de Avaliação da Educação Básica — avaliação nacional do MEC |
 | **Significância estatística** | Quando o p-valor é menor que o nível α (usualmente 0,05), indicando resultado improvável por acaso |
-| **Teste t de Welch** | Teste que compara médias de dois grupos, sem assumir variâncias iguais |
+| **Teste t** | Teste que compara médias de dois grupos; na aplicação, com erro-padrão de desenho (aluno) ou de Welch (escola) |
 | **TIC** | Tecnologias da Informação e Comunicação |
 | **Variância** | Medida de dispersão — a média dos quadrados dos desvios em relação à média |

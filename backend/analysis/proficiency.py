@@ -5,12 +5,13 @@ Provides high-level functions for proficiency distribution, regional
 comparisons, and public/private breakdowns using pre-computed parquet files.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import duckdb
 import numpy as np
 
 from backend.analysis.stats_utils import (
+    to_float,
     cohens_d_weighted,
     confidence_interval_mean,
     weighted_mean,
@@ -95,8 +96,8 @@ def get_proficiency_distribution(
     df = con.execute(query, [uf]).fetchnumpy()
     con.close()
 
-    values = np.asarray(df["prof"], dtype=np.float64)
-    weights = np.asarray(df["peso"], dtype=np.float64)
+    values = to_float(df["prof"])
+    weights = to_float(df["peso"])
 
     if len(values) == 0:
         return {
@@ -142,11 +143,34 @@ def get_proficiency_distribution(
     }
 
 
+def _domain_stats(
+    prof: np.ndarray, peso: np.ndarray, mask: np.ndarray,
+    clusters: np.ndarray, strata: np.ndarray,
+) -> Dict[str, Any]:
+    """Média e IC 95% de desenho de um domínio (sem recortar o desenho)."""
+    mask = mask & ~np.isnan(prof) & ~np.isnan(peso)
+    if not mask.any():
+        return {"mean": None, "ci_lower": None, "ci_upper": None, "n": 0}
+    mean, lo, hi = confidence_interval_mean(
+        prof, peso, strata=strata, clusters=clusters, domain=mask
+    )
+    nan_to_none = lambda x: None if x is None or np.isnan(x) else float(x)  # noqa: E731
+    return {
+        "mean": nan_to_none(mean),
+        "ci_lower": nan_to_none(lo),
+        "ci_upper": nan_to_none(hi),
+        "n": int(mask.sum()),
+    }
+
+
 def get_proficiency_comparison_rj_brasil(
     serie: str,
     disciplina: str,
 ) -> Dict[str, Any]:
     """Compare RJ, Sudeste, and Brasil proficiency means with CIs.
+
+    RJ and Sudeste are domains of the national design (all students of the
+    series; strata ``ESTRATO`` and school clusters ``ID_ESCOLA``).
 
     Returns
     -------
@@ -157,64 +181,30 @@ def get_proficiency_comparison_rj_brasil(
     prof_col, weight_col = _resolve_cols(disciplina)
 
     con = duckdb.connect()
-    query = f"""
+    df = con.execute(f"""
         SELECT
             {prof_col} AS prof,
             {weight_col} AS peso,
             ID_UF,
-            ID_REGIAO
+            ID_REGIAO,
+            ID_ESCOLA AS escola,
+            ESTRATO AS estrato
         FROM '{path}'
-        WHERE {prof_col} IS NOT NULL AND {weight_col} IS NOT NULL
-    """
-    df = con.execute(query).fetchnumpy()
+    """).fetchnumpy()
     con.close()
 
-    prof = np.asarray(df["prof"], dtype=np.float64)
-    peso = np.asarray(df["peso"], dtype=np.float64)
-    id_uf = np.asarray(df["ID_UF"])
-    id_regiao = np.asarray(df["ID_REGIAO"])
+    prof = to_float(df["prof"])
+    peso = to_float(df["peso"])
+    id_uf = to_float(df["ID_UF"])
+    id_regiao = to_float(df["ID_REGIAO"])
+    escola = np.asarray(df["escola"])
+    estrato = np.asarray(df["estrato"])
 
-    result: Dict[str, Any] = {}
-
-    # RJ
-    mask_rj = id_uf == ID_UF_RJ
-    if mask_rj.any():
-        mean_rj, ci_lo, ci_hi = confidence_interval_mean(prof[mask_rj], peso[mask_rj])
-        result["rj"] = {
-            "mean": float(mean_rj),
-            "ci_lower": float(ci_lo),
-            "ci_upper": float(ci_hi),
-            "n": int(mask_rj.sum()),
-        }
-    else:
-        result["rj"] = {"mean": None, "ci_lower": None, "ci_upper": None, "n": 0}
-
-    # Sudeste
-    mask_se = id_regiao == ID_REGIAO_SUDESTE
-    if mask_se.any():
-        mean_se, ci_lo, ci_hi = confidence_interval_mean(prof[mask_se], peso[mask_se])
-        result["sudeste"] = {
-            "mean": float(mean_se),
-            "ci_lower": float(ci_lo),
-            "ci_upper": float(ci_hi),
-            "n": int(mask_se.sum()),
-        }
-    else:
-        result["sudeste"] = {"mean": None, "ci_lower": None, "ci_upper": None, "n": 0}
-
-    # Brasil
-    if len(prof) > 0:
-        mean_br, ci_lo, ci_hi = confidence_interval_mean(prof, peso)
-        result["brasil"] = {
-            "mean": float(mean_br),
-            "ci_lower": float(ci_lo),
-            "ci_upper": float(ci_hi),
-            "n": int(len(prof)),
-        }
-    else:
-        result["brasil"] = {"mean": None, "ci_lower": None, "ci_upper": None, "n": 0}
-
-    return result
+    return {
+        "rj": _domain_stats(prof, peso, id_uf == ID_UF_RJ, escola, estrato),
+        "sudeste": _domain_stats(prof, peso, id_regiao == ID_REGIAO_SUDESTE, escola, estrato),
+        "brasil": _domain_stats(prof, peso, np.ones(len(prof), dtype=bool), escola, estrato),
+    }
 
 
 def get_proficiency_by_rede(
@@ -242,60 +232,36 @@ def get_proficiency_by_rede(
     prof_col, weight_col = _resolve_cols(disciplina)
 
     con = duckdb.connect()
-    query = f"""
+    df = con.execute(f"""
         SELECT
             {prof_col} AS prof,
             {weight_col} AS peso,
-            IN_PUBLICA
+            IN_PUBLICA,
+            ID_ESCOLA AS escola,
+            ESTRATO AS estrato
         FROM '{path}'
         WHERE ID_UF = ?
-          AND {prof_col} IS NOT NULL
-          AND {weight_col} IS NOT NULL
-          AND IN_PUBLICA IS NOT NULL
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
+    """, [uf]).fetchnumpy()
     con.close()
 
-    prof = np.asarray(df["prof"], dtype=np.float64)
-    peso = np.asarray(df["peso"], dtype=np.float64)
-    in_publica = np.asarray(df["IN_PUBLICA"])
+    prof = to_float(df["prof"])
+    peso = to_float(df["peso"])
+    in_publica = to_float(df["IN_PUBLICA"])
+    escola = np.asarray(df["escola"])
+    estrato = np.asarray(df["estrato"])
+    valid = ~np.isnan(prof) & ~np.isnan(peso)
 
-    mask_pub = in_publica == 1
-    mask_priv = in_publica == 0
+    mask_pub = valid & (in_publica == 1)
+    mask_priv = valid & (in_publica == 0)
 
-    result: Dict[str, Any] = {}
+    result: Dict[str, Any] = {
+        "publica": _domain_stats(prof, peso, mask_pub, escola, estrato),
+        "privada": _domain_stats(prof, peso, mask_priv, escola, estrato),
+    }
 
-    # Publica
-    if mask_pub.any():
-        mean_pub, ci_lo, ci_hi = confidence_interval_mean(prof[mask_pub], peso[mask_pub])
-        result["publica"] = {
-            "mean": float(mean_pub),
-            "ci_lower": float(ci_lo),
-            "ci_upper": float(ci_hi),
-            "n": int(mask_pub.sum()),
-        }
-    else:
-        result["publica"] = {"mean": None, "ci_lower": None, "ci_upper": None, "n": 0}
-
-    # Privada
-    if mask_priv.any():
-        mean_priv, ci_lo, ci_hi = confidence_interval_mean(prof[mask_priv], peso[mask_priv])
-        result["privada"] = {
-            "mean": float(mean_priv),
-            "ci_lower": float(ci_lo),
-            "ci_upper": float(ci_hi),
-            "n": int(mask_priv.sum()),
-        }
-    else:
-        result["privada"] = {"mean": None, "ci_lower": None, "ci_upper": None, "n": 0}
-
-    # Gap and effect size
     if mask_pub.any() and mask_priv.any():
-        gap = (result["privada"]["mean"] or 0) - (result["publica"]["mean"] or 0)
-        d = cohens_d_weighted(
-            prof[mask_priv], peso[mask_priv],
-            prof[mask_pub], peso[mask_pub],
-        )
+        gap = result["privada"]["mean"] - result["publica"]["mean"]
+        d = cohens_d_weighted(prof[mask_priv], peso[mask_priv], prof[mask_pub], peso[mask_pub])
         result["gap"] = float(gap)
         result["cohens_d"] = float(d) if not np.isnan(d) else None
     else:

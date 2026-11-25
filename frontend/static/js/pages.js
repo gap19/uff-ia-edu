@@ -35,7 +35,9 @@ async function loadOverview() {
 
     // KPIs
     const alunos = data.alunos_por_serie || [];
-    const totalAlunos = alunos.reduce((s, r) => s + (r.total_alunos || 0), 0);
+    // Alunos efetivamente avaliados (presentes na prova de LP); total_alunos
+    // conta todos os registros, inclusive ausentes.
+    const totalAlunos = alunos.reduce((s, r) => s + (r.presentes_lp || 0), 0);
     document.getElementById('kpi-total-alunos').textContent = fmtInt(totalAlunos);
 
     const escolas = data.escolas || {};
@@ -131,17 +133,19 @@ async function loadProficiency() {
     // Aba Comparação: RJ vs Sudeste vs Brasil
     const comparison = await fetchAPI('/saeb/proficiency/comparison');
     if (comparison) {
+        // Combina as linhas por rede (pública/privada) pela soma dos pesos
+        // amostrais — ponderar pelo n bruto subestima a rede privada, cujos
+        // alunos têm pesos muito maiores (amostra), e enviesava a média do RJ.
         const findMedia = (arr) => {
             const filtered = arr.filter(r =>
-                r.serie === state.serie && r.disciplina === state.disciplina
+                r.serie === state.serie && r.disciplina === state.disciplina &&
+                r.media_proficiencia != null
             );
-            const total = filtered.find(r => r.rede === '' || r.rede === 'total');
-            if (total) return total.media_proficiencia;
             if (filtered.length === 0) return null;
-            const totalPesos = filtered.reduce((s, r) => s + (r.n_alunos || 1), 0);
-            return filtered.reduce((s, r) =>
-                s + (r.media_proficiencia || 0) * (r.n_alunos || 1), 0
-            ) / totalPesos;
+            const weightOf = r => (r.soma_pesos != null ? r.soma_pesos : (r.n_alunos || 0));
+            const totalPesos = filtered.reduce((s, r) => s + weightOf(r), 0);
+            if (!(totalPesos > 0)) return null;
+            return filtered.reduce((s, r) => s + r.media_proficiencia * weightOf(r), 0) / totalPesos;
         };
 
         const rjMedia = findMedia(comparison.rj || []);
@@ -198,7 +202,9 @@ async function loadProficiency() {
     // Aba Níveis
     const levels = await fetchAPI('/saeb/proficiency/levels', { scope: 'rj' });
     if (levels && levels.data && levels.data.length > 0) {
-        const row = levels.data[0];
+        // TS_ESCOLA contém só escolas públicas; valores = média, entre as
+        // escolas, do % de alunos em cada nível (rede pública, rede = 1).
+        const row = levels.data.find(r => r.rede === 1) || levels.data[0];
         const disc = state.disciplina.toLowerCase();
         const serieKey = state.serie === '34EM' ? '34em' : state.serie.toLowerCase().replace('ef', '');
         const prefix = 'nivel_';
@@ -220,9 +226,9 @@ async function loadProficiency() {
                 return COLORS.primary;
             });
             renderChart('chart-prof-levels', {
-                tooltip: { trigger: 'axis', formatter: params => `Nível ${params[0].name}: <strong>${tooltipVal(params[0].value)}%</strong> dos alunos` },
+                tooltip: { trigger: 'axis', formatter: params => `${params[0].name}: <strong>${tooltipVal(params[0].value)}%</strong> dos alunos (média das escolas públicas)` },
                 xAxis: { type: 'category', data: niveis.map(n => `Nível ${n.nivel}`) },
-                yAxis: { type: 'value', name: '% de alunos' },
+                yAxis: { type: 'value', name: '% de alunos (média das escolas públicas)' },
                 series: [{
                     type: 'bar',
                     data: niveis.map((n, i) => ({
@@ -373,61 +379,82 @@ async function loadTechnology() {
         fetchAPI('/tic/privacy'),
     ]);
 
-    const INFRA_LABELS = {
-        'A1': 'Computador', 'A2': 'Portátil p/ alunos', 'A3': 'Tablet p/ alunos',
-        'A4': 'Internet', 'A5': 'Banda larga', 'A6': 'Wi-Fi',
-        'A7': 'Projetor', 'A8': 'Lousa digital',
-    };
-    const AI_LABELS = { 'E4A': 'Biometria', 'E4B': 'Reconhec. facial', 'E5': 'Analytics', 'E6': 'Sistema de IA', 'F6': 'Chatbot' };
-    const TRAINING_LABELS = { 'J1': 'Programação', 'J2': 'Robótica', 'J3': 'Uso pedagógico\nde TIC', 'J4': 'Segurança\nonline' };
-    const PRIVACY_LABELS = { 'H1': 'Política de\nprivacidade', 'H3': 'Debate sobre\nprivacidade', 'H4': 'Consentimento\nde dados', 'H5': 'Proteção\nde dados', 'H6': 'Não adoção', 'H7': 'Preocupação\ncom privacidade' };
-
-    _plotTicGroup('chart-tech-infra', infra, COLORS.primary, INFRA_LABELS);
-    _plotTicGroup('chart-tech-ai', ai, COLORS.accent, AI_LABELS);
-    _plotTicGroup('chart-tech-training', training, COLORS.green, TRAINING_LABELS);
-    _plotTicGroup('chart-tech-privacy', privacy, COLORS.purple, PRIVACY_LABELS);
+    // Rótulos, subitens e universos vêm do catálogo do backend
+    // (backend/analysis/tic.py), conferido com as tabelas oficiais do CETIC.br.
+    _plotTicComparison('chart-tech-infra', infra, COLORS.primary);
+    _plotTicComparison('chart-tech-ai', ai, COLORS.accent);
+    _plotTicComparison('chart-tech-training', training, COLORS.green);
+    _plotTicComparison('chart-tech-privacy', privacy, COLORS.purple);
 }
 
-function _plotTicGroup(elementId, response, color, labels) {
-    if (!response || !response.data || response.data.length === 0) {
-        showEmpty(elementId, response?.message || 'Dados TIC não disponíveis');
+// Quebra rótulos longos em várias linhas para o eixo X
+function _wrapLabel(text, max = 16, maxLines = 4) {
+    const words = String(text).split(' ');
+    const lines = [''];
+    for (const w of words) {
+        const cur = lines[lines.length - 1];
+        if (cur && (cur + ' ' + w).length > max && lines.length < maxLines) lines.push(w);
+        else lines[lines.length - 1] = cur ? `${cur} ${w}` : w;
+    }
+    return lines.join('\n');
+}
+
+// Caracteres por linha que cabem em cada categoria do eixo X do gráfico
+function _labelWidthChars(elementId, nCategories, pxPerChar = 6) {
+    const el = document.getElementById(elementId);
+    const width = (el && el.clientWidth) || 800;
+    return Math.max(7, Math.floor((width - 90) / Math.max(nCategories, 1) / pxPerChar));
+}
+
+/**
+ * Gráfico TIC Educação: % de escolas no Sudeste (proxy do RJ) e no Brasil,
+ * para os indicadores curados de um grupo (ver /api/tic/<grupo>).
+ */
+function _plotTicComparison(elementId, response, color) {
+    const items = (response && response.data) || [];
+    if (items.length === 0) {
+        showEmpty(elementId, (response && response.message) || 'Dados TIC não disponíveis');
         return;
     }
-
-    const filtered = response.data.filter(d =>
-        d.tipo === 'proporcao' && d.valor_corte === 'TOTAL'
-    );
-    if (filtered.length === 0) {
-        showEmpty(elementId, 'Sem dados de proporção para este grupo');
-        return;
-    }
-
-    const byIndicator = {};
-    for (const d of filtered) {
-        if (!(d.indicador in byIndicator)) byIndicator[d.indicador] = d.valor;
-    }
-
-    const indicators = Object.keys(byIndicator).sort();
-    const values = indicators.map(i => byIndicator[i]);
-
-    const xLabels = indicators.map(i => (labels && labels[i]) || i);
-    const hasMultiline = xLabels.some(l => l.includes('\n'));
-    const needsRotate = !hasMultiline && (xLabels.length > 4 || xLabels.some(l => l.length > 14));
+    const regions = response.regions || { primary: 'Sudeste', reference: 'Brasil' };
+    const maxChars = Math.min(18, _labelWidthChars(elementId, items.length));
+    const xLabels = items.map(d => _wrapLabel(d.label, maxChars));
+    const pp = v => (v == null ? '' : ` (± ${tooltipVal(v)} p.p.)`);
 
     renderChart(elementId, {
-        tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name.replace(/\n/g, ' ')}</strong>: ${tooltipVal(params[0].value)}%` },
-        grid: (needsRotate || hasMultiline) ? { top: 50, right: 30, bottom: hasMultiline ? 70 : 80, left: 60, containLabel: true } : undefined,
-        xAxis: { type: 'category', data: xLabels, axisLabel: { interval: 0, rotate: needsRotate ? 25 : 0, fontSize: 10.5 } },
-        yAxis: { type: 'value', name: 'Proporção (%)', max: 100 },
-        series: [{
-            type: 'bar',
-            data: values.map(v => ({
-                value: v,
+        tooltip: {
+            trigger: 'axis',
+            formatter: params => {
+                const d = items[params[0].dataIndex];
+                const head = `<strong>${d.indicador} — ${d.label.replace('¹', '')}</strong>`;
+                const desc = `<span style="font-size:11px;opacity:.8">${d.item ? d.item : d.titulo}</span>`;
+                const lines = [
+                    `${regions.primary}: <strong>${tooltipVal(d.sudeste)}%</strong>${pp(d.me_sudeste)}`,
+                    `${regions.reference}: <strong>${tooltipVal(d.brasil)}%</strong>${pp(d.me_brasil)}`,
+                ];
+                const uni = d.universo_especifico ? `<br><span style="font-size:11px;opacity:.8">Universo: ${d.universo}</span>` : '';
+                return `${head}<br>${desc}<br>${lines.join('<br>')}${uni}`;
+            },
+        },
+        legend: { data: [regions.primary, regions.reference], top: 0 },
+        grid: { top: 45, right: 20, bottom: 20, left: 55, containLabel: true },
+        xAxis: { type: 'category', data: xLabels, axisLabel: { interval: 0, fontSize: maxChars < 12 ? 9 : 10, lineHeight: 12 } },
+        yAxis: { type: 'value', name: '% de escolas', max: 100 },
+        series: [
+            {
+                name: regions.primary, type: 'bar',
+                data: items.map(d => d.sudeste),
                 itemStyle: { color: gradientBar(color), borderRadius: [4, 4, 0, 0] },
-            })),
-            label: { show: true, position: 'top', formatter: p => tooltipVal(p.value) + '%', fontSize: 10 },
-            barMaxWidth: 45,
-        }],
+                label: { show: true, position: 'top', formatter: p => tooltipVal(p.value, 0) + '%', fontSize: 9 },
+                barMaxWidth: 28,
+            },
+            {
+                name: regions.reference, type: 'bar',
+                data: items.map(d => d.brasil),
+                itemStyle: { color: gradientBar('#a0aec0', 0.7), borderRadius: [4, 4, 0, 0] },
+                barMaxWidth: 28,
+            },
+        ],
     });
     renderExplanation(elementId);
 }
@@ -478,18 +505,32 @@ function _renderTeachCorr(formacao) {
     const colKey = `media_${serie.toLowerCase()}_${disc.toLowerCase()}`;
     const serieLabel = serie === '5EF' ? '5º EF' : serie === '9EF' ? '9º EF' : 'EM';
     const discLabel = disc === 'LP' ? 'LP' : 'MT';
-    // Use the appropriate formation column per series:
-    // - inicial: specific to early EF (5EF)
-    // - final: specific to late EF/EM (9EF, EM - licenciatura)
-    const formCol = serie === '5EF' ? 'pc_formacao_docente_inicial' : 'pc_formacao_docente_final';
-    const formLabel = serie === '5EF' ? '% Formação Inicial Adequada' : '% Formação Final Adequada';
+    // Indicador de formação docente do INEP específico de cada etapa:
+    // - inicial: anos iniciais do EF (5EF)
+    // - final:   anos finais do EF (9EF)
+    // - medio:   Ensino Médio (EM)
+    const FORMATION = {
+        '5EF': {
+            col: 'pc_formacao_docente_inicial', label: '% Formação Adequada (Anos Iniciais)',
+            note: '<strong>Formação adequada — anos iniciais do EF:</strong> percentual de docentes da escola com a formação exigida para os anos iniciais do Ensino Fundamental (indicador do INEP para esta etapa).',
+        },
+        '9EF': {
+            col: 'pc_formacao_docente_final', label: '% Formação Adequada (Anos Finais)',
+            note: '<strong>Formação adequada — anos finais do EF:</strong> percentual de docentes da escola com licenciatura na disciplina que lecionam nos anos finais do Ensino Fundamental (indicador do INEP para esta etapa).',
+        },
+        'EM': {
+            col: 'pc_formacao_docente_medio', label: '% Formação Adequada (Ensino Médio)',
+            note: '<strong>Formação adequada — Ensino Médio:</strong> percentual de docentes da escola com licenciatura na disciplina que lecionam no Ensino Médio (indicador do INEP para esta etapa).',
+        },
+    };
+    const formation = FORMATION[serie] || FORMATION['9EF'];
+    const formCol = formation.col;
+    const formLabel = formation.label;
 
     // Update formation note
     const noteEl = document.getElementById('corr-formation-note');
     if (noteEl) {
-        noteEl.innerHTML = serie === '5EF'
-            ? '<i class="bi bi-info-circle me-1"></i><strong>Formação Inicial Adequada:</strong> percentual de docentes da escola com formação mínima exigida para os anos iniciais do Ensino Fundamental (pedagogia ou magistério). Indicador do INEP específico para esta etapa.'
-            : '<i class="bi bi-info-circle me-1"></i><strong>Formação Final Adequada:</strong> percentual de docentes da escola com licenciatura na disciplina que lecionam. Indicador do INEP adequado para os anos finais do EF e Ensino Médio, onde se exige formação específica na área.';
+        noteEl.innerHTML = `<i class="bi bi-info-circle me-1"></i>${formation.note} Cada ponto é uma escola pública.`;
     }
 
     if (formacao && formacao.data && formacao.data.length > 0) {
@@ -620,11 +661,11 @@ async function loadQuestionnaires() {
     if (textBox) textBox.classList.add('d-none');
 }
 
-function renderQuestionnaireChart(dataset, questao) {
+function renderQuestionnaireChart(dataset, questao, signal) {
     return async function () {
         if (!questao) return;
         showLoading('chart-questionnaire');
-        const data = await fetchAPI(`/saeb/questionnaire/${dataset}`, { questao });
+        const data = await fetchAPI(`/saeb/questionnaire/${dataset}`, { questao }, { signal });
 
         // Show question text
         const textBox = document.getElementById('quest-question-text');
@@ -689,42 +730,28 @@ async function loadEthics() {
 
     const [ai, gap, training, privacy] = await Promise.all([
         fetchAPI('/tic/ai'),
-        fetchAPI('/saeb/equity/gap', { serie: state.serie, disciplina: state.disciplina }),
+        fetchAPI('/saeb/equity/gap'),  // todas as séries/disciplinas, para comparar
         fetchAPI('/tic/teacher-training'),
         fetchAPI('/tic/privacy'),
     ]);
 
-    // IA nas escolas
-    if (ai && ai.data && ai.data.length > 0) {
-        const filtered = ai.data.filter(d => d.tipo === 'proporcao' && d.valor_corte === 'TOTAL');
-        const byInd = {};
-        for (const d of filtered) { if (!(d.indicador in byInd)) byInd[d.indicador] = d.valor; }
-        const labels = { 'E4A': 'Biometria', 'E4B': 'Reconhec. facial', 'E5': 'Analytics', 'E6': 'Sistema de IA', 'F6': 'Chatbot' };
-        const inds = Object.keys(byInd).sort();
-        renderChart('chart-ethics-tech', {
-            tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name}</strong>: ${tooltipVal(p[0].value)}%` },
-            xAxis: { type: 'category', data: inds.map(i => labels[i] || i), axisLabel: { interval: 0, fontSize: 10.5 } },
-            yAxis: { type: 'value', name: 'Proporção (%)', max: 100 },
-            series: [{
-                type: 'bar',
-                data: inds.map(i => ({ value: byInd[i], itemStyle: { color: gradientBar(COLORS.accent), borderRadius: [4, 4, 0, 0] } })),
-                label: { show: true, position: 'top', formatter: p => tooltipVal(p.value) + '%', fontSize: 11 },
-                barMaxWidth: 55,
-            }],
-        });
-        renderExplanation('chart-ethics-tech');
-    } else {
-        showEmpty('chart-ethics-tech', 'Dados TIC de IA não disponíveis');
-    }
+    // IA, dados e vigilância nas escolas (TIC Educação)
+    _plotTicComparison('chart-ethics-tech', ai, COLORS.accent);
 
     // Desigualdade Digital
     if (gap && gap.data) {
-        const items = gap.data.filter(g => g.media_publica != null && g.media_privada != null);
+        // Só LP/MT, como nas demais páginas (CH/CN são amostrais, com redes privadas pequenas)
+        const items = gap.data.filter(g =>
+            g.media_publica != null && g.media_privada != null && ['LP', 'MT'].includes(g.disciplina));
         if (items.length > 0) {
             renderChart('chart-ethics-digital', {
                 tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name}</strong>: lacuna de ${tooltipVal(p[0].value)} pts` },
                 graphic: [statAnnotation('Diferença: Privada − Pública', { color: '#666', fontSize: 11 })],
-                xAxis: { type: 'category', data: items.map(i => `${i.serie} ${i.disciplina}`) },
+                xAxis: {
+                    type: 'category',
+                    data: items.map(i => `${i.serie} ${i.disciplina}`),
+                    axisLabel: { interval: 0, rotate: items.length > 6 ? 35 : 0, fontSize: 10 },
+                },
                 yAxis: { type: 'value', name: 'Lacuna (pontos)' },
                 series: [{
                     type: 'bar',
@@ -741,52 +768,9 @@ async function loadEthics() {
         showEmpty('chart-ethics-digital');
     }
 
-    // Preparação Docente
-    if (training && training.data && training.data.length > 0) {
-        const filtered = training.data.filter(d => d.tipo === 'proporcao' && d.valor_corte === 'TOTAL');
-        const byInd = {};
-        for (const d of filtered) { if (!(d.indicador in byInd)) byInd[d.indicador] = d.valor; }
-        const labels = { 'J1': 'Programação', 'J2': 'Robótica', 'J3': 'Uso pedagógico de TIC', 'J4': 'Segurança online' };
-        const inds = Object.keys(byInd).sort();
-        renderChart('chart-ethics-teachers', {
-            tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name}</strong>: ${tooltipVal(p[0].value)}%` },
-            xAxis: { type: 'category', data: inds.map(i => labels[i] || i), axisLabel: { interval: 0, fontSize: 10.5 } },
-            yAxis: { type: 'value', name: 'Proporção de escolas (%)', max: 100 },
-            series: [{
-                type: 'bar',
-                data: inds.map(i => ({ value: byInd[i], itemStyle: { color: gradientBar(COLORS.green), borderRadius: [4, 4, 0, 0] } })),
-                label: { show: true, position: 'top', formatter: p => tooltipVal(p.value) + '%', fontSize: 11 },
-                barMaxWidth: 55,
-            }],
-        });
-        renderExplanation('chart-ethics-teachers');
-    } else {
-        showEmpty('chart-ethics-teachers', 'Dados de formação docente TIC não disponíveis');
-    }
-
-    // Dimensões Éticas: privacidade
-    if (privacy && privacy.data && privacy.data.length > 0) {
-        const filtered = privacy.data.filter(d => d.tipo === 'proporcao' && d.valor_corte === 'TOTAL');
-        const byInd = {};
-        for (const d of filtered) { if (!(d.indicador in byInd)) byInd[d.indicador] = d.valor; }
-        const labels = { 'H1': 'Política de\nprivacidade', 'H3': 'Debate sobre\nprivacidade', 'H4': 'Consentimento\nde dados', 'H5': 'Proteção\nde dados', 'H6': 'Não adoção', 'H7': 'Preocupação\ncom privacidade' };
-        const inds = Object.keys(byInd).sort();
-        renderChart('chart-ethics-dimensions', {
-            tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name.replace(/\n/g, ' ')}</strong>: ${tooltipVal(p[0].value)}%` },
-            grid: { top: 50, right: 30, bottom: 70, left: 60, containLabel: true },
-            xAxis: { type: 'category', data: inds.map(i => labels[i] || i), axisLabel: { interval: 0, fontSize: 10 } },
-            yAxis: { type: 'value', name: 'Proporção (%)', max: 100 },
-            series: [{
-                type: 'bar',
-                data: inds.map(i => ({ value: byInd[i], itemStyle: { color: gradientBar(COLORS.purple), borderRadius: [4, 4, 0, 0] } })),
-                label: { show: true, position: 'top', formatter: p => tooltipVal(p.value) + '%', fontSize: 11 },
-                barMaxWidth: 55,
-            }],
-        });
-        renderExplanation('chart-ethics-dimensions');
-    } else {
-        showEmpty('chart-ethics-dimensions', 'Dados de privacidade TIC não disponíveis');
-    }
+    // Preparação docente e privacidade (TIC Educação)
+    _plotTicComparison('chart-ethics-teachers', training, COLORS.green);
+    _plotTicComparison('chart-ethics-dimensions', privacy, COLORS.purple);
 }
 
 async function _loadEthicsCrossFindings() {
@@ -817,7 +801,7 @@ async function _loadEthicsCrossFindings() {
     if (topBinary) {
         html += `<div class="col-md-3"><div class="border rounded p-2 text-center">
             <div class="fw-bold" style="font-size:1.5em; color: var(--clr-accent)">d = ${fmtNum(topBinary.cohens_d, 3)}</div>
-            <div class="text-muted small">Maior ${statTerm('Tamanho de efeito', 'efeito')}: ${topBinary.label}</div>
+            <div class="text-muted small">Maior ${statTerm("Cohen's d", 'd')} (variáveis Sim/Não): ${topBinary.label}</div>
         </div></div>`;
     }
     html += `<div class="col-md-3"><div class="border rounded p-2 text-center">
@@ -868,8 +852,8 @@ async function _loadCrossStudentTab() {
                 trigger: 'axis',
                 formatter: p => `Índice ${p[0].name}: <strong>${tooltipVal(p[0].value)}</strong> pts<br>n = ${fmtInt(index.by_level[p[0].dataIndex]?.n)}`,
             },
-            graphic: index.correlation ? [statAnnotation(
-                `${statTerm('Correlação', 'r')} = ${fmtNum(index.correlation.pearson_r, 3)}`,
+            graphic: index.correlation && index.correlation.pearson_r != null ? [statAnnotation(
+                `r = ${fmtNum(index.correlation.pearson_r, 3)}`,
                 { left: 15, top: 8, color: COLORS.accent }
             )] : [],
             xAxis: { type: 'category', data: index.by_level.map(l => l.index), name: 'Índice Digital (0-8)' },
@@ -955,11 +939,13 @@ async function _loadCrossOverviewTab() {
 
     // Summary table with stat term popovers
     let html = '<div class="table-responsive"><table class="table table-sm table-striped">';
-    html += `<thead><tr><th>Nível</th><th>Variável</th><th>Tipo</th><th>${statTerm('p-valor')}</th><th>${statTerm("Cohen's d", "Cohen's d / F")}</th><th>Sig.</th></tr></thead><tbody>`;
+    html += `<thead><tr><th>Nível</th><th>Variável</th><th>Tipo</th><th>${statTerm('p-valor')}</th><th>${statTerm('Tamanho de efeito', "Efeito (d / F, η²)")}</th><th>Sig.</th></tr></thead><tbody>`;
     for (const a of analyses) {
         const pVal = a.p_value != null ? (a.p_value < 0.001 ? '<0.001' : fmtNum(a.p_value, 4)) : '—';
         const effect = a.cohens_d != null ? `d = ${fmtNum(a.cohens_d, 3)}` :
-            (a.f_stat != null ? `F = ${fmtNum(a.f_stat, 2)}` : '—');
+            (a.f_stat != null
+                ? `F = ${fmtNum(a.f_stat, 2)}${a.eta_squared != null ? `, η² = ${fmtNum(a.eta_squared, 4)}` : ''}`
+                : '—');
         const sig = a.p_value != null && a.p_value < (data.bonferroni_alpha || 0.05);
         const sigBadge = sig ? '<span class="badge bg-success">Sim</span>' :
             (a.p_value != null && a.p_value < 0.05 ? '<span class="badge bg-warning text-dark">*</span>' :
@@ -1023,13 +1009,14 @@ async function _loadCrossOverviewTab() {
                     color: '#718096',
                 },
                 barMaxWidth: 18,
+                markLine: {
+                    silent: true,
+                    symbol: 'none',
+                    data: [{ xAxis: 0 }],
+                    lineStyle: { color: '#999', type: 'dashed' },
+                    label: { show: false },
+                },
             }],
-            markLine: {
-                silent: true,
-                data: [{ xAxis: 0 }],
-                lineStyle: { color: '#999', type: 'dashed' },
-                label: { show: false },
-            },
         });
         renderExplanation('chart-cross-forest');
     } else {
@@ -1050,20 +1037,32 @@ async function _loadCrossInseTab() {
 
     // WiFi by INSE
     if (wifi && wifi.by_inse && wifi.by_inse.length > 0) {
+        // Médias de grupos com menos de MIN_N alunos são omitidas (instáveis)
+        const MIN_N = 30;
+        const shown = g => (g && g.mean != null && g.n >= MIN_N ? g.mean : null);
         const inseData = wifi.by_inse.map(inse => {
             const groups = inse.groups || [];
             const noWifi = groups.find(g => g.code === 'A');
             const yesWifi = groups.find(g => g.code === 'B');
             return {
                 inse: inse.inse_level,
-                no: noWifi?.mean, yes: yesWifi?.mean,
-                gap: (yesWifi?.mean && noWifi?.mean) ? yesWifi.mean - noWifi.mean : null,
+                no: shown(noWifi), yes: shown(yesWifi),
+                nNo: noWifi?.n || 0, nYes: yesWifi?.n || 0,
+                p: inse.test ? inse.test.p_value : null,
             };
-        }).filter(d => d.gap != null);
+        }).filter(d => d.no != null || d.yes != null);
 
         if (inseData.length > 0) {
             renderChart('chart-cross-wifi-inse', {
-                tooltip: { trigger: 'axis' },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: params => {
+                        const d = inseData[params[0].dataIndex];
+                        const val = (v, n) => (v == null ? `— (n = ${fmtInt(n)} < ${MIN_N})` : `${tooltipVal(v)} pts (n = ${fmtInt(n)})`);
+                        const pStr = d.p == null ? '—' : (d.p < 0.001 ? '<0,001' : fmtNum(d.p, 3));
+                        return `<strong>INSE ${d.inse}</strong><br>Com Wi-Fi: ${val(d.yes, d.nYes)}<br>Sem Wi-Fi: ${val(d.no, d.nNo)}<br>p (desenho) = ${pStr}`;
+                    },
+                },
                 legend: { data: ['Com Wi-Fi', 'Sem Wi-Fi'], top: 0 },
                 grid: { top: 35, right: 15, left: 50 },
                 xAxis: { type: 'category', data: inseData.map(d => `INSE ${d.inse}`) },
@@ -1093,29 +1092,47 @@ async function _loadCrossInseTab() {
 
     // Digital index by INSE
     if (index && index.by_inse && index.by_inse.length > 0) {
+        // Linhas planas (tabela pré-computada) ou aninhadas (análise completa:
+        // {inse_level, faixas: [...]}) — normaliza para o formato plano
+        const flatRows = index.by_inse.flatMap(r => (Array.isArray(r.faixas)
+            ? r.faixas.map(f => ({
+                nivel_inse: r.inse_level,
+                faixa_digital: f.label === 'Médio' ? 'Medio' : f.label,
+                media_proficiencia: f.mean,
+                soma_pesos: null,
+                n_alunos: f.n,
+            }))
+            : [r]));
         // Group flat rows by nivel_inse, then by faixa_digital
         const byInseMap = {};
-        for (const row of index.by_inse) {
+        for (const row of flatRows) {
             const key = row.nivel_inse;
             if (!byInseMap[key]) byInseMap[key] = {};
             if (!byInseMap[key][row.faixa_digital]) {
-                byInseMap[key][row.faixa_digital] = { total: 0, weighted: 0 };
+                byInseMap[key][row.faixa_digital] = { total: 0, weighted: 0, n: 0 };
             }
-            byInseMap[key][row.faixa_digital].total += row.n_alunos;
-            byInseMap[key][row.faixa_digital].weighted += row.media_proficiencia * row.n_alunos;
+            // Ponderar pelos pesos amostrais (soma_pesos), não pelo n bruto
+            const w = row.soma_pesos != null ? row.soma_pesos : row.n_alunos;
+            if (row.media_proficiencia == null || !(w > 0)) continue;
+            byInseMap[key][row.faixa_digital].total += w;
+            byInseMap[key][row.faixa_digital].weighted += row.media_proficiencia * w;
+            byInseMap[key][row.faixa_digital].n += row.n_alunos || 0;
         }
         const inseKeys = Object.keys(byInseMap).map(Number).sort((a, b) => a - b);
         const bandColors = { 'Baixo': COLORS.accent, 'Medio': COLORS.secondary, 'Alto': COLORS.green };
+        const bandLabels = { 'Baixo': 'Baixo', 'Medio': 'Médio', 'Alto': 'Alto' };
         const traces = [];
         for (const band of ['Baixo', 'Medio', 'Alto']) {
             const yVals = [];
             for (const inse of inseKeys) {
                 const entry = byInseMap[inse][band];
-                yVals.push(entry && entry.total > 0 ? +(entry.weighted / entry.total).toFixed(1) : null);
+                // Médias com menos de 30 alunos são omitidas (instáveis)
+                yVals.push(entry && entry.total > 0 && entry.n >= 30
+                    ? +(entry.weighted / entry.total).toFixed(1) : null);
             }
             if (yVals.some(v => v !== null)) {
                 traces.push({
-                    name: band, type: 'bar',
+                    name: bandLabels[band], type: 'bar',
                     data: yVals,
                     itemStyle: { color: gradientBar(bandColors[band]), borderRadius: [4, 4, 0, 0] },
                     barMaxWidth: 18,

@@ -16,8 +16,11 @@ data/Dicionario_Saeb_2023.xlsx
 # Dados processados são incluídos no repositório (prontos para uso)
 # Para regenerar a partir dos brutos: python scripts/init_db.py
 
-# Documentos pessoais do projeto
+# Documentos pessoais do projeto (não publicar no repositório público)
 *.pdf
+/*.docx
+/*.pptx
+/*.xlsx
 
 # Materiais da pesquisa PPE (apenas locais, nunca versionados)
 pesquisa_ppe/
@@ -40,5 +43,32 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Claude Code
+# Assistentes de IA (configurações, instruções, memórias, planos) — nunca versionar
 .claude/
+CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.md
+**/CLAUDE.local.md
+.mcp.json
+AGENTS.md
+GEMINI.md
+.gemini/
+.cursor/
+.aider*
+PLANO.md
+MEMORY.md
+memory/
+
+# Segredos e credenciais
+.env
+.env.*
+*.pem
+*.key
+*.p12
+credentials.json
+*-credentials.json
+*service-account*.json
+application_default_credentials.json
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log

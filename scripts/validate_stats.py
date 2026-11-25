@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import duckdb
-from backend.config import DUCKDB_PATH, SAEB_PARQUET_DIR, ID_UF_RJ
+from backend.config import DUCKDB_PATH, ID_UF_RJ
 
 # ───────────────────────────────────────────────────────────────────────
 # Conexão
@@ -62,10 +62,9 @@ def validate_tables(db):
     expected = [
         "prof_by_uf_serie_disc", "prof_by_inse", "prof_niveis_rj",
         "prof_niveis_nacional", "quest_aluno_rj", "quest_professor_rj",
-        "quest_diretor_rj", "escola_formacao_rj", "kpi_rj",
+        "quest_diretor_rj", "kpi_rj",
         "tic_indicadores",
-        "cross_aluno_tech_rj", "cross_diretor_tech_rj",
-        "cross_professor_tech_rj", "cross_digital_index_rj",
+        "cross_aluno_tech_rj", "cross_digital_index_rj",
     ]
     for t in expected:
         check(f"Tabela '{t}' existe", t in tables, f"Faltando: {t}")
@@ -85,7 +84,7 @@ def validate_proficiency_ranges(db):
         # Escala SAEB: tipicamente 100-400 para todas as séries
         check(f"{s}/{d}: min={minp:.1f}, max={maxp:.1f} dentro [100, 400]",
               100 < minp and maxp < 400,
-              f"Fora da faixa esperada")
+              "Fora da faixa esperada")
 
 
 def validate_rj_means(db):
@@ -166,7 +165,7 @@ def validate_inse_monotonic(db):
         trend_up = vals[-1] > vals[0]
         check(f"{s}/{d}: INSE nível mais alto ({vals[-1]:.1f}) > mais baixo ({vals[0]:.1f})",
               trend_up,
-              f"Tendência decrescente inesperada")
+              "Tendência decrescente inesperada")
 
 
 def validate_wifi_gap(db):
@@ -187,7 +186,7 @@ def validate_wifi_gap(db):
             gap = yes_wifi - no_wifi
             check(f"Gap WiFi = {gap:.1f} pts (ref: ~19 pts, tolerância ±5)",
                   14 < gap < 25,
-                  f"Gap fora da tolerância")
+                  "Gap fora da tolerância")
             n_no = by_resp["A"]["n_alunos"]
             n_yes = by_resp["B"]["n_alunos"]
             check(f"N sem WiFi = {n_no:,} (ref: ~9.5K)",
@@ -232,6 +231,40 @@ def validate_tic_indicators(db):
         check(f"Todos os {len(rows)} indicadores TIC em [0, 100]", True)
     elif not rows:
         warn("Nenhum indicador TIC encontrado")
+        return
+
+    # Estrutura: as respostas de cada indicador/subitem somam ~100% (TOTAL e Sudeste)
+    bad = query(db,
+        "SELECT indicador, item, valor_corte, SUM(valor) AS s FROM tic_indicadores "
+        "WHERE tipo = 'proporcao' AND valor_corte IN ('TOTAL', 'Sudeste') "
+        "GROUP BY ALL HAVING abs(SUM(valor) - 100) > 0.6"
+    )
+    check("Respostas TIC somam 100% por indicador/subitem (Brasil e Sudeste)",
+          not bad, f"{len(bad)} grupos fora: {bad[:3]}")
+
+    # Valores de referência das tabelas oficiais do Cetic.br
+    a1 = query(db,
+        "SELECT valor_corte, valor FROM tic_indicadores WHERE indicador = 'A1' "
+        "AND tipo = 'proporcao' AND resposta = 'Sim' AND valor_corte IN ('TOTAL', 'Sudeste')"
+    )
+    a1 = {r["valor_corte"]: r["valor"] for r in a1}
+    check(f"A1 (acesso à internet) Brasil = {a1.get('TOTAL')}% (ref.: 92,4%)",
+          abs((a1.get("TOTAL") or 0) - 92.409) < 0.01)
+    check(f"A1 (acesso à internet) Sudeste = {a1.get('Sudeste')}% (ref.: 98,0%)",
+          abs((a1.get("Sudeste") or 0) - 97.9657) < 0.01)
+
+    # Catálogo do dashboard: todo indicador curado precisa existir
+    from backend.analysis.tic import TIC_GROUPS, _match
+    rows_sim = query(db,
+        "SELECT indicador, item, resposta FROM tic_indicadores "
+        "WHERE tipo = 'proporcao' AND valor_corte = 'TOTAL'"
+    )
+    missing = [
+        f"{spec['code']}:{spec.get('item', '')}"
+        for cfg in TIC_GROUPS.values() for spec in cfg["indicators"]
+        if not any(_match(spec, r) for r in rows_sim)
+    ]
+    check("Catálogo TIC do dashboard encontrado nas tabelas", not missing, f"Faltando: {missing}")
 
 
 def validate_digital_index(db):

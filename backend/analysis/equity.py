@@ -4,20 +4,25 @@ Equity analysis module for the SAEB/TIC education dashboard.
 Provides gap analyses across school networks (public/private),
 socioeconomic levels (INSE), and geographic locations (urban/rural,
 capital/interior).
+
+Inference uses the SAEB design (strata ``ESTRATO`` and school clusters
+``ID_ESCOLA``) for all students of the UF/series; each subgroup is a domain
+(see ``backend.analysis.stats_utils``).
 """
 
 from typing import Any, Dict, List, Optional
 
 import duckdb
 import numpy as np
+from scipy import stats as sps
 
 from backend.analysis.stats_utils import (
     cohens_d_weighted,
     confidence_interval_mean,
+    design_ttest,
     pearson_weighted,
-    weighted_mean,
+    to_float,
     weighted_std,
-    weighted_ttest,
 )
 from backend.config import (
     ID_UF_RJ,
@@ -61,33 +66,84 @@ def _resolve_cols(disciplina: str) -> tuple[str, str]:
     return prof_col, weight_col
 
 
-def _group_stats(
-    values: np.ndarray,
-    weights: np.ndarray,
-    mask: np.ndarray,
-    label: str,
-) -> Dict[str, Any]:
-    """Compute summary statistics for a boolean-masked subgroup."""
-    if not mask.any():
+def _sf(value: Any) -> Optional[float]:
+    """float JSON-seguro: NaN/None -> None."""
+    if value is None:
+        return None
+    value = float(value)
+    return None if np.isnan(value) else value
+
+
+def _load(serie: str, disciplina: str, uf: int, extra_cols: str) -> Dict[str, np.ndarray]:
+    """Todos os alunos da UF/série (o desenho completo), com colunas extras."""
+    path = _parquet_path(serie)
+    prof_col, weight_col = _resolve_cols(disciplina)
+    con = duckdb.connect()
+    df = con.execute(f"""
+        SELECT
+            {prof_col} AS prof,
+            {weight_col} AS peso,
+            {extra_cols},
+            ID_ESCOLA AS escola,
+            ESTRATO AS estrato
+        FROM '{path}'
+        WHERE ID_UF = ?
+    """, [uf]).fetchnumpy()
+    con.close()
+    return df
+
+
+class _Design:
+    """Valores, pesos e desenho (clusters/strata) de todos os alunos."""
+
+    def __init__(self, df: Dict[str, np.ndarray]):
+        self.prof = to_float(df["prof"])
+        self.peso = to_float(df["peso"])
+        self.clusters = np.asarray(df["escola"])
+        self.strata = np.asarray(df["estrato"])
+        self.valid = ~np.isnan(self.prof) & ~np.isnan(self.peso)
+
+    def group_stats(self, mask: np.ndarray, label: str) -> Dict[str, Any]:
+        """Média, IC 95% de desenho (domínio) e DP de um subgrupo."""
+        mask = mask & self.valid
+        if not mask.any():
+            return {"label": label, "mean": None, "ci_lower": None, "ci_upper": None,
+                    "std": None, "n": 0}
+        mean, ci_lo, ci_hi = confidence_interval_mean(
+            self.prof, self.peso, strata=self.strata, clusters=self.clusters, domain=mask
+        )
         return {
             "label": label,
-            "mean": None,
-            "ci_lower": None,
-            "ci_upper": None,
-            "std": None,
-            "n": 0,
+            "mean": _sf(mean),
+            "ci_lower": _sf(ci_lo),
+            "ci_upper": _sf(ci_hi),
+            "std": _sf(weighted_std(self.prof[mask], self.peso[mask])),
+            "n": int(mask.sum()),
         }
-    v, w = values[mask], weights[mask]
-    mean, ci_lo, ci_hi = confidence_interval_mean(v, w)
-    sd = weighted_std(v, w)
-    return {
-        "label": label,
-        "mean": float(mean),
-        "ci_lower": float(ci_lo),
-        "ci_upper": float(ci_hi),
-        "std": float(sd) if not np.isnan(sd) else None,
-        "n": int(mask.sum()),
-    }
+
+    def gap_test(self, m1: np.ndarray, m2: np.ndarray, alpha: float = 0.05) -> Dict[str, Any]:
+        """Diferença m1 − m2 com t de desenho, IC (t com gl de desenho) e d de Cohen."""
+        m1, m2 = m1 & self.valid, m2 & self.valid
+        if not (m1.any() and m2.any()):
+            return {"gap": None, "ci_gap_lower": None, "ci_gap_upper": None,
+                    "t_stat": None, "p_value": None, "df": None, "cohens_d": None}
+        labels = np.where(m1, 1, np.where(m2, 2, 0))
+        res = design_ttest(self.prof, self.peso, labels, 1, 2, self.clusters, self.strata,
+                           domain=m1 | m2)
+        ci_lo = ci_hi = None
+        if not np.isnan(res["se"]) and res["df"] >= 1:
+            half = sps.t.ppf(1 - alpha / 2, res["df"]) * res["se"]
+            ci_lo, ci_hi = res["diff"] - half, res["diff"] + half
+        d = cohens_d_weighted(self.prof[m1], self.peso[m1], self.prof[m2], self.peso[m2])
+        return {
+            "gap": _sf(res["diff"]),
+            "ci_gap_lower": _sf(ci_lo),
+            "ci_gap_upper": _sf(ci_hi),
+            "t_stat": _sf(res["t"]),
+            "p_value": _sf(res["p"]),
+            "df": _sf(res["df"]),
+            "cohens_d": _sf(d),
+        }
 
 
 # ------------------------------------------------------------------ #
@@ -104,61 +160,19 @@ def get_public_private_gap(
 
     Returns
     -------
-    dict with keys: publica, privada (stats dicts), gap, ci_gap_lower,
-    ci_gap_upper, t_stat, p_value, cohens_d.
+    dict with keys: publica, privada (stats dicts), gap (privada − pública),
+    ci_gap_lower, ci_gap_upper, t_stat, p_value, df, cohens_d.
     """
-    path = _parquet_path(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
-
-    con = duckdb.connect()
-    query = f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            IN_PUBLICA
-        FROM '{path}'
-        WHERE ID_UF = ?
-          AND {prof_col} IS NOT NULL
-          AND {weight_col} IS NOT NULL
-          AND IN_PUBLICA IS NOT NULL
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
-    con.close()
-
-    prof = np.asarray(df["prof"], dtype=np.float64)
-    peso = np.asarray(df["peso"], dtype=np.float64)
-    in_pub = np.asarray(df["IN_PUBLICA"])
-
-    mask_pub = in_pub == 1
-    mask_priv = in_pub == 0
-
-    pub_stats = _group_stats(prof, peso, mask_pub, "publica")
-    priv_stats = _group_stats(prof, peso, mask_priv, "privada")
+    df = _load(serie, disciplina, uf, "IN_PUBLICA")
+    d = _Design(df)
+    in_pub = to_float(df["IN_PUBLICA"])
+    mask_pub, mask_priv = in_pub == 1, in_pub == 0
 
     result: Dict[str, Any] = {
-        "publica": pub_stats,
-        "privada": priv_stats,
+        "publica": d.group_stats(mask_pub, "publica"),
+        "privada": d.group_stats(mask_priv, "privada"),
     }
-
-    if mask_pub.any() and mask_priv.any():
-        t_stat, p_value, diff = weighted_ttest(
-            prof[mask_priv], peso[mask_priv],
-            prof[mask_pub], peso[mask_pub],
-        )
-        d = cohens_d_weighted(
-            prof[mask_priv], peso[mask_priv],
-            prof[mask_pub], peso[mask_pub],
-        )
-        result["gap"] = float(diff) if not np.isnan(diff) else None
-        result["t_stat"] = float(t_stat) if not np.isnan(t_stat) else None
-        result["p_value"] = float(p_value) if not np.isnan(p_value) else None
-        result["cohens_d"] = float(d) if not np.isnan(d) else None
-    else:
-        result["gap"] = None
-        result["t_stat"] = None
-        result["p_value"] = None
-        result["cohens_d"] = None
-
+    result.update(d.gap_test(mask_priv, mask_pub))
     return result
 
 
@@ -175,79 +189,42 @@ def get_inse_correlation(
     """Return INSE vs proficiency analysis: Pearson r, p-value, means by INSE level.
 
     Uses INSE_ALUNO (continuous) for correlation and NU_TIPO_NIVEL_INSE
-    (categorical 1-8) for group means.
+    (categorical 1-8) for group means — only for students with IN_INSE = 1
+    (students without INSE come coded as level 1 in the microdata).
 
     Returns
     -------
     dict with keys: pearson_r, p_value, n, means_by_level (list of dicts).
     """
-    path = _parquet_path(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
-
-    con = duckdb.connect()
-    # Use PESO_ALUNO_INSE for INSE-related analyses when available;
-    # fall back to the discipline weight for proficiency stats.
-    query = f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            INSE_ALUNO,
-            NU_TIPO_NIVEL_INSE AS nivel_inse,
-            PESO_ALUNO_INSE AS peso_inse
-        FROM '{path}'
-        WHERE ID_UF = ?
-          AND {prof_col} IS NOT NULL
-          AND {weight_col} IS NOT NULL
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
-    con.close()
-
-    prof = np.asarray(df["prof"], dtype=np.float64)
-    peso = np.asarray(df["peso"], dtype=np.float64)
-    inse = np.asarray(df["INSE_ALUNO"], dtype=np.float64)
-    nivel = np.asarray(df["nivel_inse"], dtype=np.float64)
+    df = _load(serie, disciplina, uf, """
+        CASE WHEN IN_INSE = 1 THEN INSE_ALUNO END AS inse,
+        CASE WHEN IN_INSE = 1 THEN NU_TIPO_NIVEL_INSE END AS nivel_inse
+    """)
+    d = _Design(df)
+    inse = to_float(df["inse"])
+    nivel = to_float(df["nivel_inse"])
 
     result: Dict[str, Any] = {}
-
-    # Pearson correlation on continuous INSE
-    valid = ~np.isnan(inse) & ~np.isnan(prof) & ~np.isnan(peso)
-    if valid.sum() >= 3:
-        r, p = pearson_weighted(inse[valid], prof[valid], peso[valid])
-        result["pearson_r"] = float(r) if not np.isnan(r) else None
-        result["p_value"] = float(p) if not np.isnan(p) else None
-        result["n"] = int(valid.sum())
+    has_inse = d.valid & ~np.isnan(inse)
+    if has_inse.sum() >= 3:
+        r, p = pearson_weighted(
+            inse, d.prof, d.peso, clusters=d.clusters, strata=d.strata, domain=has_inse
+        )
+        result.update(pearson_r=_sf(r), p_value=_sf(p), n=int(has_inse.sum()))
     else:
-        result["pearson_r"] = None
-        result["p_value"] = None
-        result["n"] = 0
+        result.update(pearson_r=None, p_value=None, n=0)
 
-    # Means by INSE level (1-8)
     means_by_level: List[Dict[str, Any]] = []
-    valid_nivel = ~np.isnan(nivel)
-    if valid_nivel.any():
-        levels = sorted(set(int(x) for x in nivel[valid_nivel] if not np.isnan(x)))
-        for lvl in levels:
-            mask = (nivel == lvl) & ~np.isnan(prof) & ~np.isnan(peso)
-            if mask.any():
-                mean_val, ci_lo, ci_hi = confidence_interval_mean(
-                    prof[mask], peso[mask]
-                )
-                means_by_level.append({
-                    "nivel_inse": lvl,
-                    "mean": float(mean_val),
-                    "ci_lower": float(ci_lo),
-                    "ci_upper": float(ci_hi),
-                    "n": int(mask.sum()),
-                })
-            else:
-                means_by_level.append({
-                    "nivel_inse": lvl,
-                    "mean": None,
-                    "ci_lower": None,
-                    "ci_upper": None,
-                    "n": 0,
-                })
-
+    has_level = d.valid & ~np.isnan(nivel)
+    for lvl in sorted(set(int(x) for x in nivel[has_level])):
+        stats = d.group_stats(nivel == lvl, f"nivel_{lvl}")
+        means_by_level.append({
+            "nivel_inse": lvl,
+            "mean": stats["mean"],
+            "ci_lower": stats["ci_lower"],
+            "ci_upper": stats["ci_upper"],
+            "n": stats["n"],
+        })
     result["means_by_level"] = means_by_level
     return result
 
@@ -271,92 +248,26 @@ def get_location_gap(
     Returns
     -------
     dict with keys:
-      urban_rural: {urbana, rural, gap, t_stat, p_value, cohens_d}
-      capital_interior: {capital, interior, gap, t_stat, p_value, cohens_d}
+      urban_rural: {urbana, rural, gap, ci_gap_*, t_stat, p_value, df, cohens_d}
+      capital_interior: {capital, interior, gap, ci_gap_*, t_stat, p_value, df, cohens_d}
     """
-    path = _parquet_path(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
+    df = _load(serie, disciplina, uf, "ID_LOCALIZACAO, ID_AREA")
+    d = _Design(df)
+    loc = to_float(df["ID_LOCALIZACAO"])
+    area = to_float(df["ID_AREA"])
 
-    con = duckdb.connect()
-    query = f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            ID_LOCALIZACAO,
-            ID_AREA
-        FROM '{path}'
-        WHERE ID_UF = ?
-          AND {prof_col} IS NOT NULL
-          AND {weight_col} IS NOT NULL
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
-    con.close()
+    mask_urban, mask_rural = loc == 1, loc == 2
+    ur: Dict[str, Any] = {
+        "urbana": d.group_stats(mask_urban, "urbana"),
+        "rural": d.group_stats(mask_rural, "rural"),
+    }
+    ur.update(d.gap_test(mask_urban, mask_rural))
 
-    prof = np.asarray(df["prof"], dtype=np.float64)
-    peso = np.asarray(df["peso"], dtype=np.float64)
-    loc = np.asarray(df["ID_LOCALIZACAO"])
-    area = np.asarray(df["ID_AREA"])
+    mask_cap, mask_int = area == 1, area == 2
+    ci: Dict[str, Any] = {
+        "capital": d.group_stats(mask_cap, "capital"),
+        "interior": d.group_stats(mask_int, "interior"),
+    }
+    ci.update(d.gap_test(mask_cap, mask_int))
 
-    result: Dict[str, Any] = {}
-
-    # --- Urban vs Rural ---
-    mask_urban = loc == 1
-    mask_rural = loc == 2
-
-    urban_stats = _group_stats(prof, peso, mask_urban, "urbana")
-    rural_stats = _group_stats(prof, peso, mask_rural, "rural")
-
-    ur: Dict[str, Any] = {"urbana": urban_stats, "rural": rural_stats}
-
-    if mask_urban.any() and mask_rural.any():
-        t_stat, p_value, diff = weighted_ttest(
-            prof[mask_urban], peso[mask_urban],
-            prof[mask_rural], peso[mask_rural],
-        )
-        d = cohens_d_weighted(
-            prof[mask_urban], peso[mask_urban],
-            prof[mask_rural], peso[mask_rural],
-        )
-        ur["gap"] = float(diff) if not np.isnan(diff) else None
-        ur["t_stat"] = float(t_stat) if not np.isnan(t_stat) else None
-        ur["p_value"] = float(p_value) if not np.isnan(p_value) else None
-        ur["cohens_d"] = float(d) if not np.isnan(d) else None
-    else:
-        ur["gap"] = None
-        ur["t_stat"] = None
-        ur["p_value"] = None
-        ur["cohens_d"] = None
-
-    result["urban_rural"] = ur
-
-    # --- Capital vs Interior ---
-    mask_cap = area == 1
-    mask_int = area == 2
-
-    cap_stats = _group_stats(prof, peso, mask_cap, "capital")
-    int_stats = _group_stats(prof, peso, mask_int, "interior")
-
-    ci: Dict[str, Any] = {"capital": cap_stats, "interior": int_stats}
-
-    if mask_cap.any() and mask_int.any():
-        t_stat, p_value, diff = weighted_ttest(
-            prof[mask_cap], peso[mask_cap],
-            prof[mask_int], peso[mask_int],
-        )
-        d = cohens_d_weighted(
-            prof[mask_cap], peso[mask_cap],
-            prof[mask_int], peso[mask_int],
-        )
-        ci["gap"] = float(diff) if not np.isnan(diff) else None
-        ci["t_stat"] = float(t_stat) if not np.isnan(t_stat) else None
-        ci["p_value"] = float(p_value) if not np.isnan(p_value) else None
-        ci["cohens_d"] = float(d) if not np.isnan(d) else None
-    else:
-        ci["gap"] = None
-        ci["t_stat"] = None
-        ci["p_value"] = None
-        ci["cohens_d"] = None
-
-    result["capital_interior"] = ci
-
-    return result
+    return {"urban_rural": ur, "capital_interior": ci}

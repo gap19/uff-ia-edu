@@ -1,13 +1,12 @@
 """Rotas da API para dados SAEB 2023."""
 
 import json
-from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.api.app import get_db
-from backend.config import ID_UF_RJ, ID_REGIAO_SUDESTE, UF_MAP, SERIES_MAP, PROCESSED_DIR
+from backend.db import db_query
+from backend.config import ID_UF_RJ, ID_REGIAO_SUDESTE, UF_MAP, PROCESSED_DIR, SAEB_PARQUET_DIR
 
 # ---------------------------------------------------------------------------
 # Questionnaire dictionary (question texts + response labels)
@@ -42,12 +41,29 @@ router = APIRouter()
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _query(sql: str, params: list | None = None) -> list[dict]:
-    """Execute a DuckDB query and return rows as list of dicts."""
-    db = get_db()
-    rel = db.execute(sql, params or [])
-    columns = [desc[0] for desc in rel.description]
-    return [dict(zip(columns, row)) for row in rel.fetchall()]
+_query = db_query
+
+# Ordem pedagógica das séries (ORDER BY serie em texto daria 34EM, 5EF, 9EF)
+_SERIE_ORDER_SQL = "CASE serie WHEN '5EF' THEN 1 WHEN '9EF' THEN 2 ELSE 3 END"
+
+# rede: IN_PUBLICA (1 = pública, 0 = privada)
+_REDE_CODES = {"publica": 1, "pública": 1, "1": 1, "privada": 0, "0": 0}
+
+
+def _parse_rede(rede: Optional[str]) -> Optional[int]:
+    """Converte o filtro textual de rede para o código IN_PUBLICA.
+
+    ``None``, ``""`` e ``"total"`` significam sem filtro (todas as redes).
+    """
+    if rede is None or rede.strip().lower() in ("", "total"):
+        return None
+    code = _REDE_CODES.get(rede.strip().lower())
+    if code is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Rede '{rede}' inválida. Opções: publica, privada, total",
+        )
+    return code
 
 
 # UFs that belong to the Sudeste region (codes starting with 3x)
@@ -59,10 +75,10 @@ _SUDESTE_UFS = [id_uf for id_uf in UF_MAP if id_uf // 10 == ID_REGIAO_SUDESTE]
 # ---------------------------------------------------------------------------
 
 @router.get("/overview")
-async def overview():
+def overview():
     """KPIs gerais do RJ: total de alunos, escolas e proficiencia media por serie."""
     try:
-        kpi_alunos = _query("SELECT * FROM kpi_rj ORDER BY serie")
+        kpi_alunos = _query(f"SELECT * FROM kpi_rj ORDER BY {_SERIE_ORDER_SQL}")
         kpi_escolas = _query("SELECT * FROM kpi_escolas_rj")
 
         return {
@@ -78,29 +94,30 @@ async def overview():
 # ---------------------------------------------------------------------------
 
 @router.get("/proficiency")
-async def proficiency(
+def proficiency(
     serie: Optional[str] = Query(None, description="Filtro de serie (ex: 5EF, 9EF)"),
     disciplina: Optional[str] = Query(None, description="Filtro de disciplina (LP, MT, etc.)"),
     rede: Optional[str] = Query(None, description="Filtro de rede (publica, privada, total)"),
 ):
     """Proficiencia por UF, serie e disciplina."""
+    rede_code = _parse_rede(rede)
     try:
         conditions = []
         params = []
 
         if serie:
             conditions.append("serie = ?")
-            params.append(serie)
+            params.append(serie.upper())
         if disciplina:
             conditions.append("disciplina = ?")
-            params.append(disciplina)
+            params.append(disciplina.upper())
 
         where = " WHERE " + " AND ".join(conditions) if conditions else ""
 
-        if rede:
+        if rede_code is not None:
             conditions_rede = list(conditions)
             conditions_rede.append("rede = ?")
-            params_rede = list(params) + [rede]
+            params_rede = list(params) + [rede_code]
             where_rede = " WHERE " + " AND ".join(conditions_rede)
             sql = f"SELECT * FROM prof_by_uf_serie_disc{where_rede} ORDER BY ID_UF, serie, disciplina"
             rows = _query(sql, params_rede)
@@ -130,13 +147,13 @@ async def proficiency(
 # ---------------------------------------------------------------------------
 
 @router.get("/proficiency/comparison")
-async def proficiency_comparison():
+def proficiency_comparison():
     """Comparacao RJ vs Sudeste vs Brasil por serie e disciplina."""
     try:
         # RJ
         rj = _query(
-            "SELECT serie, disciplina, rede, media_proficiencia, n_alunos "
-            "FROM prof_by_uf_serie_disc WHERE ID_UF = ? ORDER BY serie, disciplina",
+            "SELECT serie, disciplina, rede, media_proficiencia, soma_pesos, n_alunos "
+            "FROM prof_by_uf_serie_disc WHERE ID_UF = ? ORDER BY serie, disciplina, rede",
             [ID_UF_RJ],
         )
 
@@ -145,11 +162,11 @@ async def proficiency_comparison():
         sudeste = _query(
             f"SELECT serie, disciplina, rede, "
             f"  SUM(media_proficiencia * soma_pesos) / SUM(soma_pesos) AS media_proficiencia, "
-            f"  SUM(n_alunos) AS n_alunos "
+            f"  SUM(soma_pesos) AS soma_pesos, SUM(n_alunos) AS n_alunos "
             f"FROM prof_by_uf_serie_disc "
             f"WHERE ID_UF IN ({placeholders}) "
             f"GROUP BY serie, disciplina, rede "
-            f"ORDER BY serie, disciplina",
+            f"ORDER BY serie, disciplina, rede",
             _SUDESTE_UFS,
         )
 
@@ -157,10 +174,10 @@ async def proficiency_comparison():
         brasil = _query(
             "SELECT serie, disciplina, rede, "
             "  SUM(media_proficiencia * soma_pesos) / SUM(soma_pesos) AS media_proficiencia, "
-            "  SUM(n_alunos) AS n_alunos "
+            "  SUM(soma_pesos) AS soma_pesos, SUM(n_alunos) AS n_alunos "
             "FROM prof_by_uf_serie_disc "
             "GROUP BY serie, disciplina, rede "
-            "ORDER BY serie, disciplina",
+            "ORDER BY serie, disciplina, rede",
         )
 
         return {
@@ -177,15 +194,19 @@ async def proficiency_comparison():
 # ---------------------------------------------------------------------------
 
 @router.get("/proficiency/levels")
-async def proficiency_levels(
+def proficiency_levels(
     scope: str = Query("rj", description="Escopo: 'rj' ou 'nacional'"),
 ):
-    """Distribuicao de niveis de proficiencia."""
+    """Distribuicao de niveis de proficiencia.
+
+    Fonte: TS_ESCOLA, que contém apenas escolas públicas. Os valores são a
+    média simples, entre as escolas, do percentual de alunos em cada nível.
+    """
     try:
         if scope == "nacional":
             rows = _query("SELECT * FROM prof_niveis_nacional")
         else:
-            rows = _query("SELECT * FROM prof_niveis_rj")
+            rows = _query("SELECT * FROM prof_niveis_rj ORDER BY rede DESC")
 
         return {"scope": scope, "data": rows}
     except Exception as exc:
@@ -197,7 +218,7 @@ async def proficiency_levels(
 # ---------------------------------------------------------------------------
 
 @router.get("/equity/gap")
-async def equity_gap(
+def equity_gap(
     serie: Optional[str] = Query(None, description="Filtro de serie"),
     disciplina: Optional[str] = Query(None, description="Filtro de disciplina"),
 ):
@@ -208,16 +229,16 @@ async def equity_gap(
 
         if serie:
             conditions.append("serie = ?")
-            params.append(serie)
+            params.append(serie.upper())
         if disciplina:
             conditions.append("disciplina = ?")
-            params.append(disciplina)
+            params.append(disciplina.upper())
 
         where = " AND ".join(conditions)
         sql = (
             f"SELECT serie, disciplina, rede, media_proficiencia, n_alunos "
             f"FROM prof_by_uf_serie_disc WHERE {where} "
-            f"ORDER BY serie, disciplina, rede"
+            f"ORDER BY {_SERIE_ORDER_SQL}, disciplina, rede"
         )
         rows = _query(sql, params)
 
@@ -252,7 +273,7 @@ async def equity_gap(
 # ---------------------------------------------------------------------------
 
 @router.get("/equity/inse")
-async def equity_inse():
+def equity_inse():
     """INSE vs proficiencia."""
     try:
         rows = _query(
@@ -268,7 +289,7 @@ async def equity_inse():
 # ---------------------------------------------------------------------------
 
 @router.get("/equity/location")
-async def equity_location():
+def equity_location():
     """Proficiência por localização (urbana/rural) no RJ."""
     try:
         rows = _query(
@@ -288,11 +309,35 @@ async def equity_location():
 # ---------------------------------------------------------------------------
 
 @router.get("/teachers/formation")
-async def teachers_formation():
-    """Formacao docente vs desempenho dos alunos no RJ."""
+def teachers_formation():
+    """Formacao docente vs desempenho dos alunos no RJ — uma linha por escola.
+
+    Lido diretamente de TS_ESCOLA (pequeno): a antiga tabela pré-computada
+    ``escola_formacao_rj`` agrupava escolas com percentuais idênticos, o que
+    distorcia a correlação calculada no frontend.
+    """
+    pq = str(SAEB_PARQUET_DIR / "TS_ESCOLA.parquet")
     try:
-        rows = _query("SELECT * FROM escola_formacao_rj ORDER BY rede")
-        return {"data": rows}
+        rows = _query(f"""
+            SELECT
+                IN_PUBLICA AS rede,
+                ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_INICIAL AS DOUBLE), 2) AS pc_formacao_docente_inicial,
+                ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_FINAL AS DOUBLE), 2) AS pc_formacao_docente_final,
+                ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_MEDIO AS DOUBLE), 2) AS pc_formacao_docente_medio,
+                ROUND(TRY_CAST(MEDIA_5EF_LP AS DOUBLE), 2) AS media_5ef_lp,
+                ROUND(TRY_CAST(MEDIA_5EF_MT AS DOUBLE), 2) AS media_5ef_mt,
+                ROUND(TRY_CAST(MEDIA_9EF_LP AS DOUBLE), 2) AS media_9ef_lp,
+                ROUND(TRY_CAST(MEDIA_9EF_MT AS DOUBLE), 2) AS media_9ef_mt,
+                ROUND(TRY_CAST(MEDIA_EM_LP AS DOUBLE), 2) AS media_em_lp,
+                ROUND(TRY_CAST(MEDIA_EM_MT AS DOUBLE), 2) AS media_em_mt
+            FROM read_parquet('{pq}')
+            WHERE ID_UF = ?
+            ORDER BY ID_ESCOLA
+        """, [ID_UF_RJ])
+        # Cada escola só tem as etapas que oferece: omitir campos nulos reduz
+        # o JSON (importante no site estático) — ausente == null no frontend.
+        rows = [{k: v for k, v in r.items() if v is not None} for r in rows]
+        return {"data": rows, "unit": "escola"}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -311,7 +356,7 @@ _QUESTIONNAIRE_TABLES = {
 
 
 @router.get("/questionnaire/{dataset}")
-async def questionnaire(
+def questionnaire(
     dataset: str,
     questao: Optional[str] = Query(None, description="Filtro por codigo da questao"),
 ):
@@ -384,19 +429,20 @@ async def questionnaire(
 # ---------------------------------------------------------------------------
 
 @router.get("/proficiency/ranking")
-async def proficiency_ranking(
+def proficiency_ranking(
     serie: str = Query(..., description="Serie (ex: 5EF, 9EF)"),
     disciplina: str = Query(..., description="Disciplina (LP, MT, etc.)"),
     rede: Optional[str] = Query(None, description="Filtro de rede"),
 ):
     """Ranking de UFs por proficiencia para serie/disciplina especifica."""
+    rede_code = _parse_rede(rede)
     try:
         conditions = ["serie = ?", "disciplina = ?"]
-        params: list = [serie, disciplina]
+        params: list = [serie.upper(), disciplina.upper()]
 
-        if rede:
+        if rede_code is not None:
             conditions.append("rede = ?")
-            params.append(rede)
+            params.append(rede_code)
             sql = (
                 f"SELECT ID_UF, serie, disciplina, rede, media_proficiencia, n_alunos "
                 f"FROM prof_by_uf_serie_disc WHERE {' AND '.join(conditions)} "

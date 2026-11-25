@@ -209,3 +209,72 @@ async def test_proficiency_ranking(client):
     # Verificar que está ordenado decrescente
     medias = [r["media_proficiencia"] for r in data["data"]]
     assert medias == sorted(medias, reverse=True)
+
+
+# -----------------------------------------------------------------------
+# Regressões da revisão
+# -----------------------------------------------------------------------
+
+@pytest.mark.anyio
+async def test_overview_series_in_pedagogical_order(client):
+    resp = await client.get("/api/saeb/overview")
+    series = [r["serie"] for r in resp.json()["alunos_por_serie"]]
+    assert series == ["5EF", "9EF", "34EM"]
+
+
+@pytest.mark.anyio
+async def test_proficiency_rede_filter(client):
+    """rede é textual na API e inteiro (IN_PUBLICA) na tabela."""
+    resp = await client.get("/api/saeb/proficiency", params={
+        "serie": "9EF", "disciplina": "LP", "rede": "publica"
+    })
+    assert resp.status_code == 200
+    assert resp.json()["data"]
+    assert all(r["rede"] == 1 for r in resp.json()["data"])
+
+    resp = await client.get("/api/saeb/proficiency/ranking", params={
+        "serie": "9EF", "disciplina": "LP", "rede": "privada"
+    })
+    assert resp.status_code == 200
+    assert all(r["rede"] == 0 for r in resp.json()["data"])
+
+    resp = await client.get("/api/saeb/proficiency", params={"rede": "xyz"})
+    assert resp.status_code == 400
+
+
+@pytest.mark.anyio
+async def test_comparison_weighted_mean_matches_kpi(client):
+    """Combinar redes pela soma dos pesos reproduz a média ponderada do RJ."""
+    comp = (await client.get("/api/saeb/proficiency/comparison")).json()
+    rows = [r for r in comp["rj"] if r["serie"] == "9EF" and r["disciplina"] == "LP"]
+    assert all("soma_pesos" in r for r in rows)
+    weighted = sum(r["media_proficiencia"] * r["soma_pesos"] for r in rows) / sum(
+        r["soma_pesos"] for r in rows
+    )
+    kpi = (await client.get("/api/saeb/overview")).json()["alunos_por_serie"]
+    media_lp = next(r["media_lp"] for r in kpi if r["serie"] == "9EF")
+    assert weighted == pytest.approx(media_lp, abs=0.01)
+
+
+@pytest.mark.anyio
+async def test_teachers_formation_one_row_per_school(client):
+    import duckdb
+    from backend.config import SAEB_PARQUET_DIR
+
+    resp = await client.get("/api/saeb/teachers/formation")
+    assert resp.status_code == 200
+    data = resp.json()
+    con = duckdb.connect()
+    n_schools = con.execute(
+        f"SELECT COUNT(*) FROM '{SAEB_PARQUET_DIR / 'TS_ESCOLA.parquet'}' WHERE ID_UF = 33"
+    ).fetchone()[0]
+    con.close()
+    assert data["unit"] == "escola"
+    assert len(data["data"]) == n_schools
+
+
+@pytest.mark.anyio
+async def test_filters_are_case_insensitive(client):
+    upper = (await client.get("/api/saeb/equity/gap", params={"serie": "9EF", "disciplina": "LP"})).json()
+    lower = (await client.get("/api/saeb/equity/gap", params={"serie": "9ef", "disciplina": "lp"})).json()
+    assert upper["data"] and upper == lower

@@ -22,6 +22,8 @@ const COLORS = {
 const _chartInstances = {};
 // Stored options for re-rendering on theme change
 const _chartOptions = {};
+// Charts hidden during a theme toggle: re-rendered when their tab is shown
+const _staleThemeCharts = new Set();
 
 // ─── Dark mode detection ────────────────────────────────────
 
@@ -163,18 +165,20 @@ function renderChart(elementId, option, opts = {}) {
 
     const merged = deepMerge(defaults, option);
 
-    // Apply theme-aware label colors to all series that have labels
+    // Apply theme-aware label colors to all series that have labels.
+    // Copies the series/label objects instead of mutating them: `option` is
+    // stored below for theme re-renders, and writing the current theme's
+    // color into it would freeze labels in that color after a toggle.
     if (merged.series) {
         const arr = Array.isArray(merged.series) ? merged.series : [merged.series];
-        for (const s of arr) {
-            if (s.label && s.label.show && !s.label.color) {
-                s.label.color = tc.text;
-            }
-        }
+        merged.series = arr.map(s => (s && s.label && s.label.show && !s.label.color)
+            ? { ...s, label: { ...s.label, color: tc.text } }
+            : s);
     }
 
     // Store option for theme-switch re-render
     _chartOptions[elementId] = option;
+    _staleThemeCharts.delete(elementId);
 
     chart.setOption(merged);
 
@@ -198,8 +202,13 @@ window.addEventListener('resize', () => {
 function rerenderAllCharts() {
     for (const [id, option] of Object.entries(_chartOptions)) {
         const el = document.getElementById(id);
-        if (el && el.offsetWidth > 0) {
+        if (!el) continue;
+        if (el.offsetWidth > 0) {
             renderChart(id, option);
+        } else {
+            // Oculto (aba inativa): ECharts não mede contêiner invisível;
+            // re-renderiza quando a aba for exibida (ver initTabResize)
+            _staleThemeCharts.add(id);
         }
     }
 }

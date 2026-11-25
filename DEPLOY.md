@@ -2,8 +2,13 @@
 
 O dashboard é publicado como **site 100% estático** no Firebase Hosting (plano
 Spark, sem billing). Todas as respostas da API são pré-computadas por
-`scripts/export_static.py` e salvas em `dist/` (~11 MB), junto com o HTML, os
+`scripts/export_static.py` e salvas em `dist/` (~7 MB), junto com o HTML, os
 assets e o relatório PDF pré-gerado.
+
+> **Pré-requisito:** os dados processados (`data/processed/`) são versionados
+> com Git LFS. Num clone novo, rode `git lfs install && git lfs pull` antes de
+> exportar. A geração do PDF requer as bibliotecas de sistema do WeasyPrint
+> (Pango/Cairo — ver `Dockerfile`).
 
 ## 1. Gerar o build estático
 
@@ -40,7 +45,7 @@ firebase deploy --only hosting
 
 ## Limites do plano gratuito (referência)
 
-- Armazenamento: 10 GB (o build usa ~11 MB)
+- Armazenamento: 10 GB (o build usa ~7 MB)
 - Transferência: 360 MB/dia
 - Sem funções server-side — por isso o site é estático
 
@@ -52,9 +57,11 @@ firebase deploy --only hosting
   O esquema de nomes é espelhado por `slug_path()` no exportador — **manter as
   duas funções em sincronia**.
 - O relatório PDF não é mais gerado sob demanda: o exportador pré-gera o
-  relatório completo (todas as seções, séries e disciplinas, com apêndice) em
-  `dist/reports/`. Os filtros do modal de relatório ficam desabilitados no site
-  estático.
+  relatório completo (todas as seções, incluindo cruzamentos, com apêndice
+  para todas as séries e disciplinas; gráficos de série única usam 9º EF / LP)
+  em `dist/reports/`. Cada exportação apaga `dist/api/` antes de gravar, para
+  não publicar JSONs obsoletos. Os filtros do modal de relatório ficam
+  desabilitados no site estático.
 - O servidor FastAPI continua funcionando normalmente para desenvolvimento
   local (`uvicorn backend.api.app:app`) — sem a flag, o frontend usa a API
   dinâmica como antes.
