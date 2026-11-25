@@ -126,6 +126,25 @@ function currentThemeName() {
 // ─── Wrapper principal ────────────────────────────────────
 
 /**
+ * Descarta uma instância ECharts e limpa os registros internos do container.
+ * @param {string} elementId - ID do container do gráfico
+ * @param {boolean} [clearSavedOption=true] - Remove também a opção salva para troca de tema
+ */
+function disposeChart(elementId, clearSavedOption = true) {
+    const instance = _chartInstances[elementId];
+    if (instance) {
+        if (typeof instance.isDisposed !== 'function' || !instance.isDisposed()) {
+            instance.dispose();
+        }
+        delete _chartInstances[elementId];
+    }
+    _staleThemeCharts.delete(elementId);
+    if (clearSavedOption) {
+        delete _chartOptions[elementId];
+    }
+}
+
+/**
  * Renderiza um gráfico ECharts no elemento especificado.
  * Gerencia resize automático e dispose de instâncias anteriores.
  */
@@ -137,9 +156,7 @@ function renderChart(elementId, option, opts = {}) {
     }
 
     // Dispose da instância anterior se existir
-    if (_chartInstances[elementId]) {
-        _chartInstances[elementId].dispose();
-    }
+    disposeChart(elementId, false);
 
     // Limpar conteúdo de loading
     el.innerHTML = '';
@@ -186,13 +203,17 @@ function renderChart(elementId, option, opts = {}) {
     return chart;
 }
 
-// Resize global
+// Resize global com debounce (~150ms)
+let _resizeTimer = null;
 window.addEventListener('resize', () => {
-    Object.values(_chartInstances).forEach(chart => {
-        if (chart && !chart.isDisposed()) {
-            chart.resize();
-        }
-    });
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+        Object.values(_chartInstances).forEach(chart => {
+            if (chart && !chart.isDisposed()) {
+                chart.resize();
+            }
+        });
+    }, 150);
 });
 
 /**

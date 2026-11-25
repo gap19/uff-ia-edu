@@ -1,0 +1,40 @@
+# Git e ambientes locais
+.git
+.venv
+venv
+env
+
+# Caches Python e ferramentas de desenvolvimento
+__pycache__
+*.py[cod]
+*.pyo
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.coverage
+htmlcov
+
+# Build estático e deploy Firebase
+dist
+.firebase
+
+# Configurações de assistentes de IA e IDE
+.claude
+.gemini
+.vscode
+.idea
+.DS_Store
+
+# Materiais locais e documentos binários
+pesquisa_ppe
+*.pdf
+*.docx
+*.pptx
+*.xlsx
+
+# Dados brutos (somente data/processed/ vai para a imagem)
+data/MICRODADOS_SAEB_2023
+data/tic_educacao_2023_escolas_tabelas_xlsx_v1.0
+
+# Segredos e variáveis de ambiente
+.env*

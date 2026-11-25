@@ -31,9 +31,8 @@ from backend.config import (
     WEIGHT_COLS,
 )
 
-# Maps serie identifier to the parquet file suffix.
+# Maps serie identifier to the parquet file suffix (series with full equity/INSE schema).
 _SERIE_FILE_MAP: Dict[str, str] = {
-    "2EF": "TS_ALUNO_2EF",
     "5EF": "TS_ALUNO_5EF",
     "9EF": "TS_ALUNO_9EF",
     "EM": "TS_ALUNO_34EM",
@@ -42,28 +41,36 @@ _SERIE_FILE_MAP: Dict[str, str] = {
     "34EM": "TS_ALUNO_34EM",
 }
 
+_SERIE_ID_MAP: Dict[str, int] = {
+    "3EM": 12,
+    "4EM": 13,
+}
 
-def _parquet_path(serie: str) -> str:
-    """Return the full parquet file path for a given serie."""
-    key = serie.upper()
+_SERIE_DISCIPLINAS: Dict[str, frozenset[str]] = {
+    "TS_ALUNO_5EF": frozenset({"LP", "MT", "CH", "CN"}),
+    "TS_ALUNO_9EF": frozenset({"LP", "MT", "CH", "CN"}),
+    "TS_ALUNO_34EM": frozenset({"LP", "MT"}),
+}
+
+
+def _resolve_source(serie: str, disciplina: str) -> tuple[str, str, str, Optional[int]]:
+    """Validate *(serie, disciplina)* against real Parquet columns and return paths/cols."""
+    key = serie.strip().upper()
     filename = _SERIE_FILE_MAP.get(key)
     if filename is None:
         raise ValueError(
             f"Serie '{serie}' not recognized. Valid: {list(_SERIE_FILE_MAP.keys())}"
         )
-    return str(SAEB_PARQUET_DIR / f"{filename}.parquet")
-
-
-def _resolve_cols(disciplina: str) -> tuple[str, str]:
-    """Return (proficiency_col, weight_col) for a discipline key."""
-    disc = disciplina.upper()
+    disc = disciplina.strip().upper()
+    allowed = _SERIE_DISCIPLINAS[filename]
     prof_col = PROFICIENCY_COLS.get(disc)
     weight_col = WEIGHT_COLS.get(disc)
-    if prof_col is None or weight_col is None:
+    if disc not in allowed or prof_col is None or weight_col is None:
         raise ValueError(
-            f"Disciplina '{disciplina}' not recognized. Valid: {list(PROFICIENCY_COLS.keys())}"
+            f"Disciplina '{disciplina}' not available for serie '{serie}'. "
+            f"Valid: {sorted(allowed)}"
         )
-    return prof_col, weight_col
+    return str(SAEB_PARQUET_DIR / f"{filename}.parquet"), prof_col, weight_col, _SERIE_ID_MAP.get(key)
 
 
 def _sf(value: Any) -> Optional[float]:
@@ -76,20 +83,23 @@ def _sf(value: Any) -> Optional[float]:
 
 def _load(serie: str, disciplina: str, uf: int, extra_cols: str) -> Dict[str, np.ndarray]:
     """Todos os alunos da UF/série (o desenho completo), com colunas extras."""
-    path = _parquet_path(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
+    path, prof_col, weight_col, id_serie = _resolve_source(serie, disciplina)
+    serie_clause = " AND ID_SERIE = ?" if id_serie is not None else ""
+    params: list[int] = [uf] + ([id_serie] if id_serie is not None else [])
     con = duckdb.connect()
-    df = con.execute(f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            {extra_cols},
-            ID_ESCOLA AS escola,
-            ESTRATO AS estrato
-        FROM '{path}'
-        WHERE ID_UF = ?
-    """, [uf]).fetchnumpy()
-    con.close()
+    try:
+        df = con.execute(f"""
+            SELECT
+                {prof_col} AS prof,
+                {weight_col} AS peso,
+                {extra_cols},
+                ID_ESCOLA AS escola,
+                ESTRATO AS estrato
+            FROM '{path}'
+            WHERE ID_UF = ?{serie_clause}
+        """, params).fetchnumpy()
+    finally:
+        con.close()
     return df
 
 

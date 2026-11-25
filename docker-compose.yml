@@ -8,4 +8,8 @@ services:
       - ./data/processed:/app/data/processed:ro
     environment:
       - PYTHONUNBUFFERED=1
+    mem_limit: 2g
+    cpus: 2.0
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped

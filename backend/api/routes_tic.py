@@ -63,20 +63,21 @@ def get_indicator(
     if not _table_exists():
         return _no_table_response()
 
+    code_norm = code.strip().upper()
     sql = f"""
         SELECT indicador, titulo, universo, tipo, variavel_corte, valor_corte,
                item, resposta, coluna, valor
         FROM {TABLE}
         WHERE indicador = ? AND tipo = ?
     """
-    params: list = [code, tipo]
+    params: list = [code_norm, tipo]
     if variavel_corte is not None:
         sql += " AND variavel_corte = ?"
         params.append(variavel_corte)
     sql += " ORDER BY variavel_corte, valor_corte, coluna"
 
     data = db_query(sql, params)
-    return {"indicator": code, "tipo": tipo, "count": len(data), "data": data}
+    return {"indicator": code_norm, "tipo": tipo, "count": len(data), "data": data}
 
 
 @router.get("/groups")

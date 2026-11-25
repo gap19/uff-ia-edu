@@ -7,21 +7,27 @@ school/director, and teacher levels. All analyses support INSE
 stratification to control for socioeconomic confounding.
 """
 
+import copy
+from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 import duckdb
 import numpy as np
 
 from backend.analysis.stats_utils import (
+    GroupMeansResult,
+    ci_from_group_means,
     cohens_d_weighted,
     confidence_interval_mean,
     design_ttest,
+    linearized_group_means,
     pearson_weighted,
     to_float,
     to_str,
+    ttest_from_group_means,
+    wald_anova_from_group_means,
     weighted_anova_oneway,
     weighted_eta_squared,
-    weighted_mean,
     weighted_ttest,
 )
 from backend.config import (
@@ -35,14 +41,25 @@ from backend.config import (
 # Shared helpers
 # ---------------------------------------------------------------------------
 
+# Series whose student Parquets include tech questionnaire items & INSE columns
 _SERIE_FILE_MAP: Dict[str, str] = {
-    "2EF": "TS_ALUNO_2EF",
     "5EF": "TS_ALUNO_5EF",
     "9EF": "TS_ALUNO_9EF",
     "EM": "TS_ALUNO_34EM",
     "3EM": "TS_ALUNO_34EM",
     "4EM": "TS_ALUNO_34EM",
     "34EM": "TS_ALUNO_34EM",
+}
+
+_SERIE_ID_MAP: Dict[str, int] = {
+    "3EM": 12,
+    "4EM": 13,
+}
+
+_SERIE_DISCIPLINAS: Dict[str, frozenset[str]] = {
+    "TS_ALUNO_5EF": frozenset({"LP", "MT", "CH", "CN"}),
+    "TS_ALUNO_9EF": frozenset({"LP", "MT", "CH", "CN"}),
+    "TS_ALUNO_34EM": frozenset({"LP", "MT"}),
 }
 
 _PROFESSOR_PARQUET = str(SAEB_PARQUET_DIR / "TS_PROFESSOR.parquet")
@@ -150,24 +167,48 @@ SCHOOL_MEDIA_COLS: Dict[tuple, str] = {
 }
 
 
-def _aluno_parquet(serie: str) -> str:
-    key = serie.upper()
-    filename = _SERIE_FILE_MAP.get(key)
+def validate_student_params(serie: str, disciplina: str) -> tuple[str, str, str, str, str]:
+    """Validate *(serie, disciplina)* against real Parquet columns.
+
+    Returns ``(serie_norm, disc_norm, parquet_path, prof_col, weight_col)`` or
+    raises :class:`ValueError` when the series or discipline is unsupported.
+    """
+    serie_key = serie.strip().upper()
+    filename = _SERIE_FILE_MAP.get(serie_key)
     if filename is None:
-        raise ValueError(f"Serie '{serie}' not recognized.")
-    return str(SAEB_PARQUET_DIR / f"{filename}.parquet")
+        raise ValueError(
+            f"Serie '{serie}' not recognized. Valid: {list(_SERIE_FILE_MAP.keys())}"
+        )
+    disc_key = disciplina.strip().upper()
+    allowed = _SERIE_DISCIPLINAS[filename]
+    prof_col = PROFICIENCY_COLS.get(disc_key)
+    weight_col = WEIGHT_COLS.get(disc_key)
+    if disc_key not in allowed or prof_col is None or weight_col is None:
+        raise ValueError(
+            f"Disciplina '{disciplina}' not available for serie '{serie}'. "
+            f"Valid: {sorted(allowed)}"
+        )
+    path = str(SAEB_PARQUET_DIR / f"{filename}.parquet")
+    return serie_key, disc_key, path, prof_col, weight_col
 
 
-def _resolve_cols(disciplina: str) -> tuple[str, str]:
-    disc = disciplina.upper()
-    prof_col = PROFICIENCY_COLS.get(disc)
-    weight_col = WEIGHT_COLS.get(disc)
-    if prof_col is None or weight_col is None:
-        raise ValueError(f"Disciplina '{disciplina}' not recognized.")
-    return prof_col, weight_col
+def _serie_filter_sql(serie_key: str) -> tuple[str, list[int]]:
+    """Return optional SQL ``AND ID_SERIE = ?`` clause for 3EM (12) vs 4EM (13)."""
+    id_serie = _SERIE_ID_MAP.get(serie_key)
+    if id_serie is not None:
+        return " AND ID_SERIE = ?", [id_serie]
+    return "", []
 
 
-def _safe_float(val: float) -> Optional[float]:
+def _se_from_group_means(res: GroupMeansResult, index: int) -> Optional[float]:
+    """Extract standard error for group *index* in *res*, or None if unestimable."""
+    var = float(res["cov"][index, index])
+    if res["df"] < 1 or np.isnan(var) or res["n_clusters"][index] < 2:
+        return None
+    return float(np.sqrt(max(var, 0.0)))
+
+
+def _safe_float(val: Optional[float]) -> Optional[float]:
     if val is None or np.isnan(val):
         return None
     return float(val)
@@ -210,20 +251,34 @@ def _group_stats_from_arrays(
     prof: np.ndarray, peso: np.ndarray, mask: np.ndarray, label: str,
     design: Design = _SRS,
 ) -> Dict[str, Any]:
-    """Média e IC 95% do subgrupo ``mask`` (domínio, se houver desenho)."""
+    """Média, EP e IC 95% do subgrupo ``mask`` (domínio, se houver desenho)."""
     if not mask.any():
-        return {"label": label, "mean": None, "ci_lower": None, "ci_upper": None, "n": 0}
+        return {
+            "label": label, "mean": None, "se": None,
+            "ci_low": None, "ci_high": None, "ci_lower": None, "ci_upper": None, "n": 0,
+        }
     if design.clusters is None:
         mean, ci_lo, ci_hi = confidence_interval_mean(prof[mask], peso[mask])
+        n_eff = int(np.count_nonzero(~np.isnan(prof[mask]) & ~np.isnan(peso[mask])))
+        se: Optional[float] = None
+        if n_eff >= 2 and not np.isnan(ci_lo) and not np.isnan(ci_hi):
+            from scipy import stats as sps
+            t_crit = float(sps.t.ppf(0.975, max(n_eff - 1, 1)))
+            se = (ci_hi - ci_lo) / (2.0 * t_crit) if t_crit > 0 else None
     else:
         mean, ci_lo, ci_hi = confidence_interval_mean(
             prof, peso, strata=design.strata, clusters=design.clusters, domain=mask
         )
+        se = None
+    lo_f, hi_f = _safe_float(ci_lo), _safe_float(ci_hi)
     return {
         "label": label,
         "mean": _safe_float(mean),
-        "ci_lower": _safe_float(ci_lo),
-        "ci_upper": _safe_float(ci_hi),
+        "se": _safe_float(se),
+        "ci_low": lo_f,
+        "ci_high": hi_f,
+        "ci_lower": lo_f,
+        "ci_upper": hi_f,
         "n": int(mask.sum()),
     }
 
@@ -293,12 +348,196 @@ def _anova_test(
 
 def _map_codes(codes: np.ndarray, mapping: Dict[str, float]) -> np.ndarray:
     """Converte códigos de resposta em números (NaN se fora do mapeamento)."""
-    return np.array([mapping.get(c, np.nan) for c in codes], dtype=np.float64)
+    out = np.full(len(codes), np.nan, dtype=np.float64)
+    for code, val in mapping.items():
+        out[codes == code] = val
+    return out
 
 
 # ---------------------------------------------------------------------------
 # 1. Student technology access vs proficiency
 # ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=64)
+def _student_tech_gap_cached(
+    serie_key: str,
+    disc_key: str,
+    tech_variable: str,
+    uf: int,
+    stratify_inse: bool,
+) -> Dict[str, Any]:
+    var_info = STUDENT_TECH_VARS[tech_variable]
+    _, _, path, prof_col, weight_col = validate_student_params(serie_key, disc_key)
+    serie_clause, serie_params = _serie_filter_sql(serie_key)
+
+    con = duckdb.connect()
+    try:
+        query = f"""
+            SELECT
+                {prof_col} AS prof,
+                {weight_col} AS peso,
+                {tech_variable} AS tech_resp,
+                CASE WHEN IN_INSE = 1 THEN NU_TIPO_NIVEL_INSE END AS nivel_inse,  -- IN_INSE = 0 vem codificado como nível 1
+                ID_ESCOLA AS escola,
+                ESTRATO AS estrato
+            FROM '{path}'
+            WHERE ID_UF = ?{serie_clause}
+        """
+        df = con.execute(query, [uf, *serie_params]).fetchnumpy()
+    finally:
+        con.close()
+
+    prof = to_float(df["prof"])
+    peso = to_float(df["peso"])
+    tech = to_str(df["tech_resp"])
+    inse = to_float(df["nivel_inse"])
+    responses = var_info["responses"]
+    valid = ~np.isnan(prof) & ~np.isnan(peso) & np.isin(tech, list(responses))
+
+    if not valid.any():
+        return {
+            "variable": tech_variable,
+            "label": var_info["label"],
+            "serie": serie_key,
+            "disciplina": disc_key,
+            "groups": [],
+            "test": None,
+            "correlation": None,
+            "overall": {"groups": [], "inse_level": None, "test": None, "correlation": None},
+        }
+
+    design = _student_design(df)
+    num_map = var_info.get("numeric_map", {})
+    numeric_vals = _map_codes(tech, num_map) if num_map else None
+
+    def _analyze_domain(domain: np.ndarray, inse_level: Optional[int] = None) -> Dict[str, Any]:
+        # Single joint linearization per domain (reused for all group CIs + t/Wald F)
+        res = linearized_group_means(
+            prof, peso, tech, design.clusters, design.strata, domain=domain
+        )
+        level_idx = {str(lev): i for i, lev in enumerate(res["levels"])}
+        total_w = float(peso[domain].sum())
+
+        groups: List[Dict[str, Any]] = []
+        for code in sorted(responses.keys()):
+            grp_mask = domain & (tech == code)
+            grp_w = float(peso[grp_mask].sum()) if grp_mask.any() else 0.0
+            wpct = round(100.0 * grp_w / total_w, 2) if total_w > 0 else 0.0
+            if code in level_idx:
+                j = level_idx[code]
+                mean, ci_lo, ci_hi = ci_from_group_means(res, j)
+                se = _se_from_group_means(res, j)
+                lo_f, hi_f = _safe_float(ci_lo), _safe_float(ci_hi)
+                stats: Dict[str, Any] = {
+                    "code": code,
+                    "label": responses[code],
+                    "mean": _safe_float(mean),
+                    "se": _safe_float(se),
+                    "ci_low": lo_f,
+                    "ci_high": hi_f,
+                    "ci_lower": lo_f,
+                    "ci_upper": hi_f,
+                    "n": int(res["n"][j]),
+                    "weighted_pct": wpct,
+                }
+            else:
+                stats = {
+                    "code": code,
+                    "label": responses[code],
+                    "mean": None,
+                    "se": None,
+                    "ci_low": None,
+                    "ci_high": None,
+                    "ci_lower": None,
+                    "ci_upper": None,
+                    "n": 0,
+                    "weighted_pct": 0.0,
+                }
+            groups.append(stats)
+
+        dom_result: Dict[str, Any] = {"groups": groups, "inse_level": inse_level}
+
+        corr_dict: Optional[Dict[str, Any]] = None
+        if numeric_vals is not None:
+            trend_dom = domain & ~np.isnan(numeric_vals)
+            if trend_dom.sum() >= 3:
+                r, p_r = pearson_weighted(
+                    numeric_vals, prof, peso,
+                    clusters=design.clusters, strata=design.strata, domain=trend_dom,
+                )
+                corr_dict = {
+                    "pearson_r": _safe_float(r),
+                    "p_value": _safe_float(p_r),
+                    "n": int(trend_dom.sum()),
+                }
+        dom_result["correlation"] = corr_dict
+
+        if var_info["type"] == "binary":
+            resp_codes = sorted(responses.keys())
+            if len(resp_codes) == 2:
+                pos = var_info.get("positive_code", resp_codes[1])
+                neg = resp_codes[0] if resp_codes[1] == pos else resp_codes[1]
+                if pos in level_idx and neg in level_idx:
+                    t_res = ttest_from_group_means(res, level_idx[pos], level_idx[neg])
+                    m_pos = domain & (tech == pos)
+                    m_neg = domain & (tech == neg)
+                    d = cohens_d_weighted(prof[m_pos], peso[m_pos], prof[m_neg], peso[m_neg])
+                    dom_result["test"] = {
+                        "type": "t-test",
+                        "t_stat": _safe_float(t_res["t"]),
+                        "p_value": _safe_float(t_res["p"]),
+                        "gap": _safe_float(t_res["diff"]),
+                        "se": _safe_float(t_res["se"]),
+                        "df": _safe_float(t_res["df"]),
+                        "cohens_d": _safe_float(d),
+                        "comparison": f"{responses[pos]} − {responses[neg]}",
+                    }
+        else:
+            # Ordinal: ANOVA + linear trend
+            f_stat, p_val, df_b = wald_anova_from_group_means(res)
+            test_dict: Dict[str, Any] = {
+                "type": "anova",
+                "f_stat": _safe_float(f_stat),
+                "p_value": _safe_float(p_val),
+                "df_between": df_b,
+                "df": int(res["df"]),
+                "eta_squared": _safe_float(
+                    weighted_eta_squared(prof[domain], peso[domain], tech[domain])
+                ),
+            }
+            if corr_dict is not None:
+                test_dict["trend_r"] = corr_dict["pearson_r"]
+                test_dict["trend_p"] = corr_dict["p_value"]
+            dom_result["test"] = test_dict
+
+        return dom_result
+
+    overall = _analyze_domain(valid)
+    result: Dict[str, Any] = {
+        "variable": tech_variable,
+        "label": var_info["label"],
+        "serie": serie_key,
+        "disciplina": disc_key,
+        "groups": copy.deepcopy(overall["groups"]),
+        "test": copy.deepcopy(overall.get("test")),
+        "correlation": copy.deepcopy(overall.get("correlation")),
+        "overall": overall,
+        "inference": DESIGN_NOTE,
+    }
+
+    # INSE-stratified analysis (níveis = domínios)
+    if stratify_inse:
+        by_inse: List[Dict[str, Any]] = []
+        has_inse = valid & ~np.isnan(inse)
+        for lvl in sorted(set(int(x) for x in inse[has_inse])):
+            dom_lvl = has_inse & (inse == lvl)
+            if dom_lvl.sum() < 10:
+                continue
+            by_inse.append(_analyze_domain(dom_lvl, inse_level=lvl))
+        result["by_inse"] = by_inse
+
+    return result
 
 
 def get_student_tech_gap(
@@ -321,96 +560,85 @@ def get_student_tech_gap(
             f"Variable '{tech_variable}' not recognized. "
             f"Valid: {list(STUDENT_TECH_VARS.keys())}"
         )
-
-    var_info = STUDENT_TECH_VARS[tech_variable]
-    path = _aluno_parquet(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
-
-    con = duckdb.connect()
-    query = f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            {tech_variable} AS tech_resp,
-            CASE WHEN IN_INSE = 1 THEN NU_TIPO_NIVEL_INSE END AS nivel_inse,  -- IN_INSE = 0 vem codificado como nível 1
-            ID_ESCOLA AS escola,
-            ESTRATO AS estrato
-        FROM '{path}'
-        WHERE ID_UF = ?
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
-    con.close()
-
-    prof = to_float(df["prof"])
-    peso = to_float(df["peso"])
-    tech = to_str(df["tech_resp"])
-    inse = to_float(df["nivel_inse"])
-    responses = var_info["responses"]
-    valid = ~np.isnan(prof) & ~np.isnan(peso) & np.isin(tech, list(responses))
-
-    if not valid.any():
-        return {"variable": tech_variable, "label": var_info["label"], "groups": [], "test": None}
-
-    design = _student_design(df)
-    num_map = var_info.get("numeric_map", {})
-    numeric_vals = _map_codes(tech, num_map) if num_map else None
-
-    def _analyze_domain(domain: np.ndarray, inse_level: Optional[int] = None) -> Dict[str, Any]:
-        groups: List[Dict[str, Any]] = []
-        for code in sorted(responses.keys()):
-            stats = _group_stats_from_arrays(
-                prof, peso, domain & (tech == code), responses[code], design
-            )
-            stats["code"] = code
-            groups.append(stats)
-
-        result: Dict[str, Any] = {"groups": groups, "inse_level": inse_level}
-
-        if var_info["type"] == "binary":
-            test = _binary_test(prof, peso, tech, var_info, design, domain)
-            if test:
-                result["test"] = test
-        else:
-            # Ordinal: ANOVA + linear trend
-            result["test"] = _anova_test(prof, peso, tech, design, domain)
-            if numeric_vals is not None:
-                trend_dom = domain & ~np.isnan(numeric_vals)
-                if trend_dom.sum() >= 3:
-                    r, p_r = pearson_weighted(
-                        numeric_vals, prof, peso,
-                        clusters=design.clusters, strata=design.strata, domain=trend_dom,
-                    )
-                    result["test"]["trend_r"] = _safe_float(r)
-                    result["test"]["trend_p"] = _safe_float(p_r)
-
-        return result
-
-    result: Dict[str, Any] = {
-        "variable": tech_variable,
-        "label": var_info["label"],
-        "serie": serie,
-        "disciplina": disciplina,
-        "overall": _analyze_domain(valid),
-        "inference": DESIGN_NOTE,
-    }
-
-    # INSE-stratified analysis (níveis = domínios)
-    if stratify_inse:
-        by_inse: List[Dict[str, Any]] = []
-        has_inse = valid & ~np.isnan(inse)
-        for lvl in sorted(set(int(x) for x in inse[has_inse])):
-            dom_lvl = has_inse & (inse == lvl)
-            if dom_lvl.sum() < 10:
-                continue
-            by_inse.append(_analyze_domain(dom_lvl, inse_level=lvl))
-        result["by_inse"] = by_inse
-
-    return result
+    serie_key, disc_key, *_ = validate_student_params(serie, disciplina)
+    return copy.deepcopy(
+        _student_tech_gap_cached(serie_key, disc_key, tech_variable, int(uf), bool(stratify_inse))
+    )
 
 
 # ---------------------------------------------------------------------------
 # 2. Director-reported school tech vs proficiency
 # ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=64)
+def _director_tech_gap_cached(
+    tech_variable: str,
+    serie_key: str,
+    disc_key: str,
+    uf: int,
+) -> Dict[str, Any]:
+    var_info = DIRECTOR_TECH_VARS[tech_variable]
+    media_col = SCHOOL_MEDIA_COLS[(serie_key, disc_key)]
+
+    con = duckdb.connect()
+    try:
+        query = f"""
+            WITH dir AS (
+                SELECT ID_ESCOLA, MIN({tech_variable}) AS tech_resp
+                FROM '{_DIRETOR_PARQUET}'
+                WHERE ID_UF = ?
+                  AND {tech_variable} IS NOT NULL
+                  AND {tech_variable} NOT IN ('*', '.', '')
+                  AND IN_PREENCHIMENTO_QUESTIONARIO = 1
+                GROUP BY ID_ESCOLA
+            )
+            SELECT
+                d.tech_resp,
+                TRY_CAST(e.{media_col} AS DOUBLE) AS media_prof,
+                e.IN_PUBLICA AS rede
+            FROM dir d
+            INNER JOIN '{_ESCOLA_PARQUET}' e ON d.ID_ESCOLA = e.ID_ESCOLA
+            WHERE e.{media_col} IS NOT NULL
+        """
+        df = con.execute(query, [uf]).fetchnumpy()
+    finally:
+        con.close()
+
+    if len(df.get("tech_resp", [])) == 0:
+        return {"variable": tech_variable, "label": var_info["label"], "groups": [], "test": None}
+
+    tech = np.asarray(df["tech_resp"], dtype=str)
+    media = to_float(df["media_prof"])
+    # Use uniform weights for school-level analysis (each school = 1)
+    weights = np.ones_like(media)
+
+    responses = var_info["responses"]
+    groups: List[Dict[str, Any]] = []
+    for code in sorted(responses.keys()):
+        mask = tech == code
+        stats = _group_stats_from_arrays(media, weights, mask, responses[code])
+        stats["code"] = code
+        groups.append(stats)
+
+    result: Dict[str, Any] = {
+        "variable": tech_variable,
+        "label": var_info["label"],
+        "serie": serie_key,
+        "disciplina": disc_key,
+        "groups": groups,
+        "inference": "Escola como unidade de análise (médias escolares do INEP, sem pesos); "
+                     "testes sob amostragem aleatória simples de escolas.",
+    }
+
+    if var_info["type"] == "binary":
+        test = _binary_test(media, weights, tech, var_info)
+        if test:
+            result["test"] = test
+    else:
+        result["test"] = _anova_test(media, weights, tech)
+
+    return result
 
 
 def get_director_tech_gap(
@@ -432,73 +660,136 @@ def get_director_tech_gap(
             f"Valid: {list(DIRECTOR_TECH_VARS.keys())}"
         )
 
-    var_info = DIRECTOR_TECH_VARS[tech_variable]
-
-    media_col = SCHOOL_MEDIA_COLS.get((serie.upper(), disciplina.upper()))
-    if media_col is None:
+    serie_key = serie.strip().upper()
+    disc_key = disciplina.strip().upper()
+    if (serie_key, disc_key) not in SCHOOL_MEDIA_COLS:
         raise ValueError(f"No MEDIA column for serie={serie}, disciplina={disciplina}")
 
-    con = duckdb.connect()
-    query = f"""
-        WITH dir AS (
-            SELECT ID_ESCOLA, MIN({tech_variable}) AS tech_resp
-            FROM '{_DIRETOR_PARQUET}'
-            WHERE ID_UF = ?
-              AND {tech_variable} IS NOT NULL
-              AND {tech_variable} NOT IN ('*', '.', '')
-              AND IN_PREENCHIMENTO_QUESTIONARIO = 1
-            GROUP BY ID_ESCOLA
-        )
-        SELECT
-            d.tech_resp,
-            TRY_CAST(e.{media_col} AS DOUBLE) AS media_prof,
-            e.IN_PUBLICA AS rede
-        FROM dir d
-        INNER JOIN '{_ESCOLA_PARQUET}' e ON d.ID_ESCOLA = e.ID_ESCOLA
-        WHERE e.{media_col} IS NOT NULL
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
-    con.close()
-
-    if len(df.get("tech_resp", [])) == 0:
-        return {"variable": tech_variable, "label": var_info["label"], "groups": [], "test": None}
-
-    tech = np.asarray(df["tech_resp"], dtype=str)
-    media = to_float(df["media_prof"])
-    # Use uniform weights for school-level analysis (each school = 1)
-    weights = np.ones_like(media)
-
-    responses = var_info["responses"]
-    groups: List[Dict[str, Any]] = []
-    for code in sorted(responses.keys()):
-        mask = tech == code
-        stats = _group_stats_from_arrays(media, weights, mask, responses[code])
-        stats["code"] = code
-        groups.append(stats)
-
-    result: Dict[str, Any] = {
-        "variable": tech_variable,
-        "label": var_info["label"],
-        "serie": serie,
-        "disciplina": disciplina,
-        "groups": groups,
-        "inference": "Escola como unidade de análise (médias escolares do INEP, sem pesos); "
-                     "testes sob amostragem aleatória simples de escolas.",
-    }
-
-    if var_info["type"] == "binary":
-        test = _binary_test(media, weights, tech, var_info)
-        if test:
-            result["test"] = test
-    else:
-        result["test"] = _anova_test(media, weights, tech)
-
-    return result
+    return copy.deepcopy(_director_tech_gap_cached(tech_variable, serie_key, disc_key, int(uf)))
 
 
 # ---------------------------------------------------------------------------
 # 3. Teacher tech training vs student proficiency
 # ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=64)
+def _teacher_tech_impact_cached(
+    serie_key: str,
+    disc_key: str,
+    tech_variable: str,
+    uf: int,
+) -> Dict[str, Any]:
+    var_info = PROFESSOR_TECH_VARS[tech_variable]
+    _, _, aluno_path, prof_col, weight_col = validate_student_params(serie_key, disc_key)
+    serie_clause, serie_params = _serie_filter_sql(serie_key)
+
+    con = duckdb.connect()
+    try:
+        query = f"""
+            WITH teacher_tech AS (
+                SELECT ID_TURMA, ID_PROFESSOR, MIN({tech_variable}) AS tech_resp
+                FROM '{_PROFESSOR_PARQUET}'
+                WHERE ID_UF = ?
+                  AND {tech_variable} IS NOT NULL
+                  AND {tech_variable} NOT IN ('*', '.', '')
+                  AND IN_PREENCHIMENTO_QUESTIONARIO = 1
+                GROUP BY ID_TURMA, ID_PROFESSOR
+            ),
+            teachers_per_class AS (
+                SELECT ID_TURMA, COUNT(*) AS n_prof
+                FROM teacher_tech
+                GROUP BY ID_TURMA
+            ),
+            student_prof AS (
+                SELECT ID_TURMA, ID_ALUNO, ID_ESCOLA, ESTRATO,
+                       {prof_col} AS prof, {weight_col} AS peso
+                FROM '{aluno_path}'
+                WHERE ID_UF = ?{serie_clause}
+            )
+            SELECT tt.tech_resp, sp.prof, sp.peso / COALESCE(k.n_prof, 1) AS peso,
+                   sp.ID_ALUNO AS aluno, sp.ID_ESCOLA AS escola, sp.ESTRATO AS estrato
+            FROM student_prof sp
+            LEFT JOIN teacher_tech tt ON sp.ID_TURMA = tt.ID_TURMA
+            LEFT JOIN teachers_per_class k ON sp.ID_TURMA = k.ID_TURMA
+        """
+        df = con.execute(query, [uf, uf, *serie_params]).fetchnumpy()
+    finally:
+        con.close()
+
+    tech = to_str(df["tech_resp"])
+    prof = to_float(df["prof"])
+    peso = to_float(df["peso"])
+    aluno = np.asarray(df["aluno"])
+    responses = var_info["responses"]
+    valid = ~np.isnan(prof) & ~np.isnan(peso) & np.isin(tech, list(responses))
+
+    if not valid.any():
+        return {"variable": tech_variable, "label": var_info["label"], "groups": [], "test": None}
+
+    # Conglomerado = escola: os pares de um mesmo aluno (vários professores)
+    # ficam no mesmo conglomerado, o que corrige a dependência entre eles.
+    design = _student_design(df)
+    res = linearized_group_means(
+        prof, peso, tech, design.clusters, design.strata, domain=valid
+    )
+    level_idx = {str(lev): i for i, lev in enumerate(res["levels"])}
+
+    groups: List[Dict[str, Any]] = []
+    for code in sorted(responses.keys()):
+        mask = valid & (tech == code)
+        if code in level_idx:
+            j = level_idx[code]
+            mean, ci_lo, ci_hi = ci_from_group_means(res, j)
+            se = _se_from_group_means(res, j)
+            lo_f, hi_f = _safe_float(ci_lo), _safe_float(ci_hi)
+            stats: Dict[str, Any] = {
+                "label": responses[code],
+                "mean": _safe_float(mean),
+                "se": _safe_float(se),
+                "ci_low": lo_f,
+                "ci_high": hi_f,
+                "ci_lower": lo_f,
+                "ci_upper": hi_f,
+                "n": int(len(np.unique(aluno[mask]))) if mask.any() else 0,
+                "code": code,
+            }
+        else:
+            stats = {
+                "label": responses[code],
+                "mean": None,
+                "se": None,
+                "ci_low": None,
+                "ci_high": None,
+                "ci_lower": None,
+                "ci_upper": None,
+                "n": 0,
+                "code": code,
+            }
+        groups.append(stats)
+
+    f_stat, p_val, df_b = wald_anova_from_group_means(res)
+    test_result: Dict[str, Any] = {
+        "type": "anova",
+        "f_stat": _safe_float(f_stat),
+        "p_value": _safe_float(p_val),
+        "df_between": df_b,
+        "df": int(res["df"]),
+        "eta_squared": _safe_float(
+            weighted_eta_squared(prof[valid], peso[valid], tech[valid])
+        ),
+    }
+
+    return {
+        "variable": tech_variable,
+        "label": var_info["label"],
+        "serie": serie_key,
+        "disciplina": disc_key,
+        "groups": groups,
+        "test": test_result,
+        "unit": "par aluno-professor",
+        "inference": DESIGN_NOTE,
+    }
 
 
 def get_teacher_tech_impact(
@@ -523,74 +814,8 @@ def get_teacher_tech_impact(
             f"Variable '{tech_variable}' not recognized. "
             f"Valid: {list(PROFESSOR_TECH_VARS.keys())}"
         )
-
-    var_info = PROFESSOR_TECH_VARS[tech_variable]
-    prof_col, weight_col = _resolve_cols(disciplina)
-    aluno_path = _aluno_parquet(serie)
-
-    con = duckdb.connect()
-    query = f"""
-        WITH teacher_tech AS (
-            SELECT ID_TURMA, {tech_variable} AS tech_resp
-            FROM '{_PROFESSOR_PARQUET}'
-            WHERE ID_UF = ?
-              AND {tech_variable} IS NOT NULL
-              AND {tech_variable} NOT IN ('*', '.', '')
-              AND IN_PREENCHIMENTO_QUESTIONARIO = 1
-        ),
-        teachers_per_class AS (
-            SELECT ID_TURMA, COUNT(*) AS n_prof
-            FROM teacher_tech
-            GROUP BY ID_TURMA
-        ),
-        student_prof AS (
-            SELECT ID_TURMA, ID_ALUNO, ID_ESCOLA, ESTRATO,
-                   {prof_col} AS prof, {weight_col} AS peso
-            FROM '{aluno_path}'
-            WHERE ID_UF = ?
-        )
-        SELECT tt.tech_resp, sp.prof, sp.peso / COALESCE(k.n_prof, 1) AS peso,
-               sp.ID_ALUNO AS aluno, sp.ID_ESCOLA AS escola, sp.ESTRATO AS estrato
-        FROM student_prof sp
-        LEFT JOIN teacher_tech tt ON sp.ID_TURMA = tt.ID_TURMA
-        LEFT JOIN teachers_per_class k ON sp.ID_TURMA = k.ID_TURMA
-    """
-    df = con.execute(query, [uf, uf]).fetchnumpy()
-    con.close()
-
-    tech = to_str(df["tech_resp"])
-    prof = to_float(df["prof"])
-    peso = to_float(df["peso"])
-    aluno = np.asarray(df["aluno"])
-    responses = var_info["responses"]
-    valid = ~np.isnan(prof) & ~np.isnan(peso) & np.isin(tech, list(responses))
-
-    if not valid.any():
-        return {"variable": tech_variable, "label": var_info["label"], "groups": [], "test": None}
-
-    # Conglomerado = escola: os pares de um mesmo aluno (vários professores)
-    # ficam no mesmo conglomerado, o que corrige a dependência entre eles.
-    design = _student_design(df)
-
-    groups: List[Dict[str, Any]] = []
-    for code in sorted(responses.keys()):
-        mask = valid & (tech == code)
-        stats = _group_stats_from_arrays(prof, peso, mask, responses[code], design)
-        stats["code"] = code
-        stats["n"] = int(len(np.unique(aluno[mask]))) if mask.any() else 0
-        groups.append(stats)
-
-    result: Dict[str, Any] = {
-        "variable": tech_variable,
-        "label": var_info["label"],
-        "serie": serie,
-        "disciplina": disciplina,
-        "groups": groups,
-        "test": _anova_test(prof, peso, tech, design, valid),
-        "unit": "par aluno-professor",
-        "inference": DESIGN_NOTE,
-    }
-    return result
+    serie_key, disc_key, *_ = validate_student_params(serie, disciplina)
+    return copy.deepcopy(_teacher_tech_impact_cached(serie_key, disc_key, tech_variable, int(uf)))
 
 
 # ---------------------------------------------------------------------------
@@ -606,46 +831,97 @@ _INDEX_MAPS: Dict[str, Dict[str, float]] = {
 _INDEX_BANDS = {"Baixo": (0, 2), "Médio": (3, 5), "Alto": (6, 8)}
 
 
-def get_digital_access_index(
-    serie: str = "9EF",
-    disciplina: str = "LP",
-    uf: int = ID_UF_RJ,
-    stratify_inse: bool = False,
+@lru_cache(maxsize=32)
+def _digital_access_index_cached(
+    serie_key: str,
+    disc_key: str,
+    uf: int,
+    stratify_inse: bool,
 ) -> Dict[str, Any]:
-    """Compute composite digital access index and its correlation with proficiency.
-
-    Index = Q12b(0-3) + Q12g(0-3) + Q13a(0-1) + Q13b(0-1) = 0 to 8 (only for
-    students who answered all four items). Bands: Baixo(0-2), Médio(3-5),
-    Alto(6-8).
-    """
-    path = _aluno_parquet(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
+    _, _, path, prof_col, weight_col = validate_student_params(serie_key, disc_key)
+    serie_clause, serie_params = _serie_filter_sql(serie_key)
 
     con = duckdb.connect()
-    query = f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            TX_RESP_Q12b, TX_RESP_Q12g, TX_RESP_Q13a, TX_RESP_Q13b,
-            CASE WHEN IN_INSE = 1 THEN NU_TIPO_NIVEL_INSE END AS nivel_inse,  -- IN_INSE = 0 vem codificado como nível 1
-            ID_ESCOLA AS escola,
-            ESTRATO AS estrato
-        FROM '{path}'
-        WHERE ID_UF = ?
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
-    con.close()
+    try:
+        query = f"""
+            SELECT
+                {prof_col} AS prof,
+                {weight_col} AS peso,
+                TX_RESP_Q12b, TX_RESP_Q12g, TX_RESP_Q13a, TX_RESP_Q13b,
+                CASE WHEN IN_INSE = 1 THEN NU_TIPO_NIVEL_INSE END AS nivel_inse,  -- IN_INSE = 0 vem codificado como nível 1
+                ID_ESCOLA AS escola,
+                ESTRATO AS estrato
+            FROM '{path}'
+            WHERE ID_UF = ?{serie_clause}
+        """
+        df = con.execute(query, [uf, *serie_params]).fetchnumpy()
+    finally:
+        con.close()
 
     prof = to_float(df["prof"])
     peso = to_float(df["peso"])
     inse = to_float(df["nivel_inse"])
-    index = sum(_map_codes(to_str(df[col]), mapping) for col, mapping in _INDEX_MAPS.items())
+    index = np.zeros(len(prof), dtype=np.float64)
+    for col, mapping in _INDEX_MAPS.items():
+        index = index + _map_codes(to_str(df[col]), mapping)
     valid = ~np.isnan(prof) & ~np.isnan(peso) & ~np.isnan(index)
 
     if not valid.any():
-        return {"serie": serie, "disciplina": disciplina, "faixas": [], "correlation": None}
+        return {
+            "serie": serie_key,
+            "disciplina": disc_key,
+            "faixas": [],
+            "by_level": [],
+            "correlation": None,
+            "anova": None,
+            "test": None,
+        }
 
     design = _student_design(df)
+    band_codes = np.where(index <= 2, 0, np.where(index <= 5, 1, 2))
+    band_items = list(_INDEX_BANDS.items())
+    band_ascii_codes = {"Baixo": "Baixo", "Médio": "Medio", "Alto": "Alto"}
+
+    def _band_stats(domain: np.ndarray, include_range: bool) -> List[Dict[str, Any]]:
+        res = linearized_group_means(
+            prof, peso, band_codes, design.clusters, design.strata, domain=domain
+        )
+        level_idx = {int(lev): i for i, lev in enumerate(res["levels"])}
+        out: List[Dict[str, Any]] = []
+        for b_code, (band_name, (lo, hi)) in enumerate(band_items):
+            code_str = band_ascii_codes[band_name]
+            if b_code in level_idx:
+                j = level_idx[b_code]
+                mean, ci_lo, ci_hi = ci_from_group_means(res, j)
+                se = _se_from_group_means(res, j)
+                lo_f, hi_f = _safe_float(ci_lo), _safe_float(ci_hi)
+                entry: Dict[str, Any] = {
+                    "code": code_str,
+                    "label": band_name,
+                    "mean": _safe_float(mean),
+                    "se": _safe_float(se),
+                    "ci_low": lo_f,
+                    "ci_high": hi_f,
+                    "ci_lower": lo_f,
+                    "ci_upper": hi_f,
+                    "n": int(res["n"][j]),
+                }
+            else:
+                entry = {
+                    "code": code_str,
+                    "label": band_name,
+                    "mean": None,
+                    "se": None,
+                    "ci_low": None,
+                    "ci_high": None,
+                    "ci_lower": None,
+                    "ci_upper": None,
+                    "n": 0,
+                }
+            if include_range:
+                entry["range"] = f"{lo}-{hi}"
+            out.append(entry)
+        return out
 
     # Correlation
     r, p_r = pearson_weighted(
@@ -654,27 +930,52 @@ def get_digital_access_index(
     correlation = {"pearson_r": _safe_float(r), "p_value": _safe_float(p_r), "n": int(valid.sum())}
 
     # Means by band
-    faixas: List[Dict[str, Any]] = []
-    for band_name, (lo, hi) in _INDEX_BANDS.items():
-        mask = valid & (index >= lo) & (index <= hi)
-        stats = _group_stats_from_arrays(prof, peso, mask, band_name, design)
-        stats["range"] = f"{lo}-{hi}"
-        faixas.append(stats)
+    faixas = _band_stats(valid, include_range=True)
 
-    # Means by individual index level
+    # Means, design-based SE/CI and Wald ANOVA across individual index levels 0..8
+    index_int = np.where(valid, index, -1).astype(int)
+    res_lvl = linearized_group_means(
+        prof, peso, index_int, design.clusters, design.strata, domain=valid
+    )
+    lvl_idx = {int(lev): i for i, lev in enumerate(res_lvl["levels"])}
     by_level: List[Dict[str, Any]] = []
     for lvl in range(9):
-        mask = valid & (index == lvl)
-        if mask.any():
-            m = weighted_mean(prof[mask], peso[mask])
-            by_level.append({"index": lvl, "mean": _safe_float(m), "n": int(mask.sum())})
+        if lvl in lvl_idx:
+            j = lvl_idx[lvl]
+            mean, ci_lo, ci_hi = ci_from_group_means(res_lvl, j)
+            se = _se_from_group_means(res_lvl, j)
+            lo_f, hi_f = _safe_float(ci_lo), _safe_float(ci_hi)
+            by_level.append({
+                "index": lvl,
+                "mean": _safe_float(mean),
+                "se": _safe_float(se),
+                "ci_low": lo_f,
+                "ci_high": hi_f,
+                "ci_lower": lo_f,
+                "ci_upper": hi_f,
+                "n": int(res_lvl["n"][j]),
+            })
+
+    f_stat, p_val, df_b = wald_anova_from_group_means(res_lvl)
+    anova_result: Dict[str, Any] = {
+        "type": "anova",
+        "f_stat": _safe_float(f_stat),
+        "p_value": _safe_float(p_val),
+        "df_between": df_b,
+        "df": int(res_lvl["df"]),
+        "eta_squared": _safe_float(
+            weighted_eta_squared(prof[valid], peso[valid], index_int[valid])
+        ),
+    }
 
     result: Dict[str, Any] = {
-        "serie": serie,
-        "disciplina": disciplina,
+        "serie": serie_key,
+        "disciplina": disc_key,
         "faixas": faixas,
         "by_level": by_level,
         "correlation": correlation,
+        "anova": anova_result,
+        "test": copy.deepcopy(anova_result),
         "inference": DESIGN_NOTE,
     }
 
@@ -689,19 +990,33 @@ def get_digital_access_index(
                 index, prof, peso,
                 clusters=design.clusters, strata=design.strata, domain=mask_inse,
             )
-            inse_faixas = []
-            for band_name, (lo, hi) in _INDEX_BANDS.items():
-                band_mask = mask_inse & (index >= lo) & (index <= hi)
-                inse_faixas.append(_group_stats_from_arrays(prof, peso, band_mask, band_name, design))
             by_inse.append({
                 "inse_level": inse_lvl,
                 "correlation": {"pearson_r": _safe_float(r_i), "p_value": _safe_float(p_i)},
-                "faixas": inse_faixas,
+                "faixas": _band_stats(mask_inse, include_range=False),
                 "n": int(mask_inse.sum()),
             })
         result["by_inse"] = by_inse
 
     return result
+
+
+def get_digital_access_index(
+    serie: str = "9EF",
+    disciplina: str = "LP",
+    uf: int = ID_UF_RJ,
+    stratify_inse: bool = False,
+) -> Dict[str, Any]:
+    """Compute composite digital access index and its correlation with proficiency.
+
+    Index = Q12b(0-3) + Q12g(0-3) + Q13a(0-1) + Q13b(0-1) = 0 to 8 (only for
+    students who answered all four items). Bands: Baixo(0-2), Médio(3-5),
+    Alto(6-8).
+    """
+    serie_key, disc_key, *_ = validate_student_params(serie, disciplina)
+    return copy.deepcopy(
+        _digital_access_index_cached(serie_key, disc_key, int(uf), bool(stratify_inse))
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -754,46 +1069,33 @@ def _summary_entry(
     return entry
 
 
-def get_cross_summary(
-    serie: str = "9EF",
-    disciplina: str = "LP",
-    uf: int = ID_UF_RJ,
+@lru_cache(maxsize=16)
+def _cross_summary_cached(
+    serie_key: str,
+    disc_key: str,
+    uf: int,
 ) -> Dict[str, Any]:
-    """Return summary of all cross-analyses for one serie/disciplina.
-
-    For each technology variable, returns the gap, effect size, significance.
-    Ranked by effect magnitude on a common scale (|d|, or the d-equivalent
-    of the ANOVA eta²) — never by raw F, which grows with sample size.
-    """
     analyses: List[Dict[str, Any]] = []
 
     # Student-level variables
     for var_name, var_info in STUDENT_TECH_VARS.items():
-        try:
-            result = get_student_tech_gap(serie, disciplina, var_name, uf)
-        except Exception:
-            continue
+        result = _student_tech_gap_cached(serie_key, disc_key, var_name, uf, False)
         overall = result.get("overall", {})
         analyses.append(_summary_entry(
             "aluno", var_name, var_info, overall.get("test"), overall.get("groups", [])
         ))
 
-    # Director-level variables
-    for var_name, var_info in DIRECTOR_TECH_VARS.items():
-        try:
-            result = get_director_tech_gap(var_name, serie, disciplina, uf)
-        except Exception:
-            continue
-        analyses.append(_summary_entry(
-            "diretor", var_name, var_info, result.get("test"), result.get("groups", [])
-        ))
+    # Director-level variables (only where TS_ESCOLA has MEDIA_* columns)
+    if (serie_key, disc_key) in SCHOOL_MEDIA_COLS:
+        for var_name, var_info in DIRECTOR_TECH_VARS.items():
+            result = _director_tech_gap_cached(var_name, serie_key, disc_key, uf)
+            analyses.append(_summary_entry(
+                "diretor", var_name, var_info, result.get("test"), result.get("groups", [])
+            ))
 
     # Professor-level variables
     for var_name, var_info in PROFESSOR_TECH_VARS.items():
-        try:
-            result = get_teacher_tech_impact(serie, disciplina, var_name, uf)
-        except Exception:
-            continue
+        result = _teacher_tech_impact_cached(serie_key, disc_key, var_name, uf)
         analyses.append(_summary_entry(
             "professor", var_name, var_info, result.get("test"), result.get("groups", [])
         ))
@@ -805,8 +1107,8 @@ def get_cross_summary(
     bonferroni_alpha = 0.05 / n_tests if n_tests > 0 else 0.05
 
     return {
-        "serie": serie,
-        "disciplina": disciplina,
+        "serie": serie_key,
+        "disciplina": disc_key,
         "analyses": analyses,
         "n_tests": n_tests,
         "bonferroni_alpha": round(bonferroni_alpha, 6),
@@ -817,3 +1119,18 @@ def get_cross_summary(
             "conglomerados por escola); de escola, com cada escola como observação."
         ),
     }
+
+
+def get_cross_summary(
+    serie: str = "9EF",
+    disciplina: str = "LP",
+    uf: int = ID_UF_RJ,
+) -> Dict[str, Any]:
+    """Return summary of all cross-analyses for one serie/disciplina.
+
+    For each technology variable, returns the gap, effect size, significance.
+    Ranked by effect magnitude on a common scale (|d|, or the d-equivalent
+    of the ANOVA eta²) — never by raw F, which grows with sample size.
+    """
+    serie_key, disc_key, *_ = validate_student_params(serie, disciplina)
+    return copy.deepcopy(_cross_summary_cached(serie_key, disc_key, int(uf)))

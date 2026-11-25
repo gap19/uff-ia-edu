@@ -6,8 +6,8 @@ staticDataURL() em frontend/static/js/app.js:
 
     /api/<path>[__<k>-<v>__<k>-<v>...].json   (pares k-v ordenados)
 
-Também renderiza o HTML do dashboard (com window.STATIC_DATA=true injetado),
-copia os assets estáticos e pré-gera o relatório PDF completo.
+Também renderiza o HTML do dashboard (com <meta name="static-data" content="true">
+injetado no <head>), copia os assets estáticos e pré-gera o relatório PDF completo.
 
 Uso:
     python scripts/export_static.py [--skip-pdf] [--out DIR]
@@ -94,6 +94,19 @@ def enumerate_calls() -> list[tuple[str, dict]]:
     return calls
 
 
+def _inject_static_flag(html: str) -> str:
+    """Injeta <meta name="static-data" content="true"> dentro de <head>."""
+    meta = '<meta name="static-data" content="true">'
+    close_head = html.find("</head>")
+    if close_head >= 0:
+        return f"{html[:close_head]}    {meta}\n{html[close_head:]}"
+    open_head = html.find("<head>")
+    if open_head >= 0:
+        insert_at = open_head + len("<head>")
+        return f"{html[:insert_at]}\n    {meta}{html[insert_at:]}"
+    return f"{meta}\n{html}"
+
+
 def export(out_dir: Path, skip_pdf: bool) -> int:
     # Erros do servidor viram respostas 500 (registradas em `failures`)
     # em vez de abortar a exportação inteira.
@@ -140,11 +153,7 @@ def export(out_dir: Path, skip_pdf: bool) -> int:
     print("Renderizando dashboard...")
     resp = client.get("/dashboard")
     resp.raise_for_status()
-    html = resp.text
-    marker = "<script"
-    inject = "<script>window.STATIC_DATA = true;</script>\n    "
-    idx = html.find(marker)
-    html = html[:idx] + inject + html[idx:] if idx >= 0 else inject + html
+    html = _inject_static_flag(resp.text)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html, encoding="utf-8")
 

@@ -26,11 +26,22 @@ understate the variance. Without ``clusters`` the functions keep their
 simple-random-sampling formulas.
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy import stats
+
+
+class GroupMeansResult(TypedDict):
+    """Typed return structure of :func:`linearized_group_means`."""
+
+    levels: np.ndarray
+    means: np.ndarray
+    cov: np.ndarray
+    df: int
+    n: np.ndarray
+    n_clusters: np.ndarray
 
 
 def to_float(column: ArrayLike) -> np.ndarray:
@@ -44,8 +55,7 @@ def to_float(column: ArrayLike) -> np.ndarray:
 
 def to_str(column: ArrayLike) -> np.ndarray:
     """Converte uma coluna de texto (ex.: de ``fetchnumpy``) em ``str``; NULL vira ''."""
-    arr = np.ma.asarray(column, dtype=object)
-    return np.asarray(arr.filled(""), dtype=str)
+    return np.asarray(np.ma.filled(np.ma.asarray(column, dtype=object), ""), dtype=str)
 
 
 def _clean(
@@ -57,6 +67,14 @@ def _clean(
     for a in arrs:
         mask &= ~np.isnan(a)
     return tuple(a[mask] for a in arrs)
+
+
+def _valid_weights(weights: np.ndarray) -> bool:
+    """Return True when *weights* is non-empty, non-negative and has finite sum > 0."""
+    if len(weights) == 0 or np.any(weights < 0):
+        return False
+    total = float(weights.sum())
+    return bool(np.isfinite(total) and total > 0.0)
 
 
 # ---------- Design-based (Taylor linearization) variance ----------
@@ -71,51 +89,57 @@ def _design_masks(*arrays: ArrayLike) -> np.ndarray:
     return mask
 
 
-def linearized_covariance(
-    influence: np.ndarray,
-    clusters: Optional[ArrayLike] = None,
-    strata: Optional[ArrayLike] = None,
-) -> Tuple[np.ndarray, int]:
-    """Covariance of estimators from their influence values.
+def _nested_psu_inverse(
+    clusters: np.ndarray,
+    strata: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, int]:
+    """Nest PSUs inside strata as ``(stratum, cluster)`` pairs (R ``nest=TRUE``).
 
-    Parameters
-    ----------
-    influence : (n, K) array
-        Linearized (influence) values of K estimators for n observations.
-    clusters, strata : optional arrays of length n
-        PSU and stratum identifiers. Clusters must be nested in strata.
-
-    Returns
-    -------
-    (cov, df) : (K, K) covariance matrix and design degrees of freedom.
+    Returns ``(psu_inv, psu_strata, n_psus)`` using a single ``np.unique`` pass
+    over length-n pairs (for non-object arrays), eliminating row-order
+    dependence when a school spans multiple strata (e.g. 3ª/4ª EM in SAEB).
     """
-    Z = np.atleast_2d(np.asarray(influence, dtype=np.float64))
-    if Z.shape[0] == 1 and np.asarray(influence).ndim == 1:
-        Z = Z.T
-    n, k = Z.shape
-    if n < 2:
-        return np.full((k, k), np.nan), 0
+    n = len(clusters)
+    if strata.dtype == object or clusters.dtype == object:
+        _, st_codes = np.unique(strata, return_inverse=True)
+        _, cl_codes = np.unique(clusters, return_inverse=True)
+        pairs = np.empty(n, dtype=[("s", np.intp), ("c", np.intp)])
+        pairs["s"] = st_codes
+        pairs["c"] = cl_codes
+    else:
+        pairs = np.empty(n, dtype=[("s", strata.dtype), ("c", clusters.dtype)])
+        pairs["s"] = strata
+        pairs["c"] = clusters
+    uniq_pairs, psu_inv = np.unique(pairs, return_inverse=True)
+    return psu_inv, uniq_pairs["s"], len(uniq_pairs)
 
-    cl = np.arange(n) if clusters is None else np.asarray(clusters)
-    cl_codes, cl_inv = np.unique(cl, return_inverse=True)
-    n_cl = len(cl_codes)
-    if n_cl < 2:
+
+def _covariance_from_psus(
+    Z: np.ndarray,
+    psu_inv: Optional[np.ndarray],
+    n_cl: int,
+    psu_strata: Optional[np.ndarray],
+) -> Tuple[np.ndarray, int]:
+    """Compute ultimate-cluster covariance from influence matrix *Z* and PSU codes."""
+    n, k = Z.shape
+    if n < 2 or n_cl < 2:
         # Com um único conglomerado a variância não é estimável
         return np.full((k, k), np.nan), 0
-    totals = np.zeros((n_cl, k))
-    np.add.at(totals, cl_inv, Z)
+
+    if psu_inv is None:
+        totals = Z
+    else:
+        totals = np.zeros((n_cl, k))
+        np.add.at(totals, psu_inv, Z)
     grand = totals.mean(axis=0)
 
-    if strata is None:
+    if psu_strata is None:
         centred = totals - grand
         cov = n_cl / (n_cl - 1) * centred.T @ centred
         return cov, n_cl - 1
 
-    # Stratum of each cluster (clusters are nested in strata)
-    first_obs = np.unique(cl_inv, return_index=True)[1]
-    cl_stratum = np.asarray(strata)[first_obs]
-    _, st_inv = np.unique(cl_stratum, return_inverse=True)
-    n_st = st_inv.max() + 1
+    _, st_inv = np.unique(psu_strata, return_inverse=True)
+    n_st = int(st_inv.max()) + 1
     n_h = np.bincount(st_inv, minlength=n_st).astype(np.float64)
     sums = np.zeros((n_st, k))
     np.add.at(sums, st_inv, totals)
@@ -129,6 +153,47 @@ def linearized_covariance(
     return cov, max(n_cl - n_st, 1)
 
 
+def linearized_covariance(
+    influence: np.ndarray,
+    clusters: Optional[ArrayLike] = None,
+    strata: Optional[ArrayLike] = None,
+) -> Tuple[np.ndarray, int]:
+    """Covariance of estimators from their influence values.
+
+    Parameters
+    ----------
+    influence : (n, K) array
+        Linearized (influence) values of K estimators for n observations.
+    clusters, strata : optional arrays of length n
+        PSU and stratum identifiers. When both are provided, PSUs are nested
+        inside strata as ``(stratum, cluster)`` pairs (equivalent to R
+        ``survey(..., nest=TRUE)`` and Stata ``svy``).
+
+    Returns
+    -------
+    (cov, df) : (K, K) covariance matrix and design degrees of freedom.
+    """
+    Z = np.atleast_2d(np.asarray(influence, dtype=np.float64))
+    if Z.shape[0] == 1 and np.asarray(influence).ndim == 1:
+        Z = Z.T
+    n, k = Z.shape
+    if n < 2:
+        return np.full((k, k), np.nan), 0
+
+    if clusters is None:
+        st_arr = None if strata is None else np.asarray(strata)
+        return _covariance_from_psus(Z, None, n, st_arr)
+
+    cl = np.asarray(clusters)
+    if strata is None:
+        cl_codes, cl_inv = np.unique(cl, return_inverse=True)
+        return _covariance_from_psus(Z, cl_inv, len(cl_codes), None)
+
+    st = np.asarray(strata)
+    psu_inv, psu_strata, n_cl = _nested_psu_inverse(cl, st)
+    return _covariance_from_psus(Z, psu_inv, n_cl, psu_strata)
+
+
 def linearized_group_means(
     values: ArrayLike,
     weights: ArrayLike,
@@ -136,7 +201,7 @@ def linearized_group_means(
     clusters: Optional[ArrayLike] = None,
     strata: Optional[ArrayLike] = None,
     domain: Optional[ArrayLike] = None,
-) -> Dict[str, object]:
+) -> GroupMeansResult:
     """Weighted means of each group with their design-based covariance.
 
     ``domain`` (boolean) marks the observations that belong to the analysis;
@@ -145,8 +210,8 @@ def linearized_group_means(
     Without ``clusters`` they are simply dropped (SRS).
 
     Returns a dict with ``levels``, ``means`` (K,), ``cov`` (K, K), ``df``,
-    ``n`` (observations per group) and ``n_clusters`` (distinct clusters per
-    group — a group in a single cluster has no estimable variance). Groups
+    ``n`` (observations per group) and ``n_clusters`` (distinct nested PSUs per
+    group — a group in a single PSU has no estimable variance). Groups
     are estimated jointly, so the covariance between groups sharing
     clusters (e.g. students with and without Wi-Fi in the same school) is
     taken into account.
@@ -158,15 +223,23 @@ def linearized_group_means(
     if domain is not None:
         in_dom &= np.asarray(domain, dtype=bool)
 
+    psu_inv: Optional[np.ndarray] = None
+    psu_strata: Optional[np.ndarray] = None
+    n_cl = 0
+
     if clusters is None:
         # SRS: each observation is its own cluster; out-of-domain rows dropped
         v, w, g = v[in_dom], w[in_dom], g[in_dom]
-        st = None if strata is None else np.asarray(strata)[in_dom]
-        cl = None
+        psu_strata = None if strata is None else np.asarray(strata)[in_dom]
+        n_cl = len(v)
         in_dom = np.ones(len(v), dtype=bool)
     else:
         cl = np.asarray(clusters)
-        st = None if strata is None else np.asarray(strata)
+        if strata is None:
+            cl_codes, psu_inv = np.unique(cl, return_inverse=True)
+            n_cl = len(cl_codes)
+        else:
+            psu_inv, psu_strata, n_cl = _nested_psu_inverse(cl, np.asarray(strata))
 
     levels = np.unique(g[in_dom])
     k = len(levels)
@@ -176,15 +249,97 @@ def linearized_group_means(
     Z = np.zeros((len(v), k))
     for j, lev in enumerate(levels):
         idx = in_dom & (g == lev)
-        w_sum = w[idx].sum()
         n_obs[j] = int(idx.sum())
-        n_clu[j] = int(idx.sum()) if cl is None else len(np.unique(cl[idx]))
-        if w_sum <= 0:
+        if psu_inv is None:
+            n_clu[j] = n_obs[j]
+        elif n_obs[j] > 0:
+            n_clu[j] = int(np.count_nonzero(np.bincount(psu_inv[idx], minlength=n_cl)))
+        wj = w[idx]
+        if not _valid_weights(wj):
             continue
-        means[j] = np.sum(w[idx] * v[idx]) / w_sum
-        Z[idx, j] = w[idx] * (v[idx] - means[j]) / w_sum
-    cov, df = linearized_covariance(Z, cl, st)
-    return {"levels": levels, "means": means, "cov": cov, "df": df, "n": n_obs, "n_clusters": n_clu}
+        w_sum = wj.sum()
+        means[j] = np.sum(wj * v[idx]) / w_sum
+        Z[idx, j] = wj * (v[idx] - means[j]) / w_sum
+    cov, df = _covariance_from_psus(Z, psu_inv, n_cl, psu_strata)
+    return {
+        "levels": levels,
+        "means": means,
+        "cov": cov,
+        "df": df,
+        "n": n_obs,
+        "n_clusters": n_clu,
+    }
+
+
+def ci_from_group_means(
+    res: GroupMeansResult,
+    index: int,
+    alpha: float = 0.05,
+) -> Tuple[float, float, float]:
+    """Compute ``(mean, lower, upper)`` for group *index* in *res*."""
+    mu = float(res["means"][index])
+    var = float(res["cov"][index, index])
+    df = res["df"]
+    if np.isnan(mu) or df < 1 or np.isnan(var) or res["n_clusters"][index] < 2:
+        return (mu, np.nan, np.nan)
+    half = float(stats.t.ppf(1 - alpha / 2, df) * np.sqrt(max(var, 0.0)))
+    return (mu, mu - half, mu + half)
+
+
+def ttest_from_group_means(
+    res: GroupMeansResult,
+    idx_1: int,
+    idx_2: int,
+) -> Dict[str, float]:
+    """Compute design-based t-test for ``means[idx_1] - means[idx_2]`` from *res*."""
+    out: Dict[str, float] = {
+        "diff": np.nan,
+        "se": np.nan,
+        "t": np.nan,
+        "p": np.nan,
+        "df": float(res["df"]),
+    }
+    m1, m2 = float(res["means"][idx_1]), float(res["means"][idx_2])
+    if np.isnan(m1) or np.isnan(m2):
+        return out
+    out["diff"] = m1 - m2
+    if min(int(res["n_clusters"][idx_1]), int(res["n_clusters"][idx_2])) < 2 or res["df"] < 1:
+        return out  # grupo concentrado numa única escola: variância não estimável
+    cov = res["cov"]
+    var = float(cov[idx_1, idx_1] + cov[idx_2, idx_2] - 2 * cov[idx_1, idx_2])
+    if not var > 0:
+        return out
+    se = float(np.sqrt(var))
+    t_stat = out["diff"] / se
+    out.update(se=se, t=float(t_stat), p=float(2 * stats.t.sf(abs(t_stat), res["df"])))
+    return out
+
+
+def wald_anova_from_group_means(res: GroupMeansResult) -> Tuple[float, float, int]:
+    """Compute Korn–Graubard adjusted Wald F-test from *res*."""
+    # Grupos concentrados numa única escola não têm variância estimável:
+    # ficam fora do teste (continuam nas estatísticas descritivas).
+    keep = (res["n_clusters"] >= 2) & ~np.isnan(res["means"])
+    means = res["means"][keep]
+    cov = res["cov"][np.ix_(keep, keep)]
+    d = res["df"]
+    k = len(means)
+    if k < 2 or d < 1:
+        return (np.nan, np.nan, max(k - 1, 0))
+    q = k - 1
+    C = np.hstack([np.ones((q, 1)), -np.eye(q)])  # mean_1 − mean_j
+    diff = C @ means
+    V = C @ cov @ C.T
+    try:
+        wald = float(diff @ np.linalg.solve(V, diff))
+    except np.linalg.LinAlgError:
+        wald = float(diff @ np.linalg.pinv(V) @ diff)
+    df2 = d - q + 1
+    if df2 < 1:
+        return (np.nan, np.nan, q)
+    f_stat = (d - q + 1) / (d * q) * wald
+    p_value = float(stats.f.sf(f_stat, q, df2))
+    return (float(f_stat), p_value, q)
 
 
 def design_ttest(
@@ -211,20 +366,9 @@ def design_ttest(
     in_pair = dom & ((lab == level_1) | (lab == level_2))
     codes = np.where(lab == level_1, 0, 1)
     res = linearized_group_means(values, weights, codes, clusters, strata, domain=in_pair)
-    out = {"diff": np.nan, "se": np.nan, "t": np.nan, "p": np.nan, "df": float(res["df"])}
     if list(res["levels"]) != [0, 1]:
-        return out
-    out["diff"] = float(res["means"][0] - res["means"][1])
-    if res["n_clusters"].min() < 2 or res["df"] < 1:
-        return out  # grupo concentrado numa única escola: variância não estimável
-    cov = res["cov"]
-    var = cov[0, 0] + cov[1, 1] - 2 * cov[0, 1]
-    if not var > 0:
-        return out
-    se = float(np.sqrt(var))
-    t_stat = out["diff"] / se
-    out.update(se=se, t=float(t_stat), p=float(2 * stats.t.sf(abs(t_stat), res["df"])))
-    return out
+        return {"diff": np.nan, "se": np.nan, "t": np.nan, "p": np.nan, "df": float(res["df"])}
+    return ttest_from_group_means(res, 0, 1)
 
 
 # ---------- Descriptive statistics ----------
@@ -233,7 +377,7 @@ def design_ttest(
 def weighted_mean(values: ArrayLike, weights: ArrayLike) -> float:
     """Weighted arithmetic mean, ignoring NaN values."""
     v, w = _clean(values, weights)
-    if len(v) == 0:
+    if not _valid_weights(w):
         return np.nan
     return float(np.average(v, weights=w))
 
@@ -247,7 +391,7 @@ def weighted_variance(
     where V1 = sum(w), V2 = sum(w^2).  When ddof=0 the denominator is V1.
     """
     v, w = _clean(values, weights)
-    if len(v) == 0:
+    if not _valid_weights(w):
         return np.nan
     mu = np.average(v, weights=w)
     v1 = w.sum()
@@ -282,7 +426,7 @@ def weighted_percentile(
         Desired percentile in the range 0-100.
     """
     v, w = _clean(values, weights)
-    if len(v) == 0:
+    if not _valid_weights(w):
         return np.nan
     order = np.argsort(v)
     v = v[order]
@@ -326,11 +470,7 @@ def confidence_interval_mean(
         res = linearized_group_means(
             values, weights, np.zeros(len(np.asarray(values))), clusters, strata, domain=valid
         )
-        mu, var, df = res["means"][0], res["cov"][0, 0], res["df"]
-        if df < 1 or np.isnan(var) or res["n_clusters"][0] < 2:
-            return (float(mu), np.nan, np.nan)
-        half = stats.t.ppf(1 - alpha / 2, df) * np.sqrt(max(var, 0.0))
-        return (float(mu), float(mu - half), float(mu + half))
+        return ci_from_group_means(res, 0, alpha=alpha)
 
     if domain is not None:
         dom = np.asarray(domain, dtype=bool)
@@ -339,7 +479,7 @@ def confidence_interval_mean(
         if strata is not None:
             strata = np.asarray(strata)[dom]
     v, w = _clean(values, weights)
-    if len(v) == 0:
+    if not _valid_weights(w):
         return (np.nan, np.nan, np.nan)
 
     mu = np.average(v, weights=w)
@@ -369,6 +509,8 @@ def confidence_interval_mean(
                 if len(vs) < 2:
                     continue
                 ws_sum = ws.sum()
+                if ws_sum <= 0:
+                    continue
                 mu_s = np.average(vs, weights=ws)
                 ws2 = np.sum(ws ** 2)
                 denom = ws_sum - ws2 / ws_sum
@@ -406,7 +548,7 @@ def weighted_ttest(
     """
     v1, wt1 = _clean(vals1, w1)
     v2, wt2 = _clean(vals2, w2)
-    if len(v1) == 0 or len(v2) == 0:
+    if not _valid_weights(wt1) or not _valid_weights(wt2):
         return (np.nan, np.nan, np.nan)
 
     mu1 = np.average(v1, weights=wt1)
@@ -448,27 +590,42 @@ def cohens_d_weighted(
     vals2: ArrayLike,
     w2: ArrayLike,
 ) -> float:
-    """Weighted Cohen's d effect size (pooled standard deviation)."""
+    """Weighted Cohen's d effect size (scale-invariant pooled standard deviation).
+
+    Invariant to positive rescaling ``c * w`` for any ``c > 0``: within-group
+    variances use Bessel reliability-weight correction ``V1^2 / (V1^2 - V2)``,
+    and the pooled variance weights each group by its population weight share
+    ``s_pooled^2 = (sw1 * var1 + sw2 * var2) / (sw1 + sw2)``. Requires at least
+    2 valid observations with positive weight in each group.
+    """
     v1, wt1 = _clean(vals1, w1)
     v2, wt2 = _clean(vals2, w2)
-    if len(v1) == 0 or len(v2) == 0:
+    if not _valid_weights(wt1) or not _valid_weights(wt2):
+        return np.nan
+    if int(np.count_nonzero(wt1 > 0)) < 2 or int(np.count_nonzero(wt2 > 0)) < 2:
         return np.nan
 
-    mu1 = np.average(v1, weights=wt1)
-    mu2 = np.average(v2, weights=wt2)
+    # Normalize both groups by a shared positive constant to avoid float
+    # overflow/underflow on extreme weight scales while preserving sw1/sw2.
+    scale = max(float(wt1.max()), float(wt2.max()))
+    u1 = wt1 / scale
+    u2 = wt2 / scale
 
-    var1 = weighted_variance(v1, wt1, ddof=1)
-    var2 = weighted_variance(v2, wt2, ddof=1)
+    mu1 = float(np.average(v1, weights=u1))
+    mu2 = float(np.average(v2, weights=u2))
 
-    sw1 = wt1.sum()
-    sw2 = wt2.sum()
-    # Pooled variance weighted by the (population) sum of weights of each
-    # group — with unit weights this reduces to the classical pooled SD.
-    denom = sw1 + sw2 - 2
-    if denom <= 0 or np.isnan(var1) or np.isnan(var2):
+    var1 = weighted_variance(v1, u1, ddof=1)
+    var2 = weighted_variance(v2, u2, ddof=1)
+    if np.isnan(var1) or np.isnan(var2):
         return np.nan
-    pooled_var = ((sw1 - 1) * var1 + (sw2 - 1) * var2) / denom
-    if pooled_var <= 0:
+
+    sw1 = float(u1.sum())
+    sw2 = float(u2.sum())
+    denom = sw1 + sw2
+    if denom <= 0:
+        return np.nan
+    pooled_var = (sw1 * var1 + sw2 * var2) / denom
+    if not np.isfinite(pooled_var) or pooled_var <= 0:
         return np.nan
     return float((mu1 - mu2) / np.sqrt(pooled_var))
 
@@ -502,29 +659,7 @@ def weighted_anova_oneway(
     """
     if clusters is not None:
         res = linearized_group_means(values, weights, groups, clusters, strata, domain=domain)
-        # Grupos concentrados numa única escola não têm variância estimável:
-        # ficam fora do teste (continuam nas estatísticas descritivas).
-        keep = (res["n_clusters"] >= 2) & ~np.isnan(res["means"])
-        means = res["means"][keep]
-        cov = res["cov"][np.ix_(keep, keep)]
-        d = res["df"]
-        k = len(means)
-        if k < 2 or d < 1:
-            return (np.nan, np.nan, max(k - 1, 0))
-        q = k - 1
-        C = np.hstack([np.ones((q, 1)), -np.eye(q)])  # mean_1 − mean_j
-        diff = C @ means
-        V = C @ cov @ C.T
-        try:
-            wald = float(diff @ np.linalg.solve(V, diff))
-        except np.linalg.LinAlgError:
-            wald = float(diff @ np.linalg.pinv(V) @ diff)
-        df2 = d - q + 1
-        if df2 < 1:
-            return (np.nan, np.nan, q)
-        f_stat = (d - q + 1) / (d * q) * wald
-        p_value = float(stats.f.sf(f_stat, q, df2))
-        return (float(f_stat), p_value, q)
+        return wald_anova_from_group_means(res)
 
     if domain is not None:
         dom = np.asarray(domain, dtype=bool)
@@ -539,12 +674,11 @@ def weighted_anova_oneway(
     )
     g = g[mask]
 
-    if len(v) == 0:
+    if not _valid_weights(w):
         return (np.nan, np.nan, 0)
 
     unique_groups = np.unique(g)
-    k = len(unique_groups)
-    if k < 2:
+    if len(unique_groups) < 2:
         return (np.nan, np.nan, 0)
 
     grand_mean = np.average(v, weights=w)
@@ -552,20 +686,27 @@ def weighted_anova_oneway(
     ss_between = 0.0
     ss_within = 0.0
     df_within = 0
+    valid_groups = 0
 
     for grp in unique_groups:
         idx = g == grp
         vg, wg = v[idx], w[idx]
         if len(vg) == 0:
             continue
-        ng = len(vg)
         wg_sum = wg.sum()
+        if wg_sum <= 0:
+            continue
+        valid_groups += 1
+        ng = len(vg)
         mu_g = np.average(vg, weights=wg)
         ss_between += wg_sum * (mu_g - grand_mean) ** 2
         ss_within += np.sum(wg * (vg - mu_g) ** 2)
         df_within += ng - 1
 
-    df_between = k - 1
+    if valid_groups < 2:
+        return (np.nan, np.nan, 0)
+
+    df_between = valid_groups - 1
     if df_within <= 0 or ss_within == 0:
         return (np.nan, np.nan, df_between)
 
@@ -592,7 +733,7 @@ def weighted_eta_squared(
         np.asarray(weights, dtype=np.float64)
     )
     g = np.asarray(groups)[mask]
-    if len(v) == 0 or len(np.unique(g)) < 2:
+    if not _valid_weights(w) or len(np.unique(g)) < 2:
         return np.nan
 
     grand_mean = np.average(v, weights=w)
@@ -602,7 +743,11 @@ def weighted_eta_squared(
     ss_between = 0.0
     for grp in np.unique(g):
         idx = g == grp
-        ss_between += w[idx].sum() * (np.average(v[idx], weights=w[idx]) - grand_mean) ** 2
+        wg = w[idx]
+        wg_sum = wg.sum()
+        if wg_sum <= 0:
+            continue
+        ss_between += wg_sum * (np.average(v[idx], weights=wg) - grand_mean) ** 2
     return float(ss_between / ss_total)
 
 
@@ -674,7 +819,7 @@ def pearson_weighted(
 
     xc, yc, wc = _clean(x, y, weights)
     n = len(xc)
-    if n < 3:
+    if n < 3 or not _valid_weights(wc):
         return (np.nan, np.nan)
 
     mu_x = np.average(xc, weights=wc)
@@ -682,12 +827,13 @@ def pearson_weighted(
     dx = xc - mu_x
     dy = yc - mu_y
 
-    cov_xy = np.sum(wc * dx * dy) / np.sum(wc)
-    var_x = np.sum(wc * dx ** 2) / np.sum(wc)
-    var_y = np.sum(wc * dy ** 2) / np.sum(wc)
+    w_sum = wc.sum()
+    cov_xy = np.sum(wc * dx * dy) / w_sum
+    var_x = np.sum(wc * dx ** 2) / w_sum
+    var_y = np.sum(wc * dy ** 2) / w_sum
 
     denom = np.sqrt(var_x * var_y)
-    if denom == 0:
+    if not (denom > 0):
         return (np.nan, np.nan)
 
     r = cov_xy / denom
@@ -714,7 +860,7 @@ def weighted_frequency(
     NaN values in *values* are dropped.
     """
     v, w = _clean(values, weights)
-    if len(v) == 0:
+    if len(v) == 0 or np.any(w < 0):
         return {}
     total = w.sum()
     unique_vals = np.unique(v)

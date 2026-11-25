@@ -30,73 +30,80 @@ async function loadOverview() {
     showLoading('chart-overview-bars');
     showLoading('chart-overview-ranking');
 
-    const data = await fetchAPI('/saeb/overview');
-    if (!data) return;
+    const [data, ranking] = await Promise.all([
+        fetchAPI('/saeb/overview'),
+        fetchAPI('/saeb/proficiency/ranking', {
+            serie: state.serie, disciplina: state.disciplina,
+        }),
+    ]);
 
-    // KPIs
-    const alunos = data.alunos_por_serie || [];
-    // Alunos efetivamente avaliados (presentes na prova de LP); total_alunos
-    // conta todos os registros, inclusive ausentes.
-    const totalAlunos = alunos.reduce((s, r) => s + (r.presentes_lp || 0), 0);
-    document.getElementById('kpi-total-alunos').textContent = fmtInt(totalAlunos);
+    if (data) {
+        // KPIs
+        const alunos = data.alunos_por_serie || [];
+        // Alunos efetivamente avaliados (presentes na prova de LP); total_alunos
+        // conta todos os registros, inclusive ausentes.
+        const totalAlunos = alunos.reduce((s, r) => s + (r.presentes_lp || 0), 0);
+        document.getElementById('kpi-total-alunos').textContent = fmtInt(totalAlunos);
 
-    const escolas = data.escolas || {};
-    document.getElementById('kpi-total-escolas').textContent = fmtInt(escolas.total_escolas);
+        const escolas = data.escolas || {};
+        document.getElementById('kpi-total-escolas').textContent = fmtInt(escolas.total_escolas);
 
-    const serieAtual = alunos.find(r => r.serie === state.serie);
-    document.getElementById('kpi-media-lp').textContent = fmtNum(serieAtual?.media_lp);
-    document.getElementById('kpi-media-mt').textContent = fmtNum(serieAtual?.media_mt);
+        const serieAtual = alunos.find(r => r.serie === state.serie);
+        document.getElementById('kpi-media-lp').textContent = fmtNum(serieAtual?.media_lp);
+        document.getElementById('kpi-media-mt').textContent = fmtNum(serieAtual?.media_mt);
 
-    // Gráfico de barras: médias por série
-    if (alunos.length > 0) {
-        const narrow = window.innerWidth < 576;
-        const lpName = narrow ? 'LP' : 'Língua Portuguesa';
-        const mtName = narrow ? 'MT' : 'Matemática';
-        const labelSize = narrow ? 9 : 11;
+        // Gráfico de barras: médias por série
+        if (alunos.length > 0) {
+            const narrow = window.innerWidth < 576;
+            const lpName = narrow ? 'LP' : 'Língua Portuguesa';
+            const mtName = narrow ? 'MT' : 'Matemática';
+            const labelSize = narrow ? 9 : 11;
 
-        renderChart('chart-overview-bars', {
-            tooltip: {
-                trigger: 'axis',
-                formatter: params => params.map(p =>
-                    `<strong>${p.seriesName}</strong>: ${tooltipVal(p.value)} pts`
-                ).join('<br>'),
-            },
-            legend: { data: [lpName, mtName], top: 0 },
-            grid: { top: 35, left: narrow ? 40 : 60 },
-            xAxis: { type: 'category', data: alunos.map(s => s.serie) },
-            yAxis: { type: 'value', name: narrow ? '' : 'Proficiência (escala SAEB)' },
-            series: [
-                {
-                    name: lpName,
-                    type: 'bar',
-                    data: alunos.map(s => s.media_lp),
-                    itemStyle: { color: gradientBar(COLORS.primary), borderRadius: [4, 4, 0, 0] },
-                    label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: labelSize },
-                    barMaxWidth: narrow ? 30 : 50,
+            renderChart('chart-overview-bars', {
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: params => params.map(p =>
+                        `<strong>${escapeHtml(p.seriesName)}</strong>: ${tooltipVal(p.value)} pts`
+                    ).join('<br>'),
                 },
-                {
-                    name: mtName,
-                    type: 'bar',
-                    data: alunos.map(s => s.media_mt),
-                    itemStyle: { color: gradientBar(COLORS.secondary), borderRadius: [4, 4, 0, 0] },
-                    label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: labelSize },
-                    barMaxWidth: narrow ? 30 : 50,
-                },
-            ],
-        });
-        renderExplanation('chart-overview-bars');
+                legend: { data: [lpName, mtName], top: 0 },
+                grid: { top: 35, left: narrow ? 40 : 60 },
+                xAxis: { type: 'category', data: alunos.map(s => s.serie) },
+                yAxis: { type: 'value', name: narrow ? '' : 'Proficiência (escala SAEB)' },
+                series: [
+                    {
+                        name: lpName,
+                        type: 'bar',
+                        data: alunos.map(s => s.media_lp),
+                        itemStyle: { color: gradientBar(COLORS.primary), borderRadius: [4, 4, 0, 0] },
+                        label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: labelSize },
+                        barMaxWidth: narrow ? 30 : 50,
+                    },
+                    {
+                        name: mtName,
+                        type: 'bar',
+                        data: alunos.map(s => s.media_mt),
+                        itemStyle: { color: gradientBar(COLORS.secondary), borderRadius: [4, 4, 0, 0] },
+                        label: { show: true, position: 'top', formatter: p => tooltipVal(p.value), fontSize: labelSize },
+                        barMaxWidth: narrow ? 30 : 50,
+                    },
+                ],
+            });
+            renderExplanation('chart-overview-bars');
+        } else {
+            showEmpty('chart-overview-bars');
+        }
+    } else {
+        showEmpty('chart-overview-bars');
     }
 
     // Ranking de UFs
-    const ranking = await fetchAPI('/saeb/proficiency/ranking', {
-        serie: state.serie, disciplina: state.disciplina,
-    });
     if (ranking && ranking.data && ranking.data.length > 0) {
         const sorted = ranking.data;
         renderChart('chart-overview-ranking', {
             tooltip: {
                 trigger: 'axis',
-                formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)} pts`,
+                formatter: params => `<strong>${escapeHtml(params[0].name)}</strong>: ${tooltipVal(params[0].value)} pts`,
             },
             grid: { top: 35, bottom: 30 },
             xAxis: { type: 'category', data: sorted.map(r => r.uf_sigla), axisLabel: { rotate: 0, fontSize: 10 } },
@@ -130,8 +137,13 @@ async function loadProficiency() {
 
     const params = { serie: state.serie, disciplina: state.disciplina };
 
+    const [comparison, profData, levels] = await Promise.all([
+        fetchAPI('/saeb/proficiency/comparison'),
+        fetchAPI('/saeb/proficiency', params),
+        fetchAPI('/saeb/proficiency/levels', { scope: 'rj' }),
+    ]);
+
     // Aba Comparação: RJ vs Sudeste vs Brasil
-    const comparison = await fetchAPI('/saeb/proficiency/comparison');
     if (comparison) {
         // Combina as linhas por rede (pública/privada) pela soma dos pesos
         // amostrais — ponderar pelo n bruto subestima a rede privada, cujos
@@ -157,7 +169,7 @@ async function loadProficiency() {
             const values = [rjMedia, sudMedia, brMedia];
             const colors = [COLORS.accent, COLORS.teal, COLORS.primary];
             renderChart('chart-prof-compare', {
-                tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)} pts` },
+                tooltip: { trigger: 'axis', formatter: params => `<strong>${escapeHtml(params[0].name)}</strong>: ${tooltipVal(params[0].value)} pts` },
                 xAxis: { type: 'category', data: labels },
                 yAxis: { type: 'value', name: 'Proficiência média' },
                 series: [{
@@ -171,15 +183,18 @@ async function loadProficiency() {
                 }],
             });
             renderExplanation('chart-prof-compare');
+        } else {
+            showEmpty('chart-prof-compare', 'Comparação não disponível para esta série/disciplina');
         }
+    } else {
+        showEmpty('chart-prof-compare');
     }
 
     // Aba Distribuição
-    const profData = await fetchAPI('/saeb/proficiency', params);
     if (profData && profData.data && profData.data.length > 0) {
         const sorted = [...profData.data].sort((a, b) => a.media_proficiencia - b.media_proficiencia);
         renderChart('chart-prof-distribution', {
-            tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)} pts` },
+            tooltip: { trigger: 'axis', formatter: params => `<strong>${escapeHtml(params[0].name)}</strong>: ${tooltipVal(params[0].value)} pts` },
             xAxis: { type: 'category', data: sorted.map(r => r.uf_sigla), axisLabel: { fontSize: 10 } },
             yAxis: { type: 'value', name: 'Proficiência média' },
             series: [{
@@ -200,7 +215,6 @@ async function loadProficiency() {
     }
 
     // Aba Níveis
-    const levels = await fetchAPI('/saeb/proficiency/levels', { scope: 'rj' });
     if (levels && levels.data && levels.data.length > 0) {
         // TS_ESCOLA contém só escolas públicas; valores = média, entre as
         // escolas, do % de alunos em cada nível (rede pública, rede = 1).
@@ -226,7 +240,7 @@ async function loadProficiency() {
                 return COLORS.primary;
             });
             renderChart('chart-prof-levels', {
-                tooltip: { trigger: 'axis', formatter: params => `${params[0].name}: <strong>${tooltipVal(params[0].value)}%</strong> dos alunos (média das escolas públicas)` },
+                tooltip: { trigger: 'axis', formatter: params => `${escapeHtml(params[0].name)}: <strong>${tooltipVal(params[0].value)}%</strong> dos alunos (média das escolas públicas)` },
                 xAxis: { type: 'category', data: niveis.map(n => `Nível ${n.nivel}`) },
                 yAxis: { type: 'value', name: '% de alunos (média das escolas públicas)' },
                 series: [{
@@ -259,8 +273,13 @@ async function loadEquity() {
 
     const params = { serie: state.serie, disciplina: state.disciplina };
 
+    const [gap, inse, location] = await Promise.all([
+        fetchAPI('/saeb/equity/gap', params),
+        fetchAPI('/saeb/equity/inse'),
+        fetchAPI('/saeb/equity/location'),
+    ]);
+
     // Gap pública vs privada
-    const gap = await fetchAPI('/saeb/equity/gap', params);
     if (gap && gap.data && gap.data.length > 0) {
         const item = gap.data.find(g =>
             g.serie === state.serie && g.disciplina === state.disciplina
@@ -268,7 +287,7 @@ async function loadEquity() {
 
         if (item.media_publica != null && item.media_privada != null) {
             renderChart('chart-eq-gap', {
-                tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)} pts` },
+                tooltip: { trigger: 'axis', formatter: params => `<strong>${escapeHtml(params[0].name)}</strong>: ${tooltipVal(params[0].value)} pts` },
                 graphic: [statAnnotation(`Lacuna: ${fmtNum(item.gap)} pontos`)],
                 xAxis: { type: 'category', data: ['Pública', 'Privada'] },
                 yAxis: { type: 'value', name: 'Proficiência média' },
@@ -291,7 +310,6 @@ async function loadEquity() {
     }
 
     // INSE
-    const inse = await fetchAPI('/saeb/equity/inse');
     if (inse && inse.data && inse.data.length > 0) {
         const filtered = inse.data.filter(i =>
             i.serie === state.serie && i.disciplina === state.disciplina
@@ -299,7 +317,7 @@ async function loadEquity() {
         if (filtered.length > 0) {
             filtered.sort((a, b) => a.nivel_inse - b.nivel_inse);
             renderChart('chart-eq-inse', {
-                tooltip: { trigger: 'axis', formatter: params => `INSE ${params[0].name}: <strong>${tooltipVal(params[0].value)}</strong> pts` },
+                tooltip: { trigger: 'axis', formatter: params => `INSE ${escapeHtml(params[0].name)}: <strong>${tooltipVal(params[0].value)}</strong> pts` },
                 xAxis: { type: 'category', data: filtered.map(i => `Nível ${i.nivel_inse}`) },
                 yAxis: { type: 'value', name: 'Proficiência média' },
                 series: [{
@@ -324,7 +342,6 @@ async function loadEquity() {
     }
 
     // Localização (urbana/rural)
-    const location = await fetchAPI('/saeb/equity/location');
     if (location && location.data && location.data.length > 0) {
         const filtered = location.data.filter(i =>
             i.serie === state.serie && i.disciplina === state.disciplina
@@ -336,7 +353,7 @@ async function loadEquity() {
             const gap = urbana && rural ? Math.abs(urbana.media_proficiencia - rural.media_proficiencia) : null;
 
             renderChart('chart-eq-location', {
-                tooltip: { trigger: 'axis', formatter: params => `<strong>${params[0].name}</strong>: ${tooltipVal(params[0].value)} pts` },
+                tooltip: { trigger: 'axis', formatter: params => `<strong>${escapeHtml(params[0].name)}</strong>: ${tooltipVal(params[0].value)} pts` },
                 graphic: gap != null ? [statAnnotation(`Lacuna: ${fmtNum(gap)} pontos`)] : [],
                 xAxis: { type: 'category', data: filtered.map(r => r.localizacao_label) },
                 yAxis: { type: 'value', name: 'Proficiência média' },
@@ -426,13 +443,13 @@ function _plotTicComparison(elementId, response, color) {
             trigger: 'axis',
             formatter: params => {
                 const d = items[params[0].dataIndex];
-                const head = `<strong>${d.indicador} — ${d.label.replace('¹', '')}</strong>`;
-                const desc = `<span style="font-size:11px;opacity:.8">${d.item ? d.item : d.titulo}</span>`;
+                const head = `<strong>${escapeHtml(d.indicador)} — ${escapeHtml(String(d.label || '').replace('¹', ''))}</strong>`;
+                const desc = `<span style="font-size:11px;opacity:.8">${escapeHtml(d.item ? d.item : d.titulo)}</span>`;
                 const lines = [
-                    `${regions.primary}: <strong>${tooltipVal(d.sudeste)}%</strong>${pp(d.me_sudeste)}`,
-                    `${regions.reference}: <strong>${tooltipVal(d.brasil)}%</strong>${pp(d.me_brasil)}`,
+                    `${escapeHtml(regions.primary)}: <strong>${tooltipVal(d.sudeste)}%</strong>${pp(d.me_sudeste)}`,
+                    `${escapeHtml(regions.reference)}: <strong>${tooltipVal(d.brasil)}%</strong>${pp(d.me_brasil)}`,
                 ];
-                const uni = d.universo_especifico ? `<br><span style="font-size:11px;opacity:.8">Universo: ${d.universo}</span>` : '';
+                const uni = d.universo_especifico ? `<br><span style="font-size:11px;opacity:.8">Universo: ${escapeHtml(d.universo)}</span>` : '';
                 return `${head}<br>${desc}<br>${lines.join('<br>')}${uni}`;
             },
         },
@@ -535,21 +552,22 @@ function _renderTeachCorr(formacao) {
 
     if (formacao && formacao.data && formacao.data.length > 0) {
         const rows = formacao.data.filter(r =>
-            r[formCol] != null && r[colKey] != null
+            r[formCol] != null && r[colKey] != null &&
+            Number.isFinite(Number(r[formCol])) && Number.isFinite(Number(r[colKey]))
         );
-        if (rows.length > 0) {
-            const scatterData = rows.map(r => [r[formCol], r[colKey]]);
+        if (rows.length >= 2) {
+            const scatterData = rows.map(r => [Number(r[formCol]), Number(r[colKey])]);
 
-            // Compute linear regression for trend line
+            // Compute linear regression and Pearson r
             const n = scatterData.length;
-            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            let sumX = 0, sumY = 0;
+            let xMin = Infinity, xMax = -Infinity;
             for (const [x, y] of scatterData) {
-                sumX += x; sumY += y; sumXY += x * y; sumX2 += x * x;
+                sumX += x;
+                sumY += y;
+                if (x < xMin) xMin = x;
+                if (x > xMax) xMax = x;
             }
-            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-            const intercept = (sumY - slope * sumX) / n;
-
-            // Compute Pearson r
             const meanX = sumX / n, meanY = sumY / n;
             let ssXY = 0, ssX2 = 0, ssY2 = 0;
             for (const [x, y] of scatterData) {
@@ -557,44 +575,55 @@ function _renderTeachCorr(formacao) {
                 ssX2 += (x - meanX) ** 2;
                 ssY2 += (y - meanY) ** 2;
             }
-            const r = ssXY / Math.sqrt(ssX2 * ssY2);
 
-            // Trend line endpoints
-            const xMin = Math.min(...scatterData.map(d => d[0]));
-            const xMax = Math.max(...scatterData.map(d => d[0]));
-            const trendData = [
-                [xMin, slope * xMin + intercept],
-                [xMax, slope * xMax + intercept],
+            const hasCorrelation = n >= 2 && ssX2 > 0 && ssY2 > 0;
+            const slope = hasCorrelation ? ssXY / ssX2 : null;
+            const intercept = hasCorrelation ? meanY - slope * meanX : null;
+            const r = hasCorrelation ? ssXY / Math.sqrt(ssX2 * ssY2) : null;
+
+            const series = [
+                {
+                    type: 'scatter',
+                    data: scatterData,
+                    symbolSize: 8,
+                    itemStyle: { color: COLORS.primary, opacity: 0.55 },
+                    emphasis: { itemStyle: { opacity: 0.9, shadowBlur: 4, shadowColor: 'rgba(0,0,0,0.2)' } },
+                },
             ];
+
+            if (hasCorrelation) {
+                const trendData = [
+                    [xMin, slope * xMin + intercept],
+                    [xMax, slope * xMax + intercept],
+                ];
+                series.push({
+                    type: 'line',
+                    data: trendData,
+                    symbol: 'none',
+                    lineStyle: { color: COLORS.accent, width: 2, type: 'dashed' },
+                    tooltip: { show: true },
+                    silent: false,
+                });
+            }
+
+            const annotation = hasCorrelation
+                ? `r = ${fmtNum(r, 3)}  (n = ${fmtInt(n)})`
+                : `r = —  (n = ${fmtInt(n)})`;
 
             renderChart('chart-teach-corr', {
                 tooltip: {
                     trigger: 'item',
                     formatter: p => {
-                        if (p.seriesType === 'line') return `Tendência: y = ${fmtNum(slope, 2)}x + ${fmtNum(intercept, 1)}`;
-                        return `${formLabel}: ${tooltipVal(p.value[0], 0)}%<br>${discLabel} ${serieLabel}: ${tooltipVal(p.value[1])} pts`;
+                        if (p.seriesType === 'line' && hasCorrelation) {
+                            return `Tendência: y = ${fmtNum(slope, 2)}x + ${fmtNum(intercept, 1)}`;
+                        }
+                        return `${escapeHtml(formLabel)}: ${tooltipVal(p.value[0], 0)}%<br>${escapeHtml(discLabel)} ${escapeHtml(serieLabel)}: ${tooltipVal(p.value[1])} pts`;
                     },
                 },
-                graphic: [statAnnotation(`r = ${fmtNum(r, 3)}  (n = ${fmtInt(n)})`, { left: 15, top: 8, color: COLORS.accent })],
+                graphic: [statAnnotation(annotation, { left: 15, top: 8, color: COLORS.accent })],
                 xAxis: { type: 'value', name: formLabel, nameLocation: 'center', nameGap: 30 },
                 yAxis: { type: 'value', name: `Proficiência ${discLabel} ${serieLabel}` },
-                series: [
-                    {
-                        type: 'scatter',
-                        data: scatterData,
-                        symbolSize: 8,
-                        itemStyle: { color: COLORS.primary, opacity: 0.55 },
-                        emphasis: { itemStyle: { opacity: 0.9, shadowBlur: 4, shadowColor: 'rgba(0,0,0,0.2)' } },
-                    },
-                    {
-                        type: 'line',
-                        data: trendData,
-                        symbol: 'none',
-                        lineStyle: { color: COLORS.accent, width: 2, type: 'dashed' },
-                        tooltip: { show: true },
-                        silent: false,
-                    },
-                ],
+                series,
             });
             renderExplanation('chart-teach-corr');
         } else {
@@ -619,7 +648,7 @@ function _plotQuestionnaire(elementId, response, title, color, labelMap) {
         title: { text: title, left: 'center', top: 0, textStyle: { fontSize: 13, fontWeight: 600 } },
         tooltip: {
             trigger: 'axis',
-            formatter: params => `${params[0].name}<br>Contagem: <strong>${fmtInt(params[0].value)}</strong> (${tooltipVal((params[0].value / total) * 100)}%)`,
+            formatter: params => `${escapeHtml(params[0].name)}<br>Contagem: <strong>${fmtInt(params[0].value)}</strong> (${tooltipVal(total > 0 ? (params[0].value / total) * 100 : 0)}%)`,
         },
         grid: { top: 40 },
         xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10, rotate: labels.some(l => l.length > 12) ? 20 : 0 } },
@@ -641,6 +670,11 @@ function _plotQuestionnaire(elementId, response, title, color, labelMap) {
 
 async function loadQuestionnaires() {
     const dataset = document.getElementById('quest-dataset').value;
+    // Limpa gráfico e enunciado da questão anterior ao trocar dataset
+    showEmpty('chart-questionnaire', 'Selecione uma questão para visualizar');
+    const textBox = document.getElementById('quest-question-text');
+    if (textBox) textBox.classList.add('d-none');
+
     const data = await fetchAPI(`/saeb/questionnaire/${dataset}`);
     if (data) {
         const select = document.getElementById('quest-question');
@@ -655,10 +689,9 @@ async function loadQuestionnaires() {
             opt.title = full;
             select.appendChild(opt);
         });
+    } else {
+        showEmpty('chart-questionnaire', 'Dados do questionário indisponíveis');
     }
-    // Hide question text box when switching dataset
-    const textBox = document.getElementById('quest-question-text');
-    if (textBox) textBox.classList.add('d-none');
 }
 
 function renderQuestionnaireChart(dataset, questao, signal) {
@@ -681,7 +714,8 @@ function renderQuestionnaireChart(dataset, questao, signal) {
             const rows = data.data;
             const total = rows.reduce((s, r) => s + r.contagem, 0);
             // Use descriptive labels if available, otherwise code
-            const labels = rows.map(r => r.resposta_label || r.resposta);
+            const fullLabels = rows.map(r => String(r.resposta_label || r.resposta || ''));
+            const labels = fullLabels.map(l => (l.length > 45 ? l.slice(0, 44) + '…' : l));
             const needsRotate = labels.some(l => l.length > 18);
 
             renderChart('chart-questionnaire', {
@@ -689,16 +723,20 @@ function renderQuestionnaireChart(dataset, questao, signal) {
                     trigger: 'axis',
                     formatter: params => {
                         const r = rows[params[0].dataIndex];
-                        const pct = ((r.contagem / total) * 100).toFixed(1);
-                        const label = r.resposta_label || r.resposta;
-                        return `<strong>${label}</strong> (${r.resposta})<br>Contagem: <strong>${fmtInt(params[0].value)}</strong> (${pct}%)`;
+                        const pct = total > 0 ? ((r.contagem / total) * 100).toFixed(1) : '0.0';
+                        const label = fullLabels[params[0].dataIndex];
+                        return `<strong>${escapeHtml(label)}</strong> (${escapeHtml(r.resposta)})<br>Contagem: <strong>${fmtInt(params[0].value)}</strong> (${pct}%)`;
                     },
                 },
                 grid: needsRotate ? { top: 50, right: 30, bottom: 100, left: 60, containLabel: true } : undefined,
                 xAxis: {
                     type: 'category',
                     data: labels,
-                    axisLabel: { interval: 0, rotate: needsRotate ? 30 : 0, fontSize: 10.5 },
+                    axisLabel: {
+                        interval: labels.length > 25 ? 'auto' : 0,
+                        rotate: needsRotate ? 30 : 0,
+                        fontSize: 10.5,
+                    },
                 },
                 yAxis: { type: 'value', name: 'Contagem' },
                 series: [{
@@ -745,7 +783,7 @@ async function loadEthics() {
             g.media_publica != null && g.media_privada != null && ['LP', 'MT'].includes(g.disciplina));
         if (items.length > 0) {
             renderChart('chart-ethics-digital', {
-                tooltip: { trigger: 'axis', formatter: p => `<strong>${p[0].name}</strong>: lacuna de ${tooltipVal(p[0].value)} pts` },
+                tooltip: { trigger: 'axis', formatter: p => `<strong>${escapeHtml(p[0].name)}</strong>: lacuna de ${tooltipVal(p[0].value)} pts` },
                 graphic: [statAnnotation('Diferença: Privada − Pública', { color: '#666', fontSize: 11 })],
                 xAxis: {
                     type: 'category',
@@ -801,7 +839,7 @@ async function _loadEthicsCrossFindings() {
     if (topBinary) {
         html += `<div class="col-md-3"><div class="border rounded p-2 text-center">
             <div class="fw-bold" style="font-size:1.5em; color: var(--clr-accent)">d = ${fmtNum(topBinary.cohens_d, 3)}</div>
-            <div class="text-muted small">Maior ${statTerm("Cohen's d", 'd')} (variáveis Sim/Não): ${topBinary.label}</div>
+            <div class="text-muted small">Maior ${statTerm("Cohen's d", 'd')} (variáveis Sim/Não): ${escapeHtml(topBinary.label)}</div>
         </div></div>`;
     }
     html += `<div class="col-md-3"><div class="border rounded p-2 text-center">
@@ -847,35 +885,58 @@ async function _loadCrossStudentTab() {
 
     // Digital index
     if (index && index.by_level && index.by_level.length > 0) {
+        const indexSeries = [{
+            type: 'line',
+            data: index.by_level.map(l => l.mean),
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 9,
+            lineStyle: { width: 3, color: COLORS.primary },
+            itemStyle: { color: COLORS.primary },
+            areaStyle: {
+                color: {
+                    type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                    colorStops: [
+                        { offset: 0, color: 'rgba(78,121,167,0.25)' },
+                        { offset: 1, color: 'rgba(78,121,167,0.02)' },
+                    ],
+                },
+            },
+        }];
+        const indexErrSeries = _buildErrorBarSeries(index.by_level);
+        if (indexErrSeries) indexSeries.push(indexErrSeries);
+
+        const indexParts = [];
+        if (index.correlation && index.correlation.pearson_r != null) {
+            indexParts.push(`r = ${fmtNum(index.correlation.pearson_r, 3)}`);
+        }
+        if (index.correlation && index.correlation.p_value != null) {
+            const pStr = index.correlation.p_value < 0.001
+                ? '<0.001'
+                : fmtNum(index.correlation.p_value, 4);
+            indexParts.push(`p = ${pStr}`);
+        }
+
         renderChart('chart-cross-index', {
             tooltip: {
                 trigger: 'axis',
-                formatter: p => `Índice ${p[0].name}: <strong>${tooltipVal(p[0].value)}</strong> pts<br>n = ${fmtInt(index.by_level[p[0].dataIndex]?.n)}`,
+                formatter: p => {
+                    const idx = p[0].dataIndex;
+                    const item = index.by_level[idx];
+                    const [ciLo, ciHi] = _extractBounds(item);
+                    const ciLine = ciLo != null && ciHi != null
+                        ? `<br>IC 95%: [${tooltipVal(ciLo)} ; ${tooltipVal(ciHi)}]`
+                        : '';
+                    return `Índice ${escapeHtml(p[0].name)}: <strong>${tooltipVal(p[0].value)}</strong> pts${ciLine}<br>n = ${fmtInt(item?.n)}`;
+                },
             },
-            graphic: index.correlation && index.correlation.pearson_r != null ? [statAnnotation(
-                `r = ${fmtNum(index.correlation.pearson_r, 3)}`,
+            graphic: indexParts.length > 0 ? [statAnnotation(
+                indexParts.join('  |  '),
                 { left: 15, top: 8, color: COLORS.accent }
             )] : [],
             xAxis: { type: 'category', data: index.by_level.map(l => l.index), name: 'Índice Digital (0-8)' },
             yAxis: { type: 'value', name: 'Proficiência média' },
-            series: [{
-                type: 'line',
-                data: index.by_level.map(l => l.mean),
-                smooth: true,
-                symbol: 'circle',
-                symbolSize: 9,
-                lineStyle: { width: 3, color: COLORS.primary },
-                itemStyle: { color: COLORS.primary },
-                areaStyle: {
-                    color: {
-                        type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-                        colorStops: [
-                            { offset: 0, color: 'rgba(78,121,167,0.25)' },
-                            { offset: 1, color: 'rgba(78,121,167,0.02)' },
-                        ],
-                    },
-                },
-            }],
+            series: indexSeries,
         });
         renderExplanation('chart-cross-index');
     } else if (index && index.faixas && index.faixas.length > 0) {
@@ -951,11 +1012,11 @@ async function _loadCrossOverviewTab() {
             (a.p_value != null && a.p_value < 0.05 ? '<span class="badge bg-warning text-dark">*</span>' :
             '<span class="badge bg-secondary">Não</span>');
         const levelLabel = { aluno: 'Aluno', diretor: 'Escola', professor: 'Professor' }[a.level] || a.level;
-        html += `<tr><td>${levelLabel}</td><td>${a.label}</td><td>${a.test_type || '—'}</td>`;
-        html += `<td>${pVal}</td><td>${effect}</td><td>${sigBadge}</td></tr>`;
+        html += `<tr><td>${escapeHtml(levelLabel)}</td><td>${escapeHtml(a.label)}</td><td>${escapeHtml(a.test_type || '—')}</td>`;
+        html += `<td>${escapeHtml(pVal)}</td><td>${escapeHtml(effect)}</td><td>${sigBadge}</td></tr>`;
     }
     html += '</tbody></table></div>';
-    html += `<p class="small text-muted mt-2">${data.note || ''}</p>`;
+    html += `<p class="small text-muted mt-2">${escapeHtml(data.note || '')}</p>`;
     document.getElementById('table-cross-summary').innerHTML = html;
     initStatPopovers();
 
@@ -977,7 +1038,7 @@ async function _loadCrossOverviewTab() {
                 axisPointer: { type: 'shadow' },
                 formatter: params => {
                     const p = params[0];
-                    return `<strong>${p.name}</strong><br>${statTerm("Cohen's d", 'd')} = ${tooltipVal(p.value, 3)}<br>Efeito: ${effectLabel(p.value)}`;
+                    return `<strong>${escapeHtml(p.name)}</strong><br>${statTerm("Cohen's d", 'd')} = ${tooltipVal(p.value, 3)}<br>Efeito: ${effectLabel(p.value)}`;
                 },
             },
             grid: { top: 20, left: 200, right: 60, bottom: 40 },
@@ -1060,7 +1121,7 @@ async function _loadCrossInseTab() {
                         const d = inseData[params[0].dataIndex];
                         const val = (v, n) => (v == null ? `— (n = ${fmtInt(n)} < ${MIN_N})` : `${tooltipVal(v)} pts (n = ${fmtInt(n)})`);
                         const pStr = d.p == null ? '—' : (d.p < 0.001 ? '<0,001' : fmtNum(d.p, 3));
-                        return `<strong>INSE ${d.inse}</strong><br>Com Wi-Fi: ${val(d.yes, d.nYes)}<br>Sem Wi-Fi: ${val(d.no, d.nNo)}<br>p (desenho) = ${pStr}`;
+                        return `<strong>INSE ${escapeHtml(d.inse)}</strong><br>Com Wi-Fi: ${val(d.yes, d.nYes)}<br>Sem Wi-Fi: ${val(d.no, d.nNo)}<br>p (desenho) = ${pStr}`;
                     },
                 },
                 legend: { data: ['Com Wi-Fi', 'Sem Wi-Fi'], top: 0 },
@@ -1157,6 +1218,63 @@ async function _loadCrossInseTab() {
     }
 }
 
+function _extractBounds(item) {
+    if (!item) return [null, null];
+    const lo = item.ci_low ?? item.ci_lower ?? null;
+    const hi = item.ci_high ?? item.ci_upper ?? null;
+    if (lo == null || hi == null || isNaN(lo) || isNaN(hi)) return [null, null];
+    return [Number(lo), Number(hi)];
+}
+
+function _buildErrorBarSeries(items) {
+    const errorData = items
+        .map((item, idx) => {
+            const [lo, hi] = _extractBounds(item);
+            return lo != null && hi != null ? [idx, lo, hi] : null;
+        })
+        .filter(Boolean);
+    if (errorData.length === 0) return null;
+    return {
+        name: 'IC 95%',
+        type: 'custom',
+        silent: true,
+        z: 10,
+        renderItem: (_params, api) => {
+            const xVal = api.value(0);
+            const low = api.value(1);
+            const high = api.value(2);
+            if (low == null || high == null || isNaN(low) || isNaN(high)) return null;
+            const highPt = api.coord([xVal, high]);
+            const lowPt = api.coord([xVal, low]);
+            const halfCap = 5;
+            const stroke = isDarkMode() ? '#cbd5e1' : '#334155';
+            return {
+                type: 'group',
+                children: [
+                    {
+                        type: 'line',
+                        shape: { x1: highPt[0], y1: highPt[1], x2: lowPt[0], y2: lowPt[1] },
+                        style: { stroke, lineWidth: 1.5 },
+                    },
+                    {
+                        type: 'line',
+                        shape: { x1: highPt[0] - halfCap, y1: highPt[1], x2: highPt[0] + halfCap, y2: highPt[1] },
+                        style: { stroke, lineWidth: 1.5 },
+                    },
+                    {
+                        type: 'line',
+                        shape: { x1: lowPt[0] - halfCap, y1: lowPt[1], x2: lowPt[0] + halfCap, y2: lowPt[1] },
+                        style: { stroke, lineWidth: 1.5 },
+                    },
+                ],
+            };
+        },
+        encode: { x: 0, y: [1, 2] },
+        data: errorData,
+        tooltip: { show: false },
+    };
+}
+
 function _plotCrossGap(elementId, response) {
     const groups = response?.groups || response?.overall?.groups || [];
     if (groups.length === 0) {
@@ -1174,43 +1292,61 @@ function _plotCrossGap(elementId, response) {
 
     // Build stat annotation
     const test = response?.test || response?.overall?.test;
+    const corr = response?.correlation || response?.overall?.correlation;
     let annotationText = '';
-    if (test) {
+    if (test || corr) {
         const parts = [];
-        if (test.gap != null) parts.push(`Gap: ${fmtNum(test.gap)} pts`);
-        if (test.cohens_d != null) parts.push(`d = ${fmtNum(test.cohens_d, 3)}`);
-        if (test.p_value != null) {
-            const pStr = test.p_value < 0.001 ? '<0.001' : fmtNum(test.p_value, 4);
+        if (test?.gap != null) parts.push(`Gap: ${fmtNum(test.gap)} pts`);
+        if (test?.cohens_d != null) parts.push(`d = ${fmtNum(test.cohens_d, 3)}`);
+        if (test?.eta_squared != null && test?.cohens_d == null) {
+            parts.push(`η² = ${fmtNum(test.eta_squared, 4)}`);
+        }
+        const rVal = test?.trend_r ?? corr?.pearson_r ?? null;
+        if (rVal != null && test?.cohens_d == null) {
+            parts.push(`r = ${fmtNum(rVal, 3)}`);
+        }
+        const pVal = test?.p_value ?? corr?.p_value ?? null;
+        if (pVal != null) {
+            const pStr = pVal < 0.001 ? '<0.001' : fmtNum(pVal, 4);
             parts.push(`p = ${pStr}`);
         }
         annotationText = parts.join('  |  ');
     }
+
+    const errSeries = _buildErrorBarSeries(groups);
+    const series = [{
+        type: 'bar',
+        data: values.map((v, i) => ({
+            value: v,
+            itemStyle: { color: gradientBar(barColors[i]), borderRadius: [4, 4, 0, 0] },
+        })),
+        label: {
+            show: true,
+            position: 'top',
+            distance: errSeries ? 10 : 5,
+            formatter: p => `${tooltipVal(p.value)} (n=${fmtInt(ns[p.dataIndex])})`,
+            fontSize: 10,
+        },
+        barMaxWidth: 55,
+    }];
+    if (errSeries) series.push(errSeries);
 
     renderChart(elementId, {
         tooltip: {
             trigger: 'axis',
             formatter: params => {
                 const idx = params[0].dataIndex;
-                return `<strong>${params[0].name}</strong><br>Proficiência: ${tooltipVal(params[0].value)} pts<br>n = ${fmtInt(ns[idx])}`;
+                const [ciLo, ciHi] = _extractBounds(groups[idx]);
+                const ciLine = ciLo != null && ciHi != null
+                    ? `<br>IC 95%: [${tooltipVal(ciLo)} ; ${tooltipVal(ciHi)}]`
+                    : '';
+                return `<strong>${escapeHtml(params[0].name)}</strong><br>Proficiência: ${tooltipVal(params[0].value)} pts${ciLine}<br>n = ${fmtInt(ns[idx])}`;
             },
         },
         graphic: annotationText ? [statAnnotation(annotationText, { fontSize: 11 })] : [],
         xAxis: { type: 'category', data: labels },
         yAxis: { type: 'value', name: 'Proficiência média' },
-        series: [{
-            type: 'bar',
-            data: values.map((v, i) => ({
-                value: v,
-                itemStyle: { color: gradientBar(barColors[i]), borderRadius: [4, 4, 0, 0] },
-            })),
-            label: {
-                show: true,
-                position: 'top',
-                formatter: p => `${tooltipVal(p.value)} (n=${fmtInt(ns[p.dataIndex])})`,
-                fontSize: 10,
-            },
-            barMaxWidth: 55,
-        }],
+        series,
     });
     renderExplanation(elementId);
 }

@@ -23,6 +23,7 @@ valor_corte, item, resposta, coluna, valor.
 from __future__ import annotations
 
 import logging
+import math
 import re
 import warnings
 from pathlib import Path
@@ -53,24 +54,29 @@ def _clean_text(value: Any) -> str | None:
 
 
 def _parse_numeric(value: Any) -> float | None:
-    """Tenta converter um valor de célula em float.
+    """Tenta converter um valor de célula em float finito.
 
-    Retorna None para valores não-numéricos como '-', '*', '..', texto vazio.
+    Retorna None para booleanos, não-finitos (NaN/Inf) e marcadores de
+    ausência como '-', '*', '..', texto vazio. Aceita separador decimal
+    brasileiro (``'92,4'``) e separador de milhar (``'1.234,5'``).
     """
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
-        return float(value)
+        num = float(value)
+        return num if math.isfinite(num) else None
     text = str(value).strip()
     # Valores comuns que indicam ausência de dado
     if text in ("", "-", "*", "..", "…", "—", "–", "0*", "**"):
         return None
-    # Tenta converter separador decimal brasileiro
-    text = text.replace(",", ".")
+    # Formato brasileiro com vírgula decimal (e eventual ponto de milhar)
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
     try:
-        return float(text)
+        num = float(text)
     except ValueError:
         return None
+    return num if math.isfinite(num) else None
 
 
 def _merged_lookup(ws: Worksheet) -> dict[tuple[int, int], Any]:
@@ -229,7 +235,7 @@ def _open_workbook_safe(xlsx_path: Path):
                 return b'<?xml version="1.0" encoding="UTF-8"?><root/>'
             raise
 
-    zipfile.ZipFile.read = _patched_read
+    setattr(zipfile.ZipFile, "read", _patched_read)
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -237,7 +243,7 @@ def _open_workbook_safe(xlsx_path: Path):
                 str(xlsx_path), read_only=False, data_only=True
             )
     finally:
-        zipfile.ZipFile.read = _orig_read
+        setattr(zipfile.ZipFile, "read", _orig_read)
 
     return wb
 

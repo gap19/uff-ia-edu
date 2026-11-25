@@ -80,7 +80,7 @@ O SAEB 2023 é **censitário** para as escolas públicas (todas as turmas das s�
 Além dos pesos, os microdados trazem as variáveis do **desenho amostral**, usadas para calcular erros-padrão, intervalos e testes (ver [seção 8.1](#81-intervalo-de-confiança)):
 
 - **`ID_ESCOLA`** — a escola é o **conglomerado** (unidade primária de amostragem): alunos de uma mesma escola tendem a ter resultados parecidos;
-- **`ESTRATO`** — o **estrato** de seleção (no RJ, 216 estratos; cada escola pertence a um único estrato).
+- **`ESTRATO`** — o **estrato** de seleção (no RJ, 162 estratos no 5º ano, 216 no 9º ano e 178 no Ensino Médio; no 5º e 9º anos cada escola pertence a um único estrato, enquanto no Ensino Médio algumas escolas com turmas de 3ª e 4ª séries aparecem em dois estratos — por isso os conglomerados são aninhados no estrato como pares `(ESTRATO, ID_ESCOLA)`, equivalente a `nest=TRUE` no pacote `survey` do R e ao `svy` do Stata).
 
 ### 2.4 Variáveis socioeconômicas
 
@@ -242,9 +242,9 @@ O script `backend/etl/precompute.py` lê os Parquet e gera, do zero, o banco Duc
 | `prof_by_inse` | Proficiência por nível socioeconômico (RJ, `IN_INSE = 1`) | Cruzamento |
 | `prof_by_location_rj` | Proficiência urbana vs. rural (RJ) | Cruzamento |
 | `escola_inse_rj` | Proficiências médias por INSE da escola | Cruzamento |
-| `quest_aluno_rj` | Distribuição de respostas dos alunos | Descritivo direto |
-| `quest_professor_rj` | Distribuição de respostas dos professores | Descritivo direto |
-| `quest_diretor_rj` | Distribuição de respostas dos diretores | Descritivo direto |
+| `quest_aluno_rj` | Distribuição de respostas fechadas dos alunos | Descritivo direto |
+| `quest_professor_rj` | Distribuição de respostas fechadas dos professores (deduplicada por `ID_PROFESSOR`) | Descritivo direto |
+| `quest_diretor_rj` | Distribuição de respostas fechadas dos diretores (deduplicada por `ID_ESCOLA`) | Descritivo direto |
 | `cross_aluno_tech_rj` | Médias de proficiência por resposta tecnológica do aluno (e por INSE) | Cruzamento |
 | `cross_digital_index_rj` | Médias por valor do índice digital composto (e por INSE) | Criado por manipulação estatística |
 | `tic_indicadores` | Tabelas da TIC Educação em formato longo | Descritivo direto |
@@ -304,18 +304,21 @@ Média do estado = ────────────────────�
 
 ### 5.3 Distribuição por nível de proficiência
 
-O SAEB classifica os alunos em **níveis de proficiência** (0 a 9 para LP, 0 a 10 para MT), onde cada nível corresponde a um conjunto de habilidades que o aluno demonstra dominar.
+O SAEB classifica os alunos em **níveis de proficiência** (0 a 9 para LP no 5º EF, 0 a 8 para LP no 9º EF e Ensino Médio, 0 a 10 para MT no 5º EF e Ensino Médio, e 0 a 9 para MT no 9º EF), onde cada nível corresponde a um conjunto de habilidades que o aluno demonstra dominar.
 
-Os percentuais vêm da tabela `TS_ESCOLA`, que traz, para cada escola **pública**, o percentual de alunos em cada nível (pré-calculado pelo INEP). A aplicação mostra a **média simples desses percentuais entre as escolas públicas do RJ** — uma aproximação da distribuição dos alunos da rede pública (não pondera pelo tamanho da escola nem inclui a rede privada). Disponível para 5º e 9º anos.
+Os percentuais vêm da tabela `TS_ESCOLA`, que traz, para cada escola **pública**, o percentual de alunos em cada nível (pré-calculado pelo INEP, incluindo `NIVEL_*_LPEM` e `NIVEL_*_MTEM` expostos como `34EM`). A aplicação mostra a **média simples desses percentuais entre as escolas públicas do RJ** — uma aproximação da distribuição dos alunos da rede pública (não pondera pelo tamanho da escola nem inclui a rede privada). Disponível para 5º EF, 9º EF e Ensino Médio (`34EM`).
 
-### 5.4 Perfil dos professores
+### 5.4 Perfil dos professores e questionários contextuais
 
 Distribuição das respostas dos professores do RJ aos questionários contextuais:
 - **Sexo** (questão Q001)
 - **Contribuição da formação em tecnologia** (Q029)
 - **Adequação dos computadores na escola** (Q072)
 
-Esses dados são contagens diretas das respostas, sem manipulação estatística.
+Como `TS_PROFESSOR` possui uma linha por turma avaliada em que o docente leciona (repetindo o mesmo professor em múltiplas turmas) e `TS_DIRETOR` possui uma linha por escola e série avaliada, as tabelas descritivas (`quest_professor_rj` e `quest_diretor_rj`) e funções descritivas de perfil docente filtram questionários efetivamente preenchidos (`IN_PREENCHIMENTO_QUESTIONARIO = 1`) e **deduplicam antes da contagem**:
+- **Professor:** 1 linha por docente único (`ID_PROFESSOR`, priorizando a turma principal onde `IN_PREENCHIMENTO_OUTRA_TURMA = 0`, resultando nos 10.239 docentes respondentes únicos no RJ);
+- **Diretor:** 1 linha por escola única (`ID_ESCOLA`, resultando nas 3.776 escolas respondentes únicas no RJ).
+Apenas questões fechadas presentes no dicionário oficial (`saeb_questionnaire_dict.json`) são tabuladas, excluindo campos dissertativos abertos.
 
 ### 5.5 Indicadores TIC Educação
 
@@ -526,12 +529,12 @@ d = ─────────────────────────
         √(variância_pooled)
 
 onde:
-                   (Σw₁ − 1) × var₁ + (Σw₂ − 1) × var₂
-variância_pooled = ──────────────────────────────────────
-                         Σw₁ + Σw₂ − 2
+                   Σw₁ × var₁ + Σw₂ × var₂
+variância_pooled = ────────────────────────
+                         Σw₁ + Σw₂
 ```
 
-A variância *pooled* (combinada) é uma média ponderada das variâncias dos dois grupos, usada como "régua" para medir a diferença.
+Cada variância intragrupo `var_g` utiliza correção de Bessel para pesos de confiabilidade (*reliability weights*): `V₁ / (V₁ − V₂/V₁)`, com `V₁ = Σw_i` e `V₂ = Σw_i²` (exigindo pelo menos 2 observações válidas com peso positivo em cada grupo). A variância *pooled* (combinada) pondera cada grupo pela sua fração populacional `Σw_g / (Σw₁ + Σw₂)`, o que torna o estimador **estritamente invariante à escala dos pesos** (multiplicar todos os pesos por qualquer constante positiva `c > 0` preserva exatamente o valor de `d`).
 
 #### Classificação (convenção de Cohen)
 

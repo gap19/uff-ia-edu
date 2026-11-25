@@ -6,13 +6,11 @@
     <title>Painel de Pesquisa: IA na Educação — UFF</title>
     <meta name="description" content="Dashboard analítico do projeto PIBITI/PIBINOVA sobre ética na tomada de decisão por IA no ambiente escolar — UFF/Faculdade de Educação">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234e79a7'/%3E%3Cpath d='M4 11V7m4 4V5m4 6V8' stroke='white' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/vendor/inter/inter.css" rel="stylesheet">
+    <link href="/static/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/vendor/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
     <link href="/static/css/dashboard.css?v={{ asset_version }}" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <link href="/static/vendor/katex/katex.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="d-flex">
@@ -259,7 +257,7 @@
                                     <div class="border rounded p-3 h-100">
                                         <h6><i class="bi bi-shield-check me-1" style="color: var(--clr-green)"></i> Controles e Correções</h6>
                                         <ul class="small mb-0">
-                                            <li><strong>Correção de Bonferroni</strong> para comparações múltiplas (α<sub>ajustado</sub> = 0,05/12 ≈ 0,004)</li>
+                                            <li><strong>Correção de Bonferroni</strong> para comparações múltiplas (α<sub>ajustado</sub> = 0,05/11 ≈ 0,0045)</li>
                                             <li><strong>Estratificação por INSE</strong> — todas as análises de cruzamento são repetidas dentro de cada nível socioeconômico (1–8) para separar o efeito da tecnologia do viés socioeconômico</li>
                                             <li><strong>Variável de estratificação</strong> (ESTRATO) para estimação de variância com desenho amostral complexo</li>
                                         </ul>
@@ -297,7 +295,7 @@
                                         <tr><td class="fw-bold">Backend/API</td><td>Python 3.12 + FastAPI</td></tr>
                                         <tr><td class="fw-bold">Banco de dados</td><td>DuckDB (in-process, Parquet colunar)</td></tr>
                                         <tr><td class="fw-bold">Frontend</td><td>Vanilla JS + Apache ECharts 5.5 + Bootstrap 5</td></tr>
-                                        <tr><td class="fw-bold">Tipografia</td><td>Google Fonts (Inter) + Bootstrap Icons</td></tr>
+                                        <tr><td class="fw-bold">Tipografia</td><td>Inter + Bootstrap Icons (auto-hospedados)</td></tr>
                                         <tr><td class="fw-bold">Relatórios PDF</td><td>WeasyPrint + matplotlib/seaborn</td></tr>
                                         <tr><td class="fw-bold">Containerização</td><td>Docker + docker-compose</td></tr>
                                     </table>
@@ -480,7 +478,13 @@
 
                 <!-- Página 5: Professores -->
                 <div id="page-teachers" class="page-section d-none">
-                    <h3 class="mb-4"><i class="bi bi-people me-2" style="color: var(--clr-primary)"></i>Professores</h3>
+                    <h3 class="mb-2"><i class="bi bi-people me-2" style="color: var(--clr-primary)"></i>Professores</h3>
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Perfil, formação e infraestrutura reportados pelos docentes do Rio de Janeiro no SAEB 2023.
+                        Nas abas descritivas, os questionários são deduplicados por docente único (<code>ID_PROFESSOR</code>, priorizando a turma principal),
+                        enquanto questionários de gestão escolar são deduplicados por escola única (<code>ID_ESCOLA</code> em Diretor).
+                    </p>
                     <ul class="nav nav-tabs mb-3">
                         <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-teach-profile">Perfil</a></li>
                         <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-teach-practices">Formação e Práticas</a></li>
@@ -527,7 +531,8 @@
                     <p class="text-muted mb-3">
                         Explorador interativo dos <strong>questionários contextuais</strong> aplicados pelo INEP junto às provas do SAEB 2023.
                         Esses questionários coletam informações sobre o perfil socioeconômico dos alunos, as práticas pedagógicas dos professores
-                        e as condições de infraestrutura reportadas pelos diretores. Os dados exibidos referem-se ao <strong>estado do Rio de Janeiro</strong>.
+                        e as condições de infraestrutura reportadas pelos diretores. Os dados exibidos referem-se ao <strong>estado do Rio de Janeiro</strong>,
+                        com contagens descritivas deduplicadas por docente único (<code>ID_PROFESSOR</code> em Professor) e por escola única (<code>ID_ESCOLA</code> em Diretor).
                     </p>
                     <div class="row g-2 mb-3">
                         <div class="col-md-4">
@@ -576,6 +581,7 @@
                         <i class="bi bi-info-circle me-1"></i>
                         O símbolo <strong>*</strong> indica respostas <em>nulas</em> (questão não respondida ou resposta inválida).
                         Respostas em branco (campo deixado vazio) são filtradas e não aparecem no gráfico.
+                        Nos questionários descritivos de <strong>Professor</strong> e <strong>Diretor</strong>, os registros são deduplicados por docente único (<code>ID_PROFESSOR</code>) e por escola única (<code>ID_ESCOLA</code>), evitando dupla contagem entre turmas ou séries avaliadas.
                         Os dados são do questionário contextual do SAEB 2023, aplicado pelo INEP/MEC.
                     </p>
                 </div>
@@ -835,22 +841,22 @@
                             <div class="row g-2">
                                 <div class="col-md-6">
                                     <ol class="small mb-0">
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-1').scrollIntoView({behavior:'smooth'});return false">Visão geral das fontes de dados</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-2').scrollIntoView({behavior:'smooth'});return false">SAEB 2023 — Microdados</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-3').scrollIntoView({behavior:'smooth'});return false">TIC Educação 2023 — Tecnologia nas escolas</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-4').scrollIntoView({behavior:'smooth'});return false">Como os dados são processados (ETL)</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-5').scrollIntoView({behavior:'smooth'});return false">Dados apresentados diretamente</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-6').scrollIntoView({behavior:'smooth'});return false">Dados cruzados</a></li>
+                                        <li><a href="#dd-sec-1" data-scroll-to="dd-sec-1">Visão geral das fontes de dados</a></li>
+                                        <li><a href="#dd-sec-2" data-scroll-to="dd-sec-2">SAEB 2023 — Microdados</a></li>
+                                        <li><a href="#dd-sec-3" data-scroll-to="dd-sec-3">TIC Educação 2023 — Tecnologia nas escolas</a></li>
+                                        <li><a href="#dd-sec-4" data-scroll-to="dd-sec-4">Como os dados são processados (ETL)</a></li>
+                                        <li><a href="#dd-sec-5" data-scroll-to="dd-sec-5">Dados apresentados diretamente</a></li>
+                                        <li><a href="#dd-sec-6" data-scroll-to="dd-sec-6">Dados cruzados</a></li>
                                     </ol>
                                 </div>
                                 <div class="col-md-6">
                                     <ol class="small mb-0" start="7">
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-7').scrollIntoView({behavior:'smooth'});return false">Dados criados por manipulação estatística</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-8').scrollIntoView({behavior:'smooth'});return false">Métodos estatísticos explicados</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-9').scrollIntoView({behavior:'smooth'});return false">Índice Digital Composto</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-10').scrollIntoView({behavior:'smooth'});return false">Correção de Bonferroni</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-11').scrollIntoView({behavior:'smooth'});return false">Fluxo completo dos dados</a></li>
-                                        <li><a href="#" onclick="document.getElementById('dd-sec-12').scrollIntoView({behavior:'smooth'});return false">Limitações e glossário</a></li>
+                                        <li><a href="#dd-sec-7" data-scroll-to="dd-sec-7">Dados criados por manipulação estatística</a></li>
+                                        <li><a href="#dd-sec-8" data-scroll-to="dd-sec-8">Métodos estatísticos explicados</a></li>
+                                        <li><a href="#dd-sec-9" data-scroll-to="dd-sec-9">Índice Digital Composto</a></li>
+                                        <li><a href="#dd-sec-10" data-scroll-to="dd-sec-10">Correção de Bonferroni</a></li>
+                                        <li><a href="#dd-sec-11" data-scroll-to="dd-sec-11">Fluxo completo dos dados</a></li>
+                                        <li><a href="#dd-sec-12" data-scroll-to="dd-sec-12">Limitações e glossário</a></li>
                                     </ol>
                                 </div>
                             </div>
@@ -1022,7 +1028,8 @@
                                     <tbody>
                                         <tr><td><code>MEDIA_5EF_LP</code>, <code>MEDIA_5EF_MT</code></td><td>Proficiência média dos alunos do 5º ano (LP e MT)</td></tr>
                                         <tr><td><code>MEDIA_9EF_LP</code>, <code>MEDIA_9EF_MT</code></td><td>Proficiência média dos alunos do 9º ano (LP e MT)</td></tr>
-                                        <tr><td><code>PC_FORMACAO_DOCENTE_INICIAL</code></td><td>% de professores com formação adequada</td></tr>
+                                        <tr><td><code>MEDIA_EM_LP</code>, <code>MEDIA_EM_MT</code></td><td>Proficiência média dos alunos do Ensino Médio (LP e MT)</td></tr>
+                                        <tr><td><code>PC_FORMACAO_DOCENTE_INICIAL</code>, <code>PC_FORMACAO_DOCENTE_FINAL</code>, <code>PC_FORMACAO_DOCENTE_MEDIO</code></td><td>% de professores com formação adequada por etapa (Anos Iniciais, Anos Finais e Ensino Médio)</td></tr>
                                         <tr><td><code>NIVEL_0_LP5</code> a <code>NIVEL_9_LP5</code></td><td>% de alunos em cada nível de proficiência</td></tr>
                                     </tbody>
                                 </table>
@@ -1147,8 +1154,8 @@
                                         <tr><td><code>prof_by_uf_serie_disc</code></td><td>Proficiência por UF, série e disciplina</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
                                         <tr><td><code>prof_niveis_rj</code> / <code>prof_niveis_nacional</code></td><td>Média, entre escolas públicas, do % de alunos por nível</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
                                         <tr><td><code>quest_aluno_rj</code></td><td>Respostas dos questionários dos alunos</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
-                                        <tr><td><code>quest_professor_rj</code></td><td>Respostas dos questionários dos professores</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
-                                        <tr><td><code>quest_diretor_rj</code></td><td>Respostas dos questionários dos diretores</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>quest_professor_rj</code></td><td>Respostas dos questionários dos professores (deduplicadas por <code>ID_PROFESSOR</code>)</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
+                                        <tr><td><code>quest_diretor_rj</code></td><td>Respostas dos questionários dos diretores (deduplicadas por <code>ID_ESCOLA</code>)</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
                                         <tr><td><code>tic_indicadores</code></td><td>Tabelas TIC Educação (formato longo, com títulos, itens e respostas)</td><td><span class="badge bg-primary">Descritivo</span></td></tr>
                                         <tr><td><code>prof_by_inse</code></td><td>Proficiência por nível socioeconômico (RJ, alunos com INSE)</td><td><span class="badge bg-warning text-dark">Cruzamento</span></td></tr>
                                         <tr><td><code>prof_by_location_rj</code></td><td>Proficiência urbana vs. rural (RJ)</td><td><span class="badge bg-warning text-dark">Cruzamento</span></td></tr>
@@ -1211,7 +1218,7 @@
                                     <div class="card h-100">
                                         <div class="card-body py-2">
                                             <h6 class="small"><i class="bi bi-layers me-1 text-primary"></i> Níveis de proficiência</h6>
-                                            <p class="small mb-0">% de alunos em cada nível (0 a 9/10), em média entre as escolas públicas do RJ. Cada nível corresponde a habilidades dominadas. Dados da tabela <code>TS_ESCOLA</code>, pré-calculados pelo INEP (disponíveis para 5º e 9º EF).</p>
+                                            <p class="small mb-0">% de alunos em cada nível (0 a 9/10), em média entre as escolas públicas do RJ. Cada nível corresponde a habilidades dominadas. Dados da tabela <code>TS_ESCOLA</code>, pré-calculados pelo INEP (disponíveis para 5º EF, 9º EF e Ensino Médio).</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1219,7 +1226,7 @@
                                     <div class="card h-100">
                                         <div class="card-body py-2">
                                             <h6 class="small"><i class="bi bi-people me-1 text-primary"></i> Perfil dos professores</h6>
-                                            <p class="small mb-0">Contagens diretas das respostas ao questionário contextual: sexo, contribuição da formação em tecnologia, adequação dos computadores.</p>
+                                            <p class="small mb-0">Contagens diretas das respostas ao questionário contextual (deduplicadas por <code>ID_PROFESSOR</code>): sexo, contribuição da formação em tecnologia, adequação dos computadores.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1318,7 +1325,7 @@
                                     <div class="card border-danger h-100">
                                         <div class="card-body py-2">
                                             <h6 class="small text-danger"><i class="bi bi-calculator me-1"></i> Índice Digital Composto (0–8)</h6>
-                                            <p class="small mb-0">Combina 4 perguntas do questionário do aluno em um único índice numérico. Classificado em faixas: Baixo, Médio, Alto. Veja <a href="#" onclick="document.getElementById('dd-sec-9').scrollIntoView({behavior:'smooth'});return false">seção 9</a>.</p>
+                                            <p class="small mb-0">Combina 4 perguntas do questionário do aluno em um único índice numérico. Classificado em faixas: Baixo, Médio, Alto. Veja <a href="#dd-sec-9" data-scroll-to="dd-sec-9">seção 9</a>.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1639,7 +1646,7 @@
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <strong class="small">SAEB 2023 (INEP/MEC)</strong>
-                                                    <p class="small mb-0 text-muted">~9 milhões de alunos, ~411 mil professores, ~107 mil diretores, ~70 mil escolas</p>
+                                                    <p class="small mb-0 text-muted">~7,1 milhões de alunos, ~411 mil professores, ~107 mil diretores, ~70 mil escolas</p>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <strong class="small">TIC Educação 2023 (CETIC.br)</strong>
@@ -1930,25 +1937,13 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+    <script src="/static/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="/static/vendor/katex/katex.min.js"></script>
+    <script src="/static/vendor/echarts/echarts.min.js"></script>
     <script src="/static/js/charts.js?v={{ asset_version }}"></script>
     <script src="/static/js/glossary.js?v={{ asset_version }}"></script>
     <script src="/static/js/explanations.js?v={{ asset_version }}"></script>
     <script src="/static/js/pages.js?v={{ asset_version }}"></script>
     <script src="/static/js/app.js?v={{ asset_version }}"></script>
-    <script>
-    // Render KaTeX formulas
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('.katex-formula').forEach(el => {
-            const formula = el.getAttribute('data-formula');
-            const displayMode = el.getAttribute('data-inline') !== 'true';
-            try {
-                katex.render(formula, el, { displayMode, throwOnError: false });
-            } catch (e) { el.textContent = formula; }
-        });
-    });
-    </script>
 </body>
 </html>

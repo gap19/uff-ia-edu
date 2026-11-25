@@ -11,14 +11,17 @@ diretamente dos Parquet (rápido, e evita os erros das antigas tabelas
 ``escola_formacao_rj`` — escolas agrupadas por percentuais idênticos).
 """
 
-import duckdb
+import json
 from pathlib import Path
+
+import duckdb
 
 from backend.config import (
     DUCKDB_PATH,
+    ID_UF_RJ,
+    PROCESSED_DIR,
     SAEB_PARQUET_DIR,
     TIC_PARQUET_DIR,
-    ID_UF_RJ,
 )
 
 
@@ -31,9 +34,34 @@ def _tic_parquet() -> str:
     return str(TIC_PARQUET_DIR / "tic_educacao_2023.parquet")
 
 
+def _count_rows(con: duckdb.DuckDBPyConnection, table: str) -> int:
+    """Retorna a contagem de linhas de *table* como int."""
+    row = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+    return int(row[0]) if row is not None else 0
+
+
+def _load_closed_questionnaire_cols(sheet: str) -> set[str] | None:
+    """Carrega o conjunto de questões fechadas da aba *sheet* no dicionário SAEB.
+
+    Retorna ``None`` se ``saeb_questionnaire_dict.json`` não existir ou não
+    tiver a aba (fallback seguro).
+    """
+    dict_path = PROCESSED_DIR / "saeb_questionnaire_dict.json"
+    if not dict_path.exists():
+        return None
+    with open(dict_path, encoding="utf-8") as f:
+        data = json.load(f)
+    sheet_dict = data.get(sheet)
+    if isinstance(sheet_dict, dict) and sheet_dict:
+        return set(sheet_dict.keys())
+    return None
+
+
 # Formato de armazenamento legível por DuckDB >= 1.1 (ver requirements.txt),
 # mesmo quando o banco é gerado por uma versão mais nova.
-_STORAGE_COMPAT = {"storage_compatibility_version": "v1.1.0"}
+_STORAGE_COMPAT: dict[str, str | bool | int | float | list[str]] = {
+    "storage_compatibility_version": "v1.1.0",
+}
 
 
 def precompute_all() -> list[str]:
@@ -137,7 +165,7 @@ def _precompute_proficiency_by_uf(con: duckdb.DuckDBPyConnection) -> list[str]:
 
     union_sql = "\nUNION ALL\n".join(queries)
     con.execute(f"CREATE OR REPLACE TABLE {table} AS ({union_sql})")
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -179,7 +207,7 @@ def _precompute_proficiency_by_inse(con: duckdb.DuckDBPyConnection) -> list[str]
 
     union_sql = "\nUNION ALL\n".join(queries)
     con.execute(f"CREATE OR REPLACE TABLE {table} AS ({union_sql})")
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -220,7 +248,7 @@ def _precompute_proficiency_by_location(con: duckdb.DuckDBPyConnection) -> list[
 
     union_sql = "\nUNION ALL\n".join(queries)
     con.execute(f"CREATE OR REPLACE TABLE {table} AS ({union_sql})")
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -229,25 +257,38 @@ def _precompute_proficiency_by_location(con: duckdb.DuckDBPyConnection) -> list[
 # Distribuição por nível de proficiência - RJ
 # ---------------------------------------------------------------------------
 
-def _nivel_avg_sql(col: str) -> str:
-    """Gera AVG(TRY_CAST(col AS DOUBLE)) AS col_lower."""
-    return f"AVG(TRY_CAST({col} AS DOUBLE)) AS {col.lower()}"
+def _nivel_avg_sql(col: str, alias: str | None = None) -> str:
+    """Gera AVG(TRY_CAST(col AS DOUBLE)) AS alias."""
+    target = alias if alias is not None else col.lower()
+    return f"AVG(TRY_CAST({col} AS DOUBLE)) AS {target}"
+
+
+def _build_proficiency_level_avgs() -> str:
+    """Expressões SQL de níveis de proficiência (5EF, 9EF e 34EM)."""
+    # Colunas NIVEL_* são VARCHAR no CSV - precisa TRY_CAST para DOUBLE.
+    # Intervalos reais em TS_ESCOLA:
+    #   LP5: 0-9, MT5: 0-10, LP9: 0-8, MT9: 0-9, LPEM: 0-8, MTEM: 0-10.
+    # Para Ensino Médio (34EM), expõe aliases nivel_{n}_lp34em e nivel_{n}_mt34em.
+    specs: list[tuple[str, str, int]] = [
+        ("LP5", "lp5", 9),
+        ("MT5", "mt5", 10),
+        ("LP9", "lp9", 8),
+        ("MT9", "mt9", 9),
+        ("LPEM", "lp34em", 8),
+        ("MTEM", "mt34em", 10),
+    ]
+    exprs: list[str] = []
+    for src_suffix, alias_suffix, max_n in specs:
+        for n in range(0, max_n + 1):
+            exprs.append(_nivel_avg_sql(f"NIVEL_{n}_{src_suffix}", f"nivel_{n}_{alias_suffix}"))
+    return ", ".join(exprs)
 
 
 def _precompute_proficiency_levels_rj(con: duckdb.DuckDBPyConnection) -> list[str]:
     """Percentual de alunos por nível de proficiência no RJ."""
     table = "prof_niveis_rj"
     pq_escola = _parquet("TS_ESCOLA")
-
-    # Colunas NIVEL_* são VARCHAR no CSV - precisa TRY_CAST para DOUBLE
-    # Intervalos reais: LP5: 0-9, MT5: 0-10, LP9: 0-8, MT9: 0-9
-    nivel_max = {"LP5": 9, "MT5": 10, "LP9": 8, "MT9": 9}
-    nivel_cols = []
-    for disc_serie, max_n in nivel_max.items():
-        for n in range(0, max_n + 1):
-            nivel_cols.append(f"NIVEL_{n}_{disc_serie}")
-
-    avgs = ", ".join(_nivel_avg_sql(c) for c in nivel_cols)
+    avgs = _build_proficiency_level_avgs()
 
     con.execute(f"""
         CREATE OR REPLACE TABLE {table} AS
@@ -260,7 +301,7 @@ def _precompute_proficiency_levels_rj(con: duckdb.DuckDBPyConnection) -> list[st
         WHERE ID_UF = {ID_UF_RJ}
         GROUP BY ID_UF, IN_PUBLICA
     """)
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -273,14 +314,7 @@ def _precompute_proficiency_levels_nacional(con: duckdb.DuckDBPyConnection) -> l
     """Percentual de alunos por nível de proficiência - nacional."""
     table = "prof_niveis_nacional"
     pq_escola = _parquet("TS_ESCOLA")
-
-    nivel_max = {"LP5": 9, "MT5": 10, "LP9": 8, "MT9": 9}
-    nivel_cols = []
-    for disc_serie, max_n in nivel_max.items():
-        for n in range(0, max_n + 1):
-            nivel_cols.append(f"NIVEL_{n}_{disc_serie}")
-
-    avgs = ", ".join(_nivel_avg_sql(c) for c in nivel_cols)
+    avgs = _build_proficiency_level_avgs()
 
     con.execute(f"""
         CREATE OR REPLACE TABLE {table} AS
@@ -289,7 +323,7 @@ def _precompute_proficiency_levels_nacional(con: duckdb.DuckDBPyConnection) -> l
             COUNT(*) AS n_escolas
         FROM read_parquet('{pq_escola}')
     """)
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -316,9 +350,12 @@ def _precompute_questionnaire_aluno_rj(con: duckdb.DuckDBPyConnection) -> list[s
         pq = _parquet(aluno_file)
         serie = aluno_file.replace("TS_ALUNO_", "")
 
-        # Obter nomes das colunas TX_RESP
+        # Obter nomes das colunas TX_RESP (restringidas às fechadas do dicionário)
         schema = con.execute(f"SELECT name FROM parquet_schema('{pq}') WHERE name LIKE 'TX_RESP_Q%'").fetchall()
         resp_cols = [row[0] for row in schema]
+        closed_cols = _load_closed_questionnaire_cols(aluno_file)
+        if closed_cols is not None:
+            resp_cols = [c for c in resp_cols if c in closed_cols]
 
         if not resp_cols:
             continue
@@ -341,7 +378,7 @@ def _precompute_questionnaire_aluno_rj(con: duckdb.DuckDBPyConnection) -> list[s
             GROUP BY col_name, val
         """)
 
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -351,21 +388,46 @@ def _precompute_questionnaire_aluno_rj(con: duckdb.DuckDBPyConnection) -> list[s
 # ---------------------------------------------------------------------------
 
 def _precompute_questionnaire_professor_rj(con: duckdb.DuckDBPyConnection) -> list[str]:
-    """Distribuição de respostas dos questionários de professores no RJ."""
+    """Distribuição de respostas dos questionários de professores no RJ (1 linha por docente único)."""
     table = "quest_professor_rj"
     pq = _parquet("TS_PROFESSOR")
 
-    # Filtrar apenas colunas TX_Q* do tipo VARCHAR para evitar erro de UNPIVOT
+    all_cols = {
+        row[0] for row in con.execute(f"SELECT name FROM parquet_schema('{pq}')").fetchall()
+    }
+    # Filtrar apenas colunas TX_Q* fechadas (presentes no dicionário oficial)
     schema = con.execute(f"""
         SELECT name FROM parquet_schema('{pq}')
         WHERE name LIKE 'TX_Q%' AND type = 'BYTE_ARRAY'
     """).fetchall()
     resp_cols = [row[0] for row in schema]
+    closed_cols = _load_closed_questionnaire_cols("TS_PROFESSOR")
+    if closed_cols is not None:
+        resp_cols = [c for c in resp_cols if c in closed_cols]
 
     if not resp_cols:
         con.execute(f"CREATE OR REPLACE TABLE {table} (questao VARCHAR, resposta VARCHAR, contagem BIGINT)")
         print(f"  [{table}] 0 linhas (sem colunas TX_Q*)")
         return [table]
+
+    filled_clause = (
+        " AND COALESCE(IN_PREENCHIMENTO_QUESTIONARIO, 1) = 1"
+        if "IN_PREENCHIMENTO_QUESTIONARIO" in all_cols
+        else ""
+    )
+    qualify_clause = ""
+    if "ID_PROFESSOR" in all_cols:
+        order_terms: list[str] = []
+        if "IN_PREENCHIMENTO_OUTRA_TURMA" in all_cols:
+            order_terms.append("COALESCE(IN_PREENCHIMENTO_OUTRA_TURMA, 0) ASC")
+        if "ID_ESCOLA" in all_cols:
+            order_terms.append("ID_ESCOLA ASC")
+        if "ID_TURMA" in all_cols:
+            order_terms.append("ID_TURMA ASC")
+        order_sql = ", ".join(order_terms) if order_terms else "ID_PROFESSOR ASC"
+        qualify_clause = (
+            f" QUALIFY ROW_NUMBER() OVER (PARTITION BY ID_PROFESSOR ORDER BY {order_sql}) = 1"
+        )
 
     unpivot_cols = ", ".join(resp_cols)
     con.execute(f"""
@@ -375,14 +437,18 @@ def _precompute_questionnaire_professor_rj(con: duckdb.DuckDBPyConnection) -> li
             val AS resposta,
             COUNT(*) AS contagem
         FROM (
-            SELECT {unpivot_cols}, ID_UF FROM read_parquet('{pq}')
-            WHERE ID_UF = {ID_UF_RJ}
+            SELECT {unpivot_cols}
+            FROM (
+                SELECT *
+                FROM read_parquet('{pq}')
+                WHERE ID_UF = {ID_UF_RJ}{filled_clause}{qualify_clause}
+            )
         )
         UNPIVOT (val FOR col_name IN ({unpivot_cols}))
         WHERE val IS NOT NULL AND val != '' AND val != '.'
         GROUP BY col_name, val
     """)
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -392,20 +458,38 @@ def _precompute_questionnaire_professor_rj(con: duckdb.DuckDBPyConnection) -> li
 # ---------------------------------------------------------------------------
 
 def _precompute_questionnaire_diretor_rj(con: duckdb.DuckDBPyConnection) -> list[str]:
-    """Distribuição de respostas dos questionários de diretores no RJ."""
+    """Distribuição de respostas dos questionários de diretores no RJ (1 linha por escola única)."""
     table = "quest_diretor_rj"
     pq = _parquet("TS_DIRETOR")
 
+    all_cols = {
+        row[0] for row in con.execute(f"SELECT name FROM parquet_schema('{pq}')").fetchall()
+    }
     schema = con.execute(f"""
         SELECT name FROM parquet_schema('{pq}')
         WHERE name LIKE 'TX_Q%' AND type = 'BYTE_ARRAY'
     """).fetchall()
     resp_cols = [row[0] for row in schema]
+    closed_cols = _load_closed_questionnaire_cols("TS_DIRETOR")
+    if closed_cols is not None:
+        resp_cols = [c for c in resp_cols if c in closed_cols]
 
     if not resp_cols:
         con.execute(f"CREATE OR REPLACE TABLE {table} (questao VARCHAR, resposta VARCHAR, contagem BIGINT)")
         print(f"  [{table}] 0 linhas (sem colunas TX_Q*)")
         return [table]
+
+    filled_clause = (
+        " AND COALESCE(IN_PREENCHIMENTO_QUESTIONARIO, 1) = 1"
+        if "IN_PREENCHIMENTO_QUESTIONARIO" in all_cols
+        else ""
+    )
+    qualify_clause = ""
+    if "ID_ESCOLA" in all_cols:
+        order_sql = "ID_SERIE ASC" if "ID_SERIE" in all_cols else "ID_ESCOLA ASC"
+        qualify_clause = (
+            f" QUALIFY ROW_NUMBER() OVER (PARTITION BY ID_ESCOLA ORDER BY {order_sql}) = 1"
+        )
 
     unpivot_cols = ", ".join(resp_cols)
     con.execute(f"""
@@ -415,14 +499,18 @@ def _precompute_questionnaire_diretor_rj(con: duckdb.DuckDBPyConnection) -> list
             val AS resposta,
             COUNT(*) AS contagem
         FROM (
-            SELECT {unpivot_cols}, ID_UF FROM read_parquet('{pq}')
-            WHERE ID_UF = {ID_UF_RJ}
+            SELECT {unpivot_cols}
+            FROM (
+                SELECT *
+                FROM read_parquet('{pq}')
+                WHERE ID_UF = {ID_UF_RJ}{filled_clause}{qualify_clause}
+            )
         )
         UNPIVOT (val FOR col_name IN ({unpivot_cols}))
         WHERE val IS NOT NULL AND val != '' AND val != '.'
         GROUP BY col_name, val
     """)
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -445,14 +533,16 @@ def _precompute_escola_inse_rj(con: duckdb.DuckDBPyConnection) -> list[str]:
             AVG(TRY_CAST(MEDIA_5EF_LP AS DOUBLE)) AS media_5ef_lp,
             AVG(TRY_CAST(MEDIA_5EF_MT AS DOUBLE)) AS media_5ef_mt,
             AVG(TRY_CAST(MEDIA_9EF_LP AS DOUBLE)) AS media_9ef_lp,
-            AVG(TRY_CAST(MEDIA_9EF_MT AS DOUBLE)) AS media_9ef_mt
+            AVG(TRY_CAST(MEDIA_9EF_MT AS DOUBLE)) AS media_9ef_mt,
+            AVG(TRY_CAST(MEDIA_EM_LP AS DOUBLE)) AS media_em_lp,
+            AVG(TRY_CAST(MEDIA_EM_MT AS DOUBLE)) AS media_em_mt
         FROM read_parquet('{pq}')
         WHERE ID_UF = {ID_UF_RJ}
           AND NIVEL_SOCIO_ECONOMICO IS NOT NULL
           AND NIVEL_SOCIO_ECONOMICO != ''
         GROUP BY NIVEL_SOCIO_ECONOMICO, IN_PUBLICA
     """)
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -478,7 +568,7 @@ def _precompute_tic_indicadores(con: duckdb.DuckDBPyConnection) -> list[str]:
         CREATE OR REPLACE TABLE {table} AS
         SELECT * FROM read_parquet('{tic_pq}')
     """)
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -530,7 +620,7 @@ def _precompute_kpi_rj(con: duckdb.DuckDBPyConnection) -> list[str]:
         WHERE ID_UF = {ID_UF_RJ}
     """)
 
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     print("  [kpi_escolas_rj] 1 linha")
     return [table, "kpi_escolas_rj"]
@@ -595,7 +685,7 @@ def _precompute_cross_aluno_tech_rj(con: duckdb.DuckDBPyConnection) -> list[str]
                     GROUP BY {tv}, NU_TIPO_NIVEL_INSE
                 """)
 
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 
@@ -673,7 +763,7 @@ def _precompute_cross_digital_index_rj(con: duckdb.DuckDBPyConnection) -> list[s
                 GROUP BY di, NU_TIPO_NIVEL_INSE
             """)
 
-    n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    n = _count_rows(con, table)
     print(f"  [{table}] {n} linhas")
     return [table]
 

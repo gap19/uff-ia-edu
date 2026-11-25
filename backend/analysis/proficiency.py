@@ -1,11 +1,20 @@
 """
 Proficiency analysis module for the SAEB/TIC education dashboard.
 
-Provides high-level functions for proficiency distribution, regional
-comparisons, and public/private breakdowns using pre-computed parquet files.
+Role in the architecture
+------------------------
+Programmatic analytical library over student microdata Parquets
+(``TS_ALUNO_*.parquet``), providing weighted histograms/percentiles and
+design-based confidence intervals (Taylor linearization with ``ESTRATO`` and
+``ID_ESCOLA``) for regional and public/private comparisons. While FastAPI
+routes in ``/api/saeb/*`` serve fast pre-computed aggregates from
+``saeb.duckdb``, this module exposes full microdata distributions and
+design-based inference for scripts, notebooks, and statistical validation,
+including explicit ``3EM`` (``ID_SERIE = 12``) vs ``4EM`` (``ID_SERIE = 13``)
+filtering within ``TS_ALUNO_34EM.parquet``.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import duckdb
 import numpy as np
@@ -37,28 +46,37 @@ _SERIE_FILE_MAP: Dict[str, str] = {
     "34EM": "TS_ALUNO_34EM",
 }
 
+_SERIE_ID_MAP: Dict[str, int] = {
+    "3EM": 12,
+    "4EM": 13,
+}
 
-def _parquet_path(serie: str) -> str:
-    """Return the full parquet file path for a given serie."""
-    key = serie.upper()
+_SERIE_DISCIPLINAS: Dict[str, frozenset[str]] = {
+    "TS_ALUNO_2EF": frozenset({"LP", "MT"}),
+    "TS_ALUNO_5EF": frozenset({"LP", "MT", "CH", "CN"}),
+    "TS_ALUNO_9EF": frozenset({"LP", "MT", "CH", "CN"}),
+    "TS_ALUNO_34EM": frozenset({"LP", "MT"}),
+}
+
+
+def _resolve_source(serie: str, disciplina: str) -> tuple[str, str, str, Optional[int]]:
+    """Validate *(serie, disciplina)* against Parquet columns and return (path, prof, weight, id_serie)."""
+    key = serie.strip().upper()
     filename = _SERIE_FILE_MAP.get(key)
     if filename is None:
         raise ValueError(
             f"Serie '{serie}' not recognized. Valid options: {list(_SERIE_FILE_MAP.keys())}"
         )
-    return str(SAEB_PARQUET_DIR / f"{filename}.parquet")
-
-
-def _resolve_cols(disciplina: str) -> tuple[str, str]:
-    """Return (proficiency_col, weight_col) for a discipline key like 'LP' or 'MT'."""
-    disc = disciplina.upper()
+    disc = disciplina.strip().upper()
+    allowed = _SERIE_DISCIPLINAS[filename]
     prof_col = PROFICIENCY_COLS.get(disc)
     weight_col = WEIGHT_COLS.get(disc)
-    if prof_col is None or weight_col is None:
+    if disc not in allowed or prof_col is None or weight_col is None:
         raise ValueError(
-            f"Disciplina '{disciplina}' not recognized. Valid options: {list(PROFICIENCY_COLS.keys())}"
+            f"Disciplina '{disciplina}' not available for serie '{serie}'. "
+            f"Valid options: {sorted(allowed)}"
         )
-    return prof_col, weight_col
+    return str(SAEB_PARQUET_DIR / f"{filename}.parquet"), prof_col, weight_col, _SERIE_ID_MAP.get(key)
 
 
 def get_proficiency_distribution(
@@ -72,7 +90,7 @@ def get_proficiency_distribution(
     Parameters
     ----------
     serie : str
-        E.g. '5EF', '9EF', 'EM'.
+        E.g. '5EF', '9EF', '3EM', '4EM', '34EM'.
     disciplina : str
         'LP', 'MT', 'CH', or 'CN'.
     uf : int
@@ -82,19 +100,22 @@ def get_proficiency_distribution(
 
     Returns
     -------
-    dict with keys: bins_edges, counts, bin_centers, mean, std, n, median, q25, q75
+    dict with keys: bin_edges, counts, bin_centers, mean, std, n, median, q25, q75
     """
-    path = _parquet_path(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
+    path, prof_col, weight_col, id_serie = _resolve_source(serie, disciplina)
+    serie_clause = " AND ID_SERIE = ?" if id_serie is not None else ""
+    params: list[int] = [uf] + ([id_serie] if id_serie is not None else [])
 
     con = duckdb.connect()
-    query = f"""
-        SELECT {prof_col} AS prof, {weight_col} AS peso
-        FROM '{path}'
-        WHERE ID_UF = ? AND {prof_col} IS NOT NULL AND {weight_col} IS NOT NULL
-    """
-    df = con.execute(query, [uf]).fetchnumpy()
-    con.close()
+    try:
+        query = f"""
+            SELECT {prof_col} AS prof, {weight_col} AS peso
+            FROM '{path}'
+            WHERE ID_UF = ? AND {prof_col} IS NOT NULL AND {weight_col} IS NOT NULL{serie_clause}
+        """
+        df = con.execute(query, params).fetchnumpy()
+    finally:
+        con.close()
 
     values = to_float(df["prof"])
     weights = to_float(df["peso"])
@@ -143,6 +164,12 @@ def get_proficiency_distribution(
     }
 
 
+def _nan_to_none(x: float | None) -> float | None:
+    if x is None or np.isnan(x):
+        return None
+    return float(x)
+
+
 def _domain_stats(
     prof: np.ndarray, peso: np.ndarray, mask: np.ndarray,
     clusters: np.ndarray, strata: np.ndarray,
@@ -154,11 +181,10 @@ def _domain_stats(
     mean, lo, hi = confidence_interval_mean(
         prof, peso, strata=strata, clusters=clusters, domain=mask
     )
-    nan_to_none = lambda x: None if x is None or np.isnan(x) else float(x)  # noqa: E731
     return {
-        "mean": nan_to_none(mean),
-        "ci_lower": nan_to_none(lo),
-        "ci_upper": nan_to_none(hi),
+        "mean": _nan_to_none(mean),
+        "ci_lower": _nan_to_none(lo),
+        "ci_upper": _nan_to_none(hi),
         "n": int(mask.sum()),
     }
 
@@ -177,21 +203,24 @@ def get_proficiency_comparison_rj_brasil(
     dict with keys for each scope (rj, sudeste, brasil), each containing
     mean, ci_lower, ci_upper, n.
     """
-    path = _parquet_path(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
+    path, prof_col, weight_col, id_serie = _resolve_source(serie, disciplina)
+    where_clause = " WHERE ID_SERIE = ?" if id_serie is not None else ""
+    params: list[int] = [id_serie] if id_serie is not None else []
 
     con = duckdb.connect()
-    df = con.execute(f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            ID_UF,
-            ID_REGIAO,
-            ID_ESCOLA AS escola,
-            ESTRATO AS estrato
-        FROM '{path}'
-    """).fetchnumpy()
-    con.close()
+    try:
+        df = con.execute(f"""
+            SELECT
+                {prof_col} AS prof,
+                {weight_col} AS peso,
+                ID_UF,
+                ID_REGIAO,
+                ID_ESCOLA AS escola,
+                ESTRATO AS estrato
+            FROM '{path}'{where_clause}
+        """, params).fetchnumpy()
+    finally:
+        con.close()
 
     prof = to_float(df["prof"])
     peso = to_float(df["peso"])
@@ -217,7 +246,7 @@ def get_proficiency_by_rede(
     Parameters
     ----------
     serie : str
-        E.g. '5EF', '9EF'.
+        E.g. '5EF', '9EF', '3EM', '4EM', '34EM'.
     disciplina : str
         'LP', 'MT', 'CH', or 'CN'.
     uf : int
@@ -228,21 +257,24 @@ def get_proficiency_by_rede(
     dict with keys: publica, privada (each with mean, ci_lower, ci_upper, n),
     gap, cohens_d.
     """
-    path = _parquet_path(serie)
-    prof_col, weight_col = _resolve_cols(disciplina)
+    path, prof_col, weight_col, id_serie = _resolve_source(serie, disciplina)
+    serie_clause = " AND ID_SERIE = ?" if id_serie is not None else ""
+    params: list[int] = [uf] + ([id_serie] if id_serie is not None else [])
 
     con = duckdb.connect()
-    df = con.execute(f"""
-        SELECT
-            {prof_col} AS prof,
-            {weight_col} AS peso,
-            IN_PUBLICA,
-            ID_ESCOLA AS escola,
-            ESTRATO AS estrato
-        FROM '{path}'
-        WHERE ID_UF = ?
-    """, [uf]).fetchnumpy()
-    con.close()
+    try:
+        df = con.execute(f"""
+            SELECT
+                {prof_col} AS prof,
+                {weight_col} AS peso,
+                IN_PUBLICA,
+                ID_ESCOLA AS escola,
+                ESTRATO AS estrato
+            FROM '{path}'
+            WHERE ID_UF = ?{serie_clause}
+        """, params).fetchnumpy()
+    finally:
+        con.close()
 
     prof = to_float(df["prof"])
     peso = to_float(df["peso"])

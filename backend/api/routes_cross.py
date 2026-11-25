@@ -1,12 +1,12 @@
 """Rotas da API para cruzamentos tecnologia x desempenho."""
 
+import logging
 from typing import Optional
 
 import duckdb
 from fastapi import APIRouter, HTTPException, Query
 
 from backend.config import ID_UF_RJ, SAEB_PARQUET_DIR
-from backend.db import db_query
 from backend.analysis.cross_analysis import (
     DIRECTOR_TECH_VARS,
     SCHOOL_MEDIA_COLS,
@@ -16,13 +16,13 @@ from backend.analysis.cross_analysis import (
     get_director_tech_gap,
     get_student_tech_gap,
     get_teacher_tech_impact,
+    validate_student_params,
 )
 
+logger = logging.getLogger(__name__)
+_INTERNAL_ERROR_DETAIL = "Erro interno ao processar a consulta."
+
 router = APIRouter()
-
-_query = db_query
-
-_FAIXA_LABELS = {"Baixo": "Baixo", "Medio": "Médio", "Alto": "Alto"}
 
 
 # ---------------------------------------------------------------------------
@@ -35,57 +35,38 @@ def student_tech(
     disciplina: str = Query("LP", description="Disciplina (LP, MT)"),
     variable: Optional[str] = Query(None, description="Variavel tech (TX_RESP_Q12b, Q12g, Q13a, Q13b)"),
     stratify_inse: bool = Query(False, description="Estratificar por INSE"),
-    use_precomputed: bool = Query(True, description="Usar tabela pre-computada"),
+    use_precomputed: bool = Query(
+        True,
+        description="Mantido por compatibilidade; retorna sempre a análise estatística completa (com cache).",
+    ),
 ):
-    """Acesso digital do aluno vs proficiencia."""
+    """Acesso digital do aluno vs proficiencia (sempre retorna contrato estatístico completo)."""
+    _ = use_precomputed
     try:
-        if use_precomputed and not stratify_inse and variable:
-            # Fast path: pre-computed table
-            rows = _query(
-                """SELECT tech_response, media_proficiencia, soma_pesos, n_alunos
-                   FROM cross_aluno_tech_rj
-                   WHERE serie = ? AND disciplina = ? AND tech_variable = ?
-                     AND nivel_inse IS NULL
-                   ORDER BY tech_response""",
-                [serie.upper(), disciplina.upper(), variable],
+        serie_norm, disc_norm, *_ = validate_student_params(serie, disciplina)
+        if variable is not None and variable not in STUDENT_TECH_VARS:
+            raise ValueError(
+                f"Variable '{variable}' not recognized. "
+                f"Valid: {list(STUDENT_TECH_VARS.keys())}"
             )
-            if rows:
-                var_info = STUDENT_TECH_VARS.get(variable, {})
-                responses = var_info.get("responses", {})
-                groups = [
-                    {
-                        "code": r["tech_response"],
-                        "label": responses.get(r["tech_response"], r["tech_response"]),
-                        "mean": r["media_proficiencia"],
-                        "n": r["n_alunos"],
-                    }
-                    for r in rows
-                ]
-                return {
-                    "variable": variable,
-                    "label": var_info.get("label", variable),
-                    "serie": serie, "disciplina": disciplina,
-                    "groups": groups, "source": "precomputed",
-                }
 
-        # Full statistical analysis
         if variable:
-            return get_student_tech_gap(serie, disciplina, variable, stratify_inse=stratify_inse)
+            return get_student_tech_gap(serie_norm, disc_norm, variable, stratify_inse=stratify_inse)
 
-        # All variables
-        results = []
-        for var in STUDENT_TECH_VARS:
-            try:
-                r = get_student_tech_gap(serie, disciplina, var, stratify_inse=stratify_inse)
-                results.append(r)
-            except Exception:
-                continue
+        results = [
+            get_student_tech_gap(serie_norm, disc_norm, var, stratify_inse=stratify_inse)
+            for var in STUDENT_TECH_VARS
+        ]
         return {"variables": results}
 
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/cross/student-tech (serie=%s, disciplina=%s, variable=%s)",
+            serie, disciplina, variable,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -113,8 +94,12 @@ def director_tech(
         return get_director_tech_gap(variable, serie, disciplina)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/cross/director-tech (variable=%s, serie=%s, disciplina=%s)",
+            variable, serie, disciplina,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -141,8 +126,12 @@ def teacher_tech(
         return get_teacher_tech_impact(serie, disciplina, variable)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/cross/teacher-tech (variable=%s, serie=%s, disciplina=%s)",
+            variable, serie, disciplina,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -154,68 +143,25 @@ def digital_index(
     serie: str = Query("9EF", description="Serie"),
     disciplina: str = Query("LP", description="Disciplina"),
     stratify_inse: bool = Query(False, description="Estratificar por INSE"),
-    use_precomputed: bool = Query(True, description="Usar tabela pre-computada"),
+    use_precomputed: bool = Query(
+        True,
+        description="Mantido por compatibilidade; retorna sempre a análise estatística completa (com cache).",
+    ),
 ):
-    """Indice digital composto vs proficiencia."""
+    """Indice digital composto vs proficiencia (sempre retorna contrato estatístico completo)."""
+    _ = use_precomputed
     try:
-        if use_precomputed:
-            rows = _query(
-                """SELECT digital_index, faixa_digital, media_proficiencia, soma_pesos, n_alunos
-                   FROM cross_digital_index_rj
-                   WHERE serie = ? AND disciplina = ? AND nivel_inse IS NULL
-                   ORDER BY digital_index""",
-                [serie.upper(), disciplina.upper()],
-            )
-            if rows:
-                by_level = [
-                    {"index": r["digital_index"], "mean": r["media_proficiencia"], "n": r["n_alunos"]}
-                    for r in rows
-                ]
-                faixas_map = {}
-                for r in rows:
-                    f = r["faixa_digital"]
-                    if f not in faixas_map:
-                        faixas_map[f] = {"label": f, "total_n": 0, "weighted_sum": 0.0, "total_weight": 0.0}
-                    faixas_map[f]["total_n"] += r["n_alunos"]
-                    faixas_map[f]["weighted_sum"] += (r["media_proficiencia"] or 0) * (r["soma_pesos"] or 0)
-                    faixas_map[f]["total_weight"] += (r["soma_pesos"] or 0)
-
-                faixas = []
-                for f_name in ["Baixo", "Medio", "Alto"]:
-                    fm = faixas_map.get(f_name)
-                    if fm and fm["total_weight"] > 0:
-                        faixas.append({
-                            "code": f_name,
-                            "label": _FAIXA_LABELS[f_name],
-                            "mean": fm["weighted_sum"] / fm["total_weight"],
-                            "n": fm["total_n"],
-                        })
-
-                result = {
-                    "serie": serie, "disciplina": disciplina,
-                    "faixas": faixas, "by_level": by_level,
-                    "source": "precomputed",
-                }
-
-                if stratify_inse:
-                    inse_rows = _query(
-                        """SELECT nivel_inse, digital_index, faixa_digital,
-                                  media_proficiencia, soma_pesos, n_alunos
-                           FROM cross_digital_index_rj
-                           WHERE serie = ? AND disciplina = ? AND nivel_inse IS NOT NULL
-                           ORDER BY nivel_inse, digital_index""",
-                        [serie.upper(), disciplina.upper()],
-                    )
-                    result["by_inse"] = inse_rows
-
-                return result
-
-        return get_digital_access_index(serie, disciplina, stratify_inse=stratify_inse)
+        serie_norm, disc_norm, *_ = validate_student_params(serie, disciplina)
+        return get_digital_access_index(serie_norm, disc_norm, stratify_inse=stratify_inse)
 
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/cross/digital-index (serie=%s, disciplina=%s)",
+            serie, disciplina,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -230,8 +176,14 @@ def summary(
     """Resumo de todas as analises cruzadas: gaps, efeitos, significancia."""
     try:
         return get_cross_summary(serie, disciplina)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/cross/summary (serie=%s, disciplina=%s)",
+            serie, disciplina,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +203,9 @@ def school_scatter(
             status_code=400,
             detail=f"Variavel '{tech_var}' invalida. Opcoes: {list(DIRECTOR_TECH_VARS)}",
         )
-    media_col = SCHOOL_MEDIA_COLS.get((serie.upper(), disciplina.upper()))
+    serie_norm = serie.strip().upper()
+    disc_norm = disciplina.strip().upper()
+    media_col = SCHOOL_MEDIA_COLS.get((serie_norm, disc_norm))
     if not media_col:
         raise HTTPException(
             status_code=400,
@@ -290,11 +244,15 @@ def school_scatter(
             con.close()
 
         return {
-            "serie": serie, "disciplina": disciplina, "tech_var": tech_var,
+            "serie": serie_norm, "disciplina": disc_norm, "tech_var": tech_var,
             "data": [
                 {"inse": r[0], "proficiencia": r[1], "tech_value": r[2], "rede": r[3]}
                 for r in rows
             ],
         }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/cross/school-scatter (serie=%s, disciplina=%s, tech_var=%s)",
+            serie, disciplina, tech_var,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)

@@ -1,11 +1,17 @@
 """Parse R scripts to extract variable labels and response options for SAEB 2023.
 
+Role in the architecture
+------------------------
+Programmatic ETL/dictionary library over the INEP-provided ``INPUTS/INPUT_R_*.R``
+files (encoded in ISO-8859-1 / latin-1). Used during raw microdata ingestion,
+dictionary generation/verification, and offline exploration of coded variables
+(complementing ``data/processed/saeb_questionnaire_dict.json``, which is
+shipped with the repository and read at runtime by ``/api/saeb/questionnaire/*``).
+
 The INEP-provided R scripts in INPUTS/ contain commented-out factor() calls
 that define the mapping between coded values and human-readable labels for
 each variable.  The TS_ESCOLA script also has a ``labels <- list(...)`` block
 with variable descriptions.
-
-All R files are encoded in latin-1 (ISO-8859-1).
 """
 
 from __future__ import annotations
@@ -35,11 +41,17 @@ def _read_r_file(path: Path) -> str:
 def _parse_r_values(raw: str) -> list[str]:
     """Parse a comma-separated R vector body into a list of string values.
 
-    Handles both quoted strings (``'A'``, ``"A"``) and unquoted numbers.
+    Handles both quoted strings (``'A'``, ``"A"``) — including empty strings —
+    and unquoted numbers.
     """
     values: list[str] = []
     for token in re.finditer(r"""'([^']*)'|"([^"]*)"|([^\s,'"]+)""", raw):
-        values.append(token.group(1) or token.group(2) or token.group(3))
+        if token.group(1) is not None:
+            values.append(token.group(1))
+        elif token.group(2) is not None:
+            values.append(token.group(2))
+        elif token.group(3) is not None:
+            values.append(token.group(3))
     return values
 
 
@@ -70,13 +82,14 @@ def _extract_factor_definitions(text: str, table_name: str) -> dict:
     joined = "\n".join(comment_lines)
 
     # Pattern:  TABLE$COLUMN <- factor(TABLE$COLUMN, levels = c(...), labels = c(...))
-    # The TABLE name inside the call may differ from the one we derived from
-    # the filename, so we capture the column from the assignment target.
+    # Quoted labels may contain closing parentheses — e.g. "Ensino Médio (1ª a 3ª série)" —
+    # so the vector body matches full quoted strings atomically before stopping at ')'.
+    r_vec_body = r"""(?:'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|[^)'"])*"""
     pattern = re.compile(
-        r"(?P<tbl>\w+)\$(?P<col>\w+)\s*<-\s*factor\("
-        r"[^,]+,\s*"                               # first arg (the vector)
-        r"levels\s*=\s*c\((?P<levels>[^)]+)\)\s*,\s*"
-        r"labels\s*=\s*c\((?P<labels>[^)]+)\)\s*\)",
+        rf"(?P<tbl>\w+)\$(?P<col>\w+)\s*<-\s*factor\("
+        rf"[^,]+,\s*"                               # first arg (the vector)
+        rf"levels\s*=\s*c\((?P<levels>{r_vec_body})\)\s*,\s*"
+        rf"labels\s*=\s*c\((?P<labels>{r_vec_body})\)\s*\)",
         re.DOTALL,
     )
 

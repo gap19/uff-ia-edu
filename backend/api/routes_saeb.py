@@ -1,12 +1,18 @@
 """Rotas da API para dados SAEB 2023."""
 
+import copy
+from functools import lru_cache
 import json
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
 from backend.db import db_query
 from backend.config import ID_UF_RJ, ID_REGIAO_SUDESTE, UF_MAP, PROCESSED_DIR, SAEB_PARQUET_DIR
+
+logger = logging.getLogger(__name__)
+_INTERNAL_ERROR_DETAIL = "Erro interno ao processar a consulta."
 
 # ---------------------------------------------------------------------------
 # Questionnaire dictionary (question texts + response labels)
@@ -85,8 +91,9 @@ def overview():
             "alunos_por_serie": kpi_alunos,
             "escolas": kpi_escolas[0] if kpi_escolas else {},
         }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception("Erro em /api/saeb/overview")
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -135,11 +142,16 @@ def proficiency(
 
         # Enrich with UF sigla
         for row in rows:
-            row["uf_sigla"] = UF_MAP.get(row.get("ID_UF"), "??")
+            id_uf = row.get("ID_UF")
+            row["uf_sigla"] = UF_MAP.get(id_uf, "??") if isinstance(id_uf, int) else "??"
 
         return {"data": rows}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/saeb/proficiency (serie=%s, disciplina=%s, rede=%s)",
+            serie, disciplina, rede,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -185,8 +197,9 @@ def proficiency_comparison():
             "sudeste": sudeste,
             "brasil": brasil,
         }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception("Erro em /api/saeb/proficiency/comparison")
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -202,15 +215,22 @@ def proficiency_levels(
     Fonte: TS_ESCOLA, que contém apenas escolas públicas. Os valores são a
     média simples, entre as escolas, do percentual de alunos em cada nível.
     """
+    scope_norm = scope.strip().lower()
+    if scope_norm not in ("rj", "nacional"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Escopo '{scope}' inválido. Opções: rj, nacional",
+        )
     try:
-        if scope == "nacional":
+        if scope_norm == "nacional":
             rows = _query("SELECT * FROM prof_niveis_nacional")
         else:
             rows = _query("SELECT * FROM prof_niveis_rj ORDER BY rede DESC")
 
-        return {"scope": scope, "data": rows}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        return {"scope": scope_norm, "data": rows}
+    except Exception:
+        logger.exception("Erro em /api/saeb/proficiency/levels (scope=%s)", scope_norm)
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -264,8 +284,12 @@ def equity_gap(
             })
 
         return {"data": gaps}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/saeb/equity/gap (serie=%s, disciplina=%s)",
+            serie, disciplina,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -280,8 +304,9 @@ def equity_inse():
             "SELECT * FROM prof_by_inse ORDER BY nivel_inse, serie, disciplina"
         )
         return {"data": rows}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception("Erro em /api/saeb/equity/inse")
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
@@ -300,13 +325,40 @@ def equity_location():
         for row in rows:
             row["localizacao_label"] = loc_map.get(row["localizacao"], str(row["localizacao"]))
         return {"data": rows}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception("Erro em /api/saeb/equity/location")
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
 # 8. GET /teachers/formation
 # ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=1)
+def _load_teachers_formation_rj() -> dict[str, object]:
+    """Lê e mantém em cache os dados escolares de formação docente no RJ."""
+    pq = str(SAEB_PARQUET_DIR / "TS_ESCOLA.parquet")
+    rows = _query(f"""
+        SELECT
+            IN_PUBLICA AS rede,
+            ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_INICIAL AS DOUBLE), 2) AS pc_formacao_docente_inicial,
+            ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_FINAL AS DOUBLE), 2) AS pc_formacao_docente_final,
+            ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_MEDIO AS DOUBLE), 2) AS pc_formacao_docente_medio,
+            ROUND(TRY_CAST(MEDIA_5EF_LP AS DOUBLE), 2) AS media_5ef_lp,
+            ROUND(TRY_CAST(MEDIA_5EF_MT AS DOUBLE), 2) AS media_5ef_mt,
+            ROUND(TRY_CAST(MEDIA_9EF_LP AS DOUBLE), 2) AS media_9ef_lp,
+            ROUND(TRY_CAST(MEDIA_9EF_MT AS DOUBLE), 2) AS media_9ef_mt,
+            ROUND(TRY_CAST(MEDIA_EM_LP AS DOUBLE), 2) AS media_em_lp,
+            ROUND(TRY_CAST(MEDIA_EM_MT AS DOUBLE), 2) AS media_em_mt
+        FROM read_parquet('{pq}')
+        WHERE ID_UF = ?
+        ORDER BY ID_ESCOLA
+    """, [ID_UF_RJ])
+    # Cada escola só tem as etapas que oferece: omitir campos nulos reduz
+    # o JSON (importante no site estático) — ausente == null no frontend.
+    rows = [{k: v for k, v in r.items() if v is not None} for r in rows]
+    return {"data": rows, "unit": "escola"}
+
 
 @router.get("/teachers/formation")
 def teachers_formation():
@@ -316,34 +368,15 @@ def teachers_formation():
     ``escola_formacao_rj`` agrupava escolas com percentuais idênticos, o que
     distorcia a correlação calculada no frontend.
     """
-    pq = str(SAEB_PARQUET_DIR / "TS_ESCOLA.parquet")
     try:
-        rows = _query(f"""
-            SELECT
-                IN_PUBLICA AS rede,
-                ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_INICIAL AS DOUBLE), 2) AS pc_formacao_docente_inicial,
-                ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_FINAL AS DOUBLE), 2) AS pc_formacao_docente_final,
-                ROUND(TRY_CAST(PC_FORMACAO_DOCENTE_MEDIO AS DOUBLE), 2) AS pc_formacao_docente_medio,
-                ROUND(TRY_CAST(MEDIA_5EF_LP AS DOUBLE), 2) AS media_5ef_lp,
-                ROUND(TRY_CAST(MEDIA_5EF_MT AS DOUBLE), 2) AS media_5ef_mt,
-                ROUND(TRY_CAST(MEDIA_9EF_LP AS DOUBLE), 2) AS media_9ef_lp,
-                ROUND(TRY_CAST(MEDIA_9EF_MT AS DOUBLE), 2) AS media_9ef_mt,
-                ROUND(TRY_CAST(MEDIA_EM_LP AS DOUBLE), 2) AS media_em_lp,
-                ROUND(TRY_CAST(MEDIA_EM_MT AS DOUBLE), 2) AS media_em_mt
-            FROM read_parquet('{pq}')
-            WHERE ID_UF = ?
-            ORDER BY ID_ESCOLA
-        """, [ID_UF_RJ])
-        # Cada escola só tem as etapas que oferece: omitir campos nulos reduz
-        # o JSON (importante no site estático) — ausente == null no frontend.
-        rows = [{k: v for k, v in r.items() if v is not None} for r in rows]
-        return {"data": rows, "unit": "escola"}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        return copy.deepcopy(_load_teachers_formation_rj())
+    except Exception:
+        logger.exception("Erro em /api/saeb/teachers/formation")
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
-# 8. GET /questionnaire/{dataset}
+# 9. GET /questionnaire/{dataset}
 # ---------------------------------------------------------------------------
 
 _QUESTIONNAIRE_TABLES = {
@@ -369,6 +402,15 @@ def questionnaire(
         )
 
     try:
+        # Enrich and restrict to closed questions in the official dictionary
+        # (excludes free-text columns such as TX_Q148/TX_Q089/TX_Q168/TX_Q211/TX_Q224)
+        qdict = _get_quest_dict()
+        sheet = _DATASET_TO_SHEET.get(dataset, "")
+        sheet_dict = qdict.get(sheet, {})
+
+        if sheet_dict and questao and questao not in sheet_dict:
+            return {"dataset": dataset, "data": []}
+
         table, serie_filter = _QUESTIONNAIRE_TABLES[dataset]
         conditions = []
         params: list = []
@@ -384,11 +426,8 @@ def questionnaire(
         sql = f"SELECT * FROM {table}{where} ORDER BY questao, resposta"
 
         rows = _query(sql, params)
-
-        # Enrich with dictionary labels
-        qdict = _get_quest_dict()
-        sheet = _DATASET_TO_SHEET.get(dataset, "")
-        sheet_dict = qdict.get(sheet, {})
+        if sheet_dict:
+            rows = [row for row in rows if row.get("questao") in sheet_dict]
 
         question_text = None
         if questao and questao in sheet_dict:
@@ -420,12 +459,15 @@ def questionnaire(
         if question_list is not None:
             result["questions"] = question_list
         return result
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/saeb/questionnaire/%s (questao=%s)", dataset, questao
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)
 
 
 # ---------------------------------------------------------------------------
-# 9. GET /proficiency/ranking
+# 10. GET /proficiency/ranking
 # ---------------------------------------------------------------------------
 
 @router.get("/proficiency/ranking")
@@ -462,7 +504,8 @@ def proficiency_ranking(
         rows = _query(sql, params)
 
         for i, row in enumerate(rows, 1):
-            row["uf_sigla"] = UF_MAP.get(row.get("ID_UF"), "??")
+            id_uf = row.get("ID_UF")
+            row["uf_sigla"] = UF_MAP.get(id_uf, "??") if isinstance(id_uf, int) else "??"
             row["ranking"] = i
 
         # Find RJ position
@@ -475,5 +518,9 @@ def proficiency_ranking(
             "total_ufs": len(rows),
             "data": rows,
         }
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+    except Exception:
+        logger.exception(
+            "Erro em /api/saeb/proficiency/ranking (serie=%s, disciplina=%s, rede=%s)",
+            serie, disciplina, rede,
+        )
+        raise HTTPException(status_code=500, detail=_INTERNAL_ERROR_DETAIL)

@@ -1,16 +1,6 @@
 """Testes dos endpoints de cruzamento tecnologia x desempenho."""
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-
-from backend.api.app import app
-
-
-@pytest.fixture()
-async def client():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
 
 
 # -----------------------------------------------------------------------
@@ -18,20 +8,56 @@ async def client():
 # -----------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_student_tech_precomputed(client):
+@pytest.mark.parametrize("serie", ["5EF", "9EF", "34EM"])
+@pytest.mark.parametrize("disciplina", ["LP", "MT"])
+async def test_student_tech_unified_contract(client, serie, disciplina):
+    """R-02: use_precomputed=true e false retornam o mesmo contrato estatístico completo."""
+    resp_true = await client.get("/api/cross/student-tech", params={
+        "serie": serie, "disciplina": disciplina,
+        "variable": "TX_RESP_Q13b", "use_precomputed": "true",
+    })
+    resp_false = await client.get("/api/cross/student-tech", params={
+        "serie": serie, "disciplina": disciplina,
+        "variable": "TX_RESP_Q13b", "use_precomputed": "false",
+    })
+    assert resp_true.status_code == 200
+    assert resp_false.status_code == 200
+    data = resp_true.json()
+    assert data == resp_false.json()
+
+    assert len(data["groups"]) == 2
+    for g in data["groups"]:
+        for key in ("code", "label", "mean", "se", "ci_low", "ci_high", "n", "weighted_pct"):
+            assert key in g
+        assert g["mean"] is not None and g["se"] is not None
+        assert g["ci_low"] < g["mean"] < g["ci_high"]
+        assert g["n"] > 0
+    assert sum(g["weighted_pct"] for g in data["groups"]) == pytest.approx(100.0, abs=0.1)
+
+    for key in ("gap", "cohens_d", "t_stat", "p_value", "df"):
+        assert data["test"][key] is not None
+    assert data["correlation"]["pearson_r"] is not None
+
+
+@pytest.mark.anyio
+async def test_student_tech_ordinal_contract_and_all_variables(client):
+    """R-02: variáveis ordinais (Q12b) e chamada sem variable entregam schema completo."""
     resp = await client.get("/api/cross/student-tech", params={
-        "serie": "9EF", "disciplina": "LP",
-        "variable": "TX_RESP_Q13b", "use_precomputed": "true"
+        "serie": "9EF", "disciplina": "LP", "variable": "TX_RESP_Q12b",
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert "groups" in data or "variables" in data
-    if "groups" in data:
-        assert len(data["groups"]) > 0
-        for g in data["groups"]:
-            assert "code" in g
-            assert "mean" in g
-            assert "n" in g
+    assert len(data["groups"]) == 4
+    assert all(g["ci_low"] < g["mean"] < g["ci_high"] for g in data["groups"])
+    assert data["test"]["type"] == "anova"
+    assert data["test"]["f_stat"] > 0 and data["test"]["df"] > 0
+    assert data["correlation"]["pearson_r"] > 0
+
+    resp_all = await client.get("/api/cross/student-tech", params={
+        "serie": "9EF", "disciplina": "LP",
+    })
+    assert resp_all.status_code == 200
+    assert len(resp_all.json()["variables"]) == 4
 
 
 @pytest.mark.anyio
@@ -43,12 +69,11 @@ async def test_student_tech_wifi_gap(client):
     })
     assert resp.status_code == 200
     data = resp.json()
-    if "groups" in data:
-        groups = {g["code"]: g["mean"] for g in data["groups"]}
-        if "A" in groups and "B" in groups:
-            gap = groups["B"] - groups["A"]
-            # Gap esperado: ~19 pts (tolerância de 5 pts)
-            assert 10 < gap < 30, f"Gap WiFi inesperado: {gap:.1f} pts"
+    groups = {g["code"]: g["mean"] for g in data["groups"]}
+    assert "A" in groups and "B" in groups
+    gap = groups["B"] - groups["A"]
+    # Gap esperado: ~19 pts (tolerância de 5 pts)
+    assert 14 < gap < 25, f"Gap WiFi inesperado: {gap:.1f} pts"
 
 
 # -----------------------------------------------------------------------
@@ -56,14 +81,15 @@ async def test_student_tech_wifi_gap(client):
 # -----------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_director_tech(client):
+@pytest.mark.parametrize("serie", ["5EF", "9EF", "34EM"])
+async def test_director_tech(client, serie):
     resp = await client.get("/api/cross/director-tech", params={
-        "variable": "TX_Q194", "serie": "9EF", "disciplina": "LP"
+        "variable": "TX_Q194", "serie": serie, "disciplina": "LP"
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert "groups" in data
-    assert len(data["groups"]) > 0
+    assert len(data["groups"]) == 2
+    assert data["test"]["type"] == "t-test"
 
 
 # -----------------------------------------------------------------------
@@ -71,14 +97,15 @@ async def test_director_tech(client):
 # -----------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_teacher_tech(client):
+@pytest.mark.parametrize("serie", ["5EF", "9EF", "34EM"])
+async def test_teacher_tech(client, serie):
     resp = await client.get("/api/cross/teacher-tech", params={
-        "variable": "TX_Q029", "serie": "9EF", "disciplina": "LP"
+        "variable": "TX_Q029", "serie": serie, "disciplina": "LP"
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert "groups" in data
-    assert len(data["groups"]) > 0
+    assert len(data["groups"]) == 4
+    assert data["test"]["type"] == "anova"
 
 
 # -----------------------------------------------------------------------
@@ -86,17 +113,32 @@ async def test_teacher_tech(client):
 # -----------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_digital_index(client):
+@pytest.mark.parametrize("serie", ["5EF", "9EF", "34EM"])
+async def test_digital_index(client, serie):
+    """R-02: /api/cross/digital-index unifica use_precomputed=true e false com IC/SE/correlação/ANOVA."""
     resp = await client.get("/api/cross/digital-index", params={
-        "serie": "9EF", "disciplina": "LP"
+        "serie": serie, "disciplina": "LP", "use_precomputed": "true",
+    })
+    resp_live = await client.get("/api/cross/digital-index", params={
+        "serie": serie, "disciplina": "LP", "use_precomputed": "false",
     })
     assert resp.status_code == 200
+    assert resp_live.status_code == 200
     data = resp.json()
-    assert "faixas" in data or "by_level" in data
-    if "faixas" in data:
-        for faixa in data["faixas"]:
-            assert "label" in faixa
-            assert "mean" in faixa
+    assert data == resp_live.json()
+
+    assert len(data["faixas"]) == 3
+    assert len(data["by_level"]) == 9
+    for lvl in data["by_level"]:
+        for key in ("index", "mean", "se", "ci_low", "ci_high", "n"):
+            assert key in lvl
+        assert lvl["ci_low"] < lvl["mean"] < lvl["ci_high"]
+    for faixa in data["faixas"]:
+        assert "code" in faixa and "label" in faixa
+        assert faixa["ci_low"] < faixa["mean"] < faixa["ci_high"]
+    assert data["correlation"]["pearson_r"] > 0
+    assert data["anova"]["f_stat"] > 0
+    assert data["test"] == data["anova"]
 
 
 @pytest.mark.anyio
@@ -106,8 +148,27 @@ async def test_digital_index_stratified(client):
     })
     assert resp.status_code == 200
     data = resp.json()
-    if "by_inse" in data:
-        assert len(data["by_inse"]) > 0
+    assert "by_inse" in data
+    assert len(data["by_inse"]) > 0
+
+
+@pytest.mark.anyio
+async def test_digital_index_full_analysis_not_precomputed(client):
+    """Cobertura de /api/cross/digital-index?use_precomputed=false (F-09)."""
+    resp = await client.get("/api/cross/digital-index", params={
+        "serie": "9EF", "disciplina": "LP",
+        "stratify_inse": "true", "use_precomputed": "false",
+    })
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["correlation"]["pearson_r"] > 0.1
+    assert data["correlation"]["p_value"] < 0.01
+    assert data["correlation"]["n"] > 50000
+    assert len(data["faixas"]) == 3
+    assert all(f["ci_lower"] < f["mean"] < f["ci_upper"] for f in data["faixas"])
+    assert len(data["by_level"]) == 9
+    assert len(data["by_inse"]) >= 7
+    assert "linearização" in data["inference"]
 
 
 # -----------------------------------------------------------------------
@@ -121,8 +182,7 @@ async def test_cross_summary(client):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert "analyses" in data
-    assert len(data["analyses"]) > 0
+    assert len(data["analyses"]) == 11
     for a in data["analyses"]:
         assert "label" in a
         assert "level" in a
@@ -139,10 +199,9 @@ async def test_school_scatter(client):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert "data" in data
-    if data["data"]:
-        assert "proficiencia" in data["data"][0]
-        assert "tech_value" in data["data"][0]
+    assert len(data["data"]) > 0
+    assert "proficiencia" in data["data"][0]
+    assert "tech_value" in data["data"][0]
 
 
 # -----------------------------------------------------------------------
@@ -177,11 +236,14 @@ async def test_director_counts_each_school_once(client):
     })
     n_total = sum(g["n"] for g in resp.json()["groups"])
     con = duckdb.connect()
-    n_schools = con.execute(
-        f"SELECT COUNT(*) FROM '{SAEB_PARQUET_DIR / 'TS_ESCOLA.parquet'}' "
-        "WHERE ID_UF = 33 AND MEDIA_9EF_LP IS NOT NULL"
-    ).fetchone()[0]
-    con.close()
+    try:
+        row = con.execute(
+            f"SELECT COUNT(*) FROM '{SAEB_PARQUET_DIR / 'TS_ESCOLA.parquet'}' "
+            "WHERE ID_UF = 33 AND MEDIA_9EF_LP IS NOT NULL"
+        ).fetchone()
+        n_schools = int(row[0]) if row is not None else 0
+    finally:
+        con.close()
     assert 0 < n_total <= n_schools
 
 
@@ -241,3 +303,64 @@ async def test_teacher_tests_use_school_clusters(client):
     data = resp.json()
     assert "linearização" in data["inference"]
     assert data["test"]["p_value"] > 1e-6
+
+
+# -----------------------------------------------------------------------
+# Regressões F-04: validação (serie, disciplina), erros 400/500 e cache
+# -----------------------------------------------------------------------
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("endpoint", "params"),
+    [
+        ("/api/cross/student-tech", {"serie": "2EF", "disciplina": "LP", "variable": "TX_RESP_Q13b"}),
+        ("/api/cross/student-tech", {"serie": "34EM", "disciplina": "CH", "variable": "TX_RESP_Q13b"}),
+        ("/api/cross/student-tech", {"serie": "INVALID", "disciplina": "LP"}),
+        ("/api/cross/student-tech", {"serie": "9EF", "disciplina": "LP", "variable": "INVALID"}),
+        ("/api/cross/director-tech", {"serie": "2EF", "disciplina": "LP", "variable": "TX_Q194"}),
+        ("/api/cross/director-tech", {"serie": "34EM", "disciplina": "CH", "variable": "TX_Q194"}),
+        ("/api/cross/teacher-tech", {"serie": "2EF", "disciplina": "LP", "variable": "TX_Q029"}),
+        ("/api/cross/teacher-tech", {"serie": "34EM", "disciplina": "CH", "variable": "TX_Q029"}),
+        ("/api/cross/digital-index", {"serie": "2EF", "disciplina": "LP"}),
+        ("/api/cross/digital-index", {"serie": "34EM", "disciplina": "CH"}),
+        ("/api/cross/summary", {"serie": "INVALID", "disciplina": "LP"}),
+        ("/api/cross/summary", {"serie": "2EF", "disciplina": "LP"}),
+        ("/api/cross/summary", {"serie": "34EM", "disciplina": "CH"}),
+        ("/api/cross/school-scatter", {"serie": "2EF", "disciplina": "LP"}),
+        ("/api/cross/school-scatter", {"serie": "34EM", "disciplina": "CH"}),
+    ],
+)
+async def test_cross_rejects_unsupported_params_with_400(client, endpoint, params):
+    resp = await client.get(endpoint, params=params)
+    assert resp.status_code == 400
+    detail = resp.json()["detail"]
+    assert ".parquet" not in detail
+    assert "Binder" not in detail
+
+
+@pytest.mark.anyio
+async def test_cross_500_does_not_leak_internal_details(client, monkeypatch):
+    from backend.api import routes_cross
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("secret /data/processed/saeb/TS_ALUNO.parquet SQL error")
+
+    monkeypatch.setattr(routes_cross, "get_cross_summary", _boom)
+    resp = await client.get("/api/cross/summary", params={"serie": "9EF", "disciplina": "LP"})
+    assert resp.status_code == 500
+    detail = resp.json()["detail"]
+    assert ".parquet" not in detail
+    assert "secret" not in detail
+
+
+def test_cross_analysis_cache_returns_isolated_copies():
+    """Mutação do dict retornado não pode corromper o cache (F-04)."""
+    from backend.analysis.cross_analysis import get_director_tech_gap
+
+    first = get_director_tech_gap("TX_Q194", "9EF", "LP")
+    first["groups"].clear()
+    first["label"] = "CORRUPTED"
+
+    second = get_director_tech_gap("TX_Q194", "9EF", "LP")
+    assert len(second["groups"]) == 2
+    assert second["label"] != "CORRUPTED"

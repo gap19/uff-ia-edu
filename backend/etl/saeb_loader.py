@@ -126,9 +126,10 @@ def load_single_saeb(name: str) -> int:
             if converted:
                 print(f"[saeb_loader] {name}: colunas convertidas para DOUBLE: {converted}")
 
-            row_count = con.execute(
+            count_row = con.execute(
                 f'SELECT COUNT(*) FROM "_tmp_{name}"'
-            ).fetchone()[0]
+            ).fetchone()
+            row_count = int(count_row[0]) if count_row is not None else 0
             col_count = len(con.execute(
                 f'SELECT * FROM "_tmp_{name}" LIMIT 0'
             ).description)

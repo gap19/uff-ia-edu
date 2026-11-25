@@ -12,8 +12,13 @@
 const API_BASE = '/api';
 
 // Modo estático (Firebase Hosting): dados pré-computados como arquivos JSON.
-// A flag window.STATIC_DATA é injetada em index.html por scripts/export_static.py.
-const STATIC_MODE = typeof window !== 'undefined' && Boolean(window.STATIC_DATA);
+// A meta tag <meta name="static-data" content="true"> é injetada em index.html
+// por scripts/export_static.py (mantendo fallback window.STATIC_DATA para testes).
+const STATIC_MODE = Boolean(
+    (typeof window !== 'undefined' && window.STATIC_DATA)
+    || (typeof document !== 'undefined'
+        && document.querySelector?.('meta[name="static-data"]')?.getAttribute('content') === 'true')
+);
 
 // Espelha slug_path() de scripts/export_static.py — manter em sincronia.
 function staticDataURL(path, params = {}) {
@@ -35,9 +40,14 @@ const state = {
 // da carga anterior, para que respostas atrasadas de um filtro antigo não
 // sobrescrevam os gráficos do filtro atual.
 let _pageLoadController = null;
+let _questionController = null;
 
 function startPageLoad(page) {
     if (_pageLoadController) _pageLoadController.abort();
+    if (_questionController) {
+        _questionController.abort();
+        _questionController = null;
+    }
     _pageLoadController = new AbortController();
     return loadPage(page);
 }
@@ -52,6 +62,22 @@ function initNavigation() {
             e.preventDefault();
             navigateTo(link.dataset.page);
         });
+    });
+}
+
+function initScrollLinks() {
+    document.addEventListener('click', (e) => {
+        const rawTarget = e && e.target;
+        const link = rawTarget && typeof rawTarget.closest === 'function'
+            ? rawTarget.closest('[data-scroll-to]')
+            : null;
+        if (!link) return;
+        e.preventDefault();
+        const targetId = link.getAttribute('data-scroll-to');
+        const targetEl = targetId ? document.getElementById(targetId) : null;
+        if (targetEl && typeof targetEl.scrollIntoView === 'function') {
+            targetEl.scrollIntoView({ behavior: 'smooth' });
+        }
     });
 }
 
@@ -149,7 +175,20 @@ function fmtInt(n) {
     return Number(n).toLocaleString('pt-BR');
 }
 
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function showLoading(elementId) {
+    if (typeof disposeChart === 'function') {
+        disposeChart(elementId, true);
+    }
     const el = document.getElementById(elementId);
     if (el) el.innerHTML = `
         <div class="loading-skeleton">
@@ -159,8 +198,11 @@ function showLoading(elementId) {
 }
 
 function showEmpty(elementId, msg = 'Dados não disponíveis') {
+    if (typeof disposeChart === 'function') {
+        disposeChart(elementId, true);
+    }
     const el = document.getElementById(elementId);
-    if (el) el.innerHTML = `<div class="text-center p-5" style="color: var(--clr-text-light)"><i class="bi bi-inbox" style="font-size:1.5rem"></i><br>${msg}</div>`;
+    if (el) el.innerHTML = `<div class="text-center p-5" style="color: var(--clr-text-light)"><i class="bi bi-inbox" style="font-size:1.5rem"></i><br>${escapeHtml(msg)}</div>`;
 }
 
 // =========================================================
@@ -198,11 +240,12 @@ function initThemeToggle() {
 // Questionários init
 // =========================================================
 
-let _questionController = null;
-
 function initQuestionnaires() {
     document.getElementById('quest-dataset').addEventListener('change', () => {
-        if (_questionController) _questionController.abort();  // descarta a questão do dataset anterior
+        if (_questionController) {
+            _questionController.abort();  // descarta a questão do dataset anterior
+            _questionController = null;
+        }
         startPageLoad('questionnaires');
     });
     document.getElementById('quest-question').addEventListener('change', async () => {
@@ -332,6 +375,7 @@ function initTabResize() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
+    initScrollLinks();
     initFilters();
     initQuestionnaires();
     initReport();

@@ -1,16 +1,6 @@
 """Testes dos endpoints TIC Educação."""
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-
-from backend.api.app import app
-
-
-@pytest.fixture()
-async def client():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
 
 
 # -----------------------------------------------------------------------
@@ -22,9 +12,10 @@ async def test_list_indicators(client):
     resp = await client.get("/api/tic/indicators")
     assert resp.status_code == 200
     data = resp.json()
-    assert "data" in data
-    if data["data"]:  # pode estar vazio se TIC não processado
-        assert "indicador" in data["data"][0]
+    assert data["count"] > 0
+    assert len(data["data"]) == data["count"]
+    assert "indicador" in data["data"][0]
+    assert "titulo" in data["data"][0]
 
 
 @pytest.mark.anyio
@@ -33,6 +24,18 @@ async def test_get_indicator(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["indicator"] == "A1"
+    assert data["count"] > 0
+    assert len(data["data"]) == data["count"]
+
+
+@pytest.mark.anyio
+async def test_get_indicator_case_insensitive(client):
+    """Código do indicador deve ser normalizado com strip().upper() (F-04)."""
+    upper = (await client.get("/api/tic/indicator/A1")).json()
+    lower = (await client.get("/api/tic/indicator/a1")).json()
+    assert lower["indicator"] == "A1"
+    assert lower["count"] > 0
+    assert lower == upper
 
 
 # -----------------------------------------------------------------------
@@ -44,7 +47,7 @@ async def test_infrastructure(client):
     resp = await client.get("/api/tic/infrastructure")
     assert resp.status_code == 200
     data = resp.json()
-    assert "data" in data
+    assert data["count"] > 0 and len(data["data"]) == data["count"]
 
 
 @pytest.mark.anyio
@@ -52,7 +55,7 @@ async def test_ai_indicators(client):
     resp = await client.get("/api/tic/ai")
     assert resp.status_code == 200
     data = resp.json()
-    assert "data" in data
+    assert data["count"] > 0 and len(data["data"]) == data["count"]
 
 
 @pytest.mark.anyio
@@ -60,7 +63,7 @@ async def test_privacy(client):
     resp = await client.get("/api/tic/privacy")
     assert resp.status_code == 200
     data = resp.json()
-    assert "data" in data
+    assert data["count"] > 0 and len(data["data"]) == data["count"]
 
 
 @pytest.mark.anyio
@@ -68,7 +71,7 @@ async def test_teacher_training(client):
     resp = await client.get("/api/tic/teacher-training")
     assert resp.status_code == 200
     data = resp.json()
-    assert "data" in data
+    assert data["count"] > 0 and len(data["data"]) == data["count"]
 
 
 @pytest.mark.anyio
@@ -76,7 +79,13 @@ async def test_digital_literacy(client):
     resp = await client.get("/api/tic/digital-literacy")
     assert resp.status_code == 200
     data = resp.json()
-    assert "data" in data
+    assert data["count"] > 0 and len(data["data"]) == data["count"]
+
+
+@pytest.mark.anyio
+async def test_invalid_group_returns_404(client):
+    resp = await client.get("/api/tic/group/inexistente")
+    assert resp.status_code == 404
 
 
 @pytest.mark.anyio
@@ -86,8 +95,7 @@ async def test_tic_groups_match_official_tables(client):
 
     resp = await client.get("/api/tic/infrastructure")
     data = resp.json()["data"]
-    if not data:
-        pytest.skip("TIC não processado")
+    assert len(data) > 0
     a1 = next(d for d in data if d["indicador"] == "A1")
     assert "ACESSO À INTERNET" in a1["titulo"]
     assert a1["sudeste"] == pytest.approx(97.9657)
@@ -104,6 +112,7 @@ async def test_tic_groups_match_official_tables(client):
     for key, cfg in TIC_GROUPS.items():
         got = (await client.get(f"/api/tic/group/{key}")).json()
         assert got["count"] == len(cfg["indicators"]), key
+        assert len(got["data"]) == len(cfg["indicators"]), key
         assert all(d["sudeste"] is not None and d["brasil"] is not None for d in got["data"])
 
 
@@ -111,7 +120,6 @@ async def test_tic_groups_match_official_tables(client):
 async def test_tic_universe_footnote_only_when_needed(client):
     infra = (await client.get("/api/tic/infrastructure")).json()
     ai = (await client.get("/api/tic/ai")).json()
-    if not infra.get("data"):
-        pytest.skip("TIC não processado")
+    assert len(infra["data"]) > 0
     assert "¹" in infra["note"]
     assert "¹" not in ai["note"]
