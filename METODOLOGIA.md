@@ -230,7 +230,7 @@ Os dados brutos (CSV do SAEB e XLSX da TIC) são convertidos para o formato **Pa
 
 ### 4.2 Etapa 2: Pré-computação de tabelas agregadas
 
-O script `backend/etl/precompute.py` lê os Parquet e gera, do zero, o banco DuckDB `data/processed/saeb.duckdb` (~5 MB) com **14 tabelas agregadas**, para que as consultas descritivas do dashboard respondam em milissegundos:
+O script `backend/etl/precompute.py` lê os Parquet e gera, do zero, o banco DuckDB `data/processed/saeb.duckdb` (~3,9 MB) com **14 tabelas agregadas**, para que as consultas descritivas do dashboard respondam em milissegundos:
 
 | Tabela | O que contém | Tipo de dado |
 |--------|--------------|--------------|
@@ -756,7 +756,7 @@ A tabela-resumo de cruzamentos tecnológicos mostra:
 ┌──────────────────────────────────────────────────────────────────┐
 │                PRÉ-COMPUTAÇÃO (DuckDB)                           │
 │                                                                  │
-│   14 tabelas agregadas (~5 MB):                                  │
+│   14 tabelas agregadas (~3,9 MB):                                │
 │                                                                  │
 │   DESCRITIVOS DIRETOS          CRUZAMENTOS             CRIADOS   │
 │   • KPIs do RJ                 • Profic. × INSE        • Índice  │

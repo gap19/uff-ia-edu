@@ -51,11 +51,18 @@ firebase deploy --only hosting
 
 ## Notas da conversão para estático
 
-- `frontend/static/js/app.js` detecta `window.STATIC_DATA` (injetado no
-  `index.html` pelo exportador) e passa a buscar arquivos
-  `/api/<rota>__<param>-<valor>...json` em vez de chamar a API dinâmica.
-  O esquema de nomes é espelhado por `slug_path()` no exportador — **manter as
-  duas funções em sincronia**.
+- `scripts/export_static.py` injeta `<meta name="static-data" content="true">` no
+  `<head>` do `index.html` gerado (sem nenhum `<script>` inline), permitindo uma
+  `Content-Security-Policy` estrita (`script-src 'self'`) tanto no servidor
+  local quanto no Firebase Hosting (`firebase.json`). `frontend/static/js/app.js`
+  detecta essa meta tag (mantendo `window.STATIC_DATA` apenas como fallback para
+  testes) e passa a buscar arquivos `/api/<rota>__<param>-<valor>...json` em vez
+  de chamar a API dinâmica. O esquema de nomes é espelhado por `slug_path()` no
+  exportador — **manter as duas funções em sincronia**.
+- Todos os assets de terceiros (Apache ECharts, Bootstrap, Bootstrap Icons,
+  KaTeX e fonte Inter) já são auto-hospedados e copiados para
+  `dist/static/vendor/` (servidos com `Cache-Control: public, max-age=31536000,
+  immutable`, sem dependência de CDNs externos).
 - O relatório PDF não é mais gerado sob demanda: o exportador pré-gera o
   relatório completo (todas as seções, incluindo cruzamentos, com apêndice
   para todas as séries e disciplinas; gráficos de série única usam 9º EF / LP)
